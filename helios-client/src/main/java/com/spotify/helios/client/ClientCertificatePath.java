@@ -21,7 +21,6 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Preconditions;
-
 import java.nio.file.Path;
 
 /** Holds the Paths to files necessary to construct a ClientCerticate. */
@@ -51,15 +50,15 @@ public class ClientCertificatePath {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final ClientCertificatePath that = (ClientCertificatePath) o;
+    final ClientCertificatePath that = (ClientCertificatePath) obj;
 
     if (!certificatePath.equals(that.certificatePath)) {
       return false;
@@ -77,9 +76,9 @@ public class ClientCertificatePath {
 
   @Override
   public String toString() {
-    return "ClientCertificatePath{" +
-           "certificatePath=" + certificatePath +
-           ", keyPath=" + keyPath +
-           '}';
+    return "ClientCertificatePath{"
+           + "certificatePath=" + certificatePath
+           + ", keyPath=" + keyPath
+           + '}';
   }
 }

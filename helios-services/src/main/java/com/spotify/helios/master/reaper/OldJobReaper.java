@@ -20,6 +20,9 @@
 
 package com.spotify.helios.master.reaper;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -28,26 +31,21 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.MasterModel;
-
-import com.google.common.annotations.VisibleForTesting;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkArgument;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Removes old jobs that haven't been deployed for a while.
  * The logic for whether a job should be reaped depends on whether it's deployed, its last history
  * event, its creation date, and the specified number of retention days.
  *
- * 1. A job that's deployed should NOT BE reaped regardless of its history or creation date.
+ * <p>1. A job that's deployed should NOT BE reaped regardless of its history or creation date.
  * 2. A job not deployed, with history, and an event before the number of retention days should
  *    BE reaped.
  * 3. A job not deployed, with history, and an event after the number of retention days should NOT
@@ -59,11 +57,11 @@ import static com.google.common.base.Preconditions.checkArgument;
  * 6. A job not deployed, without history, and with a creation date after the number of retention
  *    days should NOT BE reaped.
  *
- * Note that the --disable-job-history flag in {@link com.spotify.helios.agent.AgentParser} controls
- * whether the Helios agent should write job history to the data store. If this is disabled,
- * scenarios two and three above will never match. In this case, a job created a long time ago but
- * deployed recently may be reaped once it's undeployed even if the user needs it again in the
- * future.
+ * <p>Note that the --disable-job-history flag in {@link com.spotify.helios.agent.AgentParser}
+ * controls whether the Helios agent should write job history to the data store. If this is
+ * disabled, scenarios two and three above will never match. In this case, a job created a long
+ * time ago but deployed recently may be reaped once it's undeployed even if the user needs it
+ * again in the future.
  */
 public class OldJobReaper extends RateLimitedService<Job> {
 

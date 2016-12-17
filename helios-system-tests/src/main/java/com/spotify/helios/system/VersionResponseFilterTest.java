@@ -27,15 +27,10 @@ import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STAT
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.Maps;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.Version;
-
-import com.google.common.collect.Maps;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -43,6 +38,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import org.junit.Before;
+import org.junit.Test;
 
 public class VersionResponseFilterTest extends SystemTestBase {
 

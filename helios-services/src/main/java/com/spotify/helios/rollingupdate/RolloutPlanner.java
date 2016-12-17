@@ -21,7 +21,6 @@
 package com.spotify.helios.rollingupdate;
 
 import com.spotify.helios.common.descriptors.RolloutTask;
-
 import java.util.List;
 
 public interface RolloutPlanner {

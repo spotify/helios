@@ -27,7 +27,7 @@ import java.util.ServiceConfigurationError;
  */
 public class ServiceRegistrarLoadingException extends Exception {
 
-  ServiceRegistrarLoadingException(final String message, final ServiceConfigurationError e) {
-    super(message, e);
+  ServiceRegistrarLoadingException(final String message, final ServiceConfigurationError err) {
+    super(message, err);
   }
 }

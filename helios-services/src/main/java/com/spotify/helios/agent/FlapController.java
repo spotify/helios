@@ -20,14 +20,12 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.collect.Queues;
+import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.Queues;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
-
 import java.util.Deque;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Tracks container starts and exits and determines if the task is "flapping", which is to say:
@@ -36,9 +34,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class FlapController {
 
   /**
-   * Number of restarts in the time period to consider the job flapping
+   * Number of restarts in the time period to consider the job flapping.
    */
   private static final int DEFAULT_FLAPPING_RESTART_COUNT = 10;
+
   /**
    * If total runtime of the container over the last n restarts is less than this, we throttle.
    */

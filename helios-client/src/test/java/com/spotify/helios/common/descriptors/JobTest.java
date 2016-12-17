@@ -20,26 +20,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.io.BaseEncoding;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.common.Hash;
-import com.spotify.helios.common.Json;
-
-import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
@@ -51,6 +31,23 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.io.BaseEncoding;
+import com.spotify.helios.common.Hash;
+import com.spotify.helios.common.Json;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.junit.Test;
 
 public class JobTest {
 
@@ -333,7 +330,7 @@ public class JobTest {
   }
 
   @Test
-  public void verifySha1ID() throws IOException {
+  public void verifySha1Id() throws IOException {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
                                                    "image", "foobar:4711",
                                                    "name", "foozbarz",
@@ -354,7 +351,7 @@ public class JobTest {
   }
 
   @Test
-  public void verifySha1IDWithEnv() throws IOException {
+  public void verifySha1IdWithEnv() throws IOException {
     final Map<String, String> env = ImmutableMap.of("FOO", "BAR");
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
                                                    "image", "foobar:4711",
@@ -412,7 +409,7 @@ public class JobTest {
         .setVersion("17")
         .build();
 
-     removeFieldAndParse(job, "env");
+    removeFieldAndParse(job, "env");
   }
 
   @Test

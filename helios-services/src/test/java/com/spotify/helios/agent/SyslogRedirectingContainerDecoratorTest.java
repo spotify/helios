@@ -20,15 +20,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Optional;
-import com.spotify.docker.client.messages.ContainerConfig;
-import com.spotify.docker.client.messages.HostConfig;
-import com.spotify.docker.client.messages.ImageInfo;
-import com.spotify.docker.client.messages.LogConfig;
-import com.spotify.helios.common.descriptors.Job;
-import org.junit.Before;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -37,6 +28,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.google.common.base.Optional;
+import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.docker.client.messages.ImageInfo;
+import com.spotify.docker.client.messages.LogConfig;
+import com.spotify.helios.common.descriptors.Job;
+import org.junit.Before;
+import org.junit.Test;
 
 public class SyslogRedirectingContainerDecoratorTest {
 

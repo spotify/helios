@@ -22,15 +22,13 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class DeploymentGroupListCommand extends ControlCommand {
 

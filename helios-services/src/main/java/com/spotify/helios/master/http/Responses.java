@@ -20,12 +20,12 @@
 
 package com.spotify.helios.master.http;
 
-import javax.ws.rs.WebApplicationException;
-
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.Status.FORBIDDEN;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static javax.ws.rs.core.Response.status;
+
+import javax.ws.rs.WebApplicationException;
 
 /**
  * Simpler utility code to signal error conditions from the resource classes.

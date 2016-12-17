@@ -21,18 +21,15 @@
 package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Strings;
-
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.serviceregistration.NopServiceRegistrarFactory;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrarFactory;
 import com.spotify.helios.serviceregistration.ServiceRegistrarLoader;
 import com.spotify.helios.serviceregistration.ServiceRegistrarLoadingException;
-
+import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
 
 /**
  * Loads in the service registrar factory plugin (if specified) and returns an
@@ -94,8 +91,8 @@ public class ServiceRegistrars {
       final String name = factory.getClass().getName();
       log.info("Loaded service registrar plugin: {} ({})", name, absolutePath);
     } catch (ServiceRegistrarLoadingException e) {
-      throw new RuntimeException("Unable to load service registrar plugin: " +
-                                 absolutePath, e);
+      throw new RuntimeException("Unable to load service registrar plugin: "
+                                 + absolutePath, e);
     }
     return factory;
   }

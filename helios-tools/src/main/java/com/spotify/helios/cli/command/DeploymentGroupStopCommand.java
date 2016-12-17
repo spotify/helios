@@ -20,20 +20,17 @@
 
 package com.spotify.helios.cli.command;
 
+import static java.lang.String.format;
+
 import com.spotify.helios.client.HeliosClient;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
-
 import javax.ws.rs.core.Response;
-
-import static java.lang.String.format;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class DeploymentGroupStopCommand extends ControlCommand {
 

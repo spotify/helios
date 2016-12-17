@@ -31,6 +31,13 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.Futures;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
@@ -42,18 +49,6 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.Futures;
-import org.apache.commons.lang.text.StrSubstitutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,6 +56,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TemporaryJob {
 
@@ -132,7 +130,7 @@ public class TemporaryJob {
    * should must  called instead.
    * @param port the name of the registered port
    * @return a HostAndPort describing where the registered port can be reached. Null if
-   * no ports have been registered.
+   *         no ports have been registered.
    * @throws java.lang.AssertionError if the job has been deployed to more than one host
    */
   public HostAndPort address(final String port) {
@@ -152,7 +150,7 @@ public class TemporaryJob {
    * allocated ports.
    * @param port the name of the registered port
    * @return a HostAndPort describing where the registered port can be reached. Null if
-   * no ports have been registered.
+   *         no ports have been registered.
    */
   public List<HostAndPort> addresses(final String port) {
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
@@ -268,9 +266,9 @@ public class TemporaryJob {
                 return null;
               }
 
-              if (!messagePrinted.get() &&
-                  !isNullOrEmpty(jobDeployedMessageFormat) &&
-                  !isNullOrEmpty(taskStatus.getContainerId())) {
+              if (!messagePrinted.get()
+                  && !isNullOrEmpty(jobDeployedMessageFormat)
+                  && !isNullOrEmpty(taskStatus.getContainerId())) {
                 outputDeployedMessage(host, taskStatus.getContainerId());
                 messagePrinted.set(true);
               }
@@ -324,9 +322,9 @@ public class TemporaryJob {
   private void verifyHealthy(final String host, final TaskStatus status) {
     log.debug("Checking health of {} on {}", job.getImage(), host);
     final TaskStatus.State state = status.getState();
-    if (state == TaskStatus.State.FAILED ||
-        state == TaskStatus.State.EXITED ||
-        state == TaskStatus.State.STOPPED) {
+    if (state == TaskStatus.State.FAILED
+        || state == TaskStatus.State.EXITED
+        || state == TaskStatus.State.STOPPED) {
       // Throw exception which should stop the test dead in it's tracks
       String stateString = state.toString();
       if (status.getThrottled() != ThrottleState.NO) {
@@ -351,18 +349,18 @@ public class TemporaryJob {
     Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS,
         "Unable to connect to port " + port + " on host " + host + " within %d %s",
         new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        log.info("Probing: {} @ {}:{}", port, endpoint, portMapping);
-        final boolean up = prober.probe(endpoint, portMapping);
-        if (up) {
-          log.info("Up: {} @ {}:{}", port, endpoint, externalPort);
-          return true;
-        } else {
-          return null;
-        }
-      }
-    });
+          @Override
+          public Boolean call() throws Exception {
+            log.info("Probing: {} @ {}:{}", port, endpoint, portMapping);
+            final boolean up = prober.probe(endpoint, portMapping);
+            if (up) {
+              log.info("Up: {} @ {}:{}", port, endpoint, externalPort);
+              return true;
+            } else {
+              return null;
+            }
+          }
+        });
   }
 
   /**

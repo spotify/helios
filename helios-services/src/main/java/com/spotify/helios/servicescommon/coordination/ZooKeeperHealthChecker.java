@@ -20,19 +20,17 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import com.codahale.metrics.health.HealthCheck;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import io.dropwizard.lifecycle.Managed;
-import com.codahale.metrics.health.HealthCheck;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 
 public class ZooKeeperHealthChecker extends HealthCheck
     implements Managed, PathChildrenCacheListener, Runnable {
@@ -44,7 +42,7 @@ public class ZooKeeperHealthChecker extends HealthCheck
   private final TimeUnit timeUnit;
   private final long interval;
 
-  private AtomicReference<String> reasonString = new AtomicReference<String>(UNKNOWN);
+  private AtomicReference<String> reasonString = new AtomicReference<>(UNKNOWN);
 
   public ZooKeeperHealthChecker(final ZooKeeperClient zooKeeperClient, final String path,
                                 final RiemannFacade facade, final TimeUnit timeUnit,
@@ -111,6 +109,8 @@ public class ZooKeeperHealthChecker extends HealthCheck
       case CONNECTION_SUSPENDED:
         setState("CONNECTION_SUSPENDED");
         break;
+      default:
+        throw new IllegalStateException("Unrecognized event " + event.getType());
     }
   }
 

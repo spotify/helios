@@ -20,10 +20,9 @@
 
 package com.spotify.helios;
 
-import org.apache.curator.framework.CuratorFramework;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.curator.framework.CuratorFramework;
 
 public interface ZooKeeperTestManager {
 

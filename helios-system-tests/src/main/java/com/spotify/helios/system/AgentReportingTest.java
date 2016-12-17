@@ -29,10 +29,8 @@ import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.DockerVersion;
 import com.spotify.helios.common.descriptors.HostStatus;
-
-import org.junit.Test;
-
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class AgentReportingTest extends SystemTestBase {
 

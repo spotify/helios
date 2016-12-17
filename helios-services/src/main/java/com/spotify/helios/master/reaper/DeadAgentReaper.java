@@ -20,20 +20,18 @@
 
 package com.spotify.helios.master.reaper;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.master.MasterModel;
-
-import com.google.common.annotations.VisibleForTesting;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * De-registers dead agents. An agent that has been DOWN for more than X hours is considered

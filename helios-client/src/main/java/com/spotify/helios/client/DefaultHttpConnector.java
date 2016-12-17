@@ -20,16 +20,12 @@
 
 package com.spotify.helios.client;
 
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
-
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
-
-import org.apache.http.conn.ssl.DefaultHostnameVerifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
@@ -39,10 +35,10 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
-
 import javax.net.ssl.HttpsURLConnection;
-
-import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
+import org.apache.http.conn.ssl.DefaultHostnameVerifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO (mbrown): rename
 public class DefaultHttpConnector implements HttpConnector {
@@ -152,19 +148,19 @@ public class DefaultHttpConnector implements HttpConnector {
                                 final String method,
                                 final boolean isHttps) {
     // Nasty workaround for ancient HttpURLConnection only supporting few methods
-    final Class<?> httpURLConnectionClass = connection.getClass();
+    final Class<?> httpUrlConnectionClass = connection.getClass();
     try {
       Field methodField;
       HttpURLConnection delegate;
       if (isHttps) {
-        final Field delegateField = httpURLConnectionClass.getDeclaredField("delegate");
+        final Field delegateField = httpUrlConnectionClass.getDeclaredField("delegate");
         delegateField.setAccessible(true);
         delegate = (HttpURLConnection) delegateField.get(connection);
         methodField = delegate.getClass().getSuperclass().getSuperclass().getSuperclass()
             .getDeclaredField("method");
       } else {
         delegate = connection;
-        methodField = httpURLConnectionClass.getSuperclass().getDeclaredField("method");
+        methodField = httpUrlConnectionClass.getSuperclass().getDeclaredField("method");
       }
 
       methodField.setAccessible(true);

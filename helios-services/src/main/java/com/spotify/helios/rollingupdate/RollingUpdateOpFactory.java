@@ -20,24 +20,6 @@
 
 package com.spotify.helios.rollingupdate;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
-import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
-import com.spotify.helios.common.descriptors.RolloutTask;
-import com.spotify.helios.servicescommon.coordination.Paths;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
@@ -45,6 +27,21 @@ import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
+import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 public class RollingUpdateOpFactory {
 
@@ -189,14 +186,14 @@ public class RollingUpdateOpFactory {
     return error(msg, host, errorCode, Collections.<String, Object>emptyMap());
   }
 
-  public RollingUpdateOp error(final Exception e, final String host,
+  public RollingUpdateOp error(final Exception ex, final String host,
                                final RollingUpdateError errorCode) {
     final String message;
     if (errorCode == RollingUpdateError.PORT_CONFLICT) {
-      message = e.getMessage() +
-                " (the conflicting job was deployed manually or by a different deployment group)";
+      message = ex.getMessage()
+                + " (the conflicting job was deployed manually or by a different deployment group)";
     } else {
-      message = e.getMessage();
+      message = ex.getMessage();
     }
 
     return error(message, host, errorCode);

@@ -26,6 +26,18 @@ import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceR
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.io.Resources;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.http.VersionResponseFilter;
@@ -65,25 +77,22 @@ import com.spotify.helios.servicescommon.statistics.FastForwardReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
-
-import ch.qos.logback.access.jetty.RequestLogImpl;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.io.Resources;
-import com.google.common.util.concurrent.AbstractIdleService;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.jetty.GzipFilterFactory;
 import io.dropwizard.jetty.RequestLogFactory;
 import io.dropwizard.logging.AppenderFactory;
 import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Environment;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
@@ -97,17 +106,6 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
 
 /**
  * The Helios master service.
@@ -378,6 +376,7 @@ public class MasterService extends AbstractIdleService {
       final String banner = Resources.toString(Resources.getResource("master-banner.txt"), UTF_8);
       log.info("\n{}", banner);
     } catch (IllegalArgumentException | IOException ignored) {
+      // ignored
     }
   }
 

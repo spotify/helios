@@ -23,29 +23,28 @@ package com.spotify.helios.servicescommon;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 /**
  * A ZooKeeper ACLProvider that uses regular expression-based rules to determine what ACLs govern
  * created nodes.
- * <p>
- * The permissions for all rules that match a path apply. For example if there
+ *
+ * <p>The permissions for all rules that match a path apply. For example if there
  * are two rules:
  * <ol>
  *   <li>"/foo.*", DELETE, usr1</li>
  *   <li>"/foo/bar", CREATE, user1</li>
  * </ol>
- * Then ACLs will be set so that user1 can create and delete nodes on the /foo/bar node, but he can
- * not delete nodes under the /foo node.
+ *
+ * <p>Then ACLs will be set so that user1 can create and delete nodes on the /foo/bar node, but he
+ * can not delete nodes under the /foo node.
  */
 public class RuleBasedZooKeeperAclProvider implements ACLProvider {
 

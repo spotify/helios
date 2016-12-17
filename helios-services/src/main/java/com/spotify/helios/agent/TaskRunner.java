@@ -23,6 +23,10 @@ package com.spotify.helios.agent;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -41,12 +45,6 @@ import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
-
-import com.google.common.base.Optional;
-import com.google.common.base.Stopwatch;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -295,7 +293,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   }
 
   private ContainerState getContainerState(final String existingContainerId)
-    throws DockerException, InterruptedException {
+      throws DockerException, InterruptedException {
     final ContainerInfo info = getContainerInfo(existingContainerId);
     if (info == null) {
       return null;
@@ -349,7 +347,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   public interface Listener {
 
-    void failed(Throwable t, String containerError);
+    void failed(Throwable th, String containerError);
 
     void pulling();
 
@@ -438,7 +436,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   public static class NopListener implements Listener {
 
     @Override
-    public void failed(final Throwable t, final String containerError) {
+    public void failed(final Throwable th, final String containerError) {
 
     }
 

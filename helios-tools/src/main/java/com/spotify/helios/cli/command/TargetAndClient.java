@@ -22,7 +22,6 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-
 import com.spotify.helios.cli.Target;
 import com.spotify.helios.client.HeliosClient;
 

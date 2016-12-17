@@ -20,18 +20,6 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.Lists;
-
-import com.spotify.helios.servicescommon.coordination.Paths;
-
-import org.apache.curator.framework.api.ACLProvider;
-import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Id;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.List;
-
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static org.apache.zookeeper.ZooDefs.Perms.CREATE;
@@ -43,6 +31,15 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
+import com.google.common.collect.Lists;
+import com.spotify.helios.servicescommon.coordination.Paths;
+import java.util.List;
+import org.apache.curator.framework.api.ACLProvider;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ZooKeeperAclProvidersTest {
 

@@ -20,14 +20,12 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.ImmutableList;
-
-import org.junit.Test;
-
-import java.util.Optional;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import com.google.common.collect.ImmutableList;
+import java.util.Optional;
+import org.junit.Test;
 
 public class KafkaClientProviderTest {
 

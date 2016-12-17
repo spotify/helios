@@ -31,6 +31,17 @@ import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Strings;
+import com.google.common.base.Suppliers;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerCertificateException;
@@ -64,31 +75,10 @@ import com.spotify.helios.servicescommon.statistics.FastForwardReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
-
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Strings;
-import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
-import com.google.common.util.concurrent.AbstractIdleService;
 import com.sun.management.OperatingSystemMXBean;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.setup.Environment;
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.framework.AuthInfo;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.ACLProvider;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.eclipse.jetty.server.Server;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -100,6 +90,14 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.AuthInfo;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.ACLProvider;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.eclipse.jetty.server.Server;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Helios agent.
@@ -441,7 +439,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     zkRegistrar = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(client)
         .setZooKeeperRegistrar(agentZooKeeperRegistrar)
-        .setZKRegistrationSignal(zkRegistrationSignal)
+        .setZkRegistrationSignal(zkRegistrationSignal)
         .build();
 
     return client;
@@ -473,6 +471,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       final String banner = Resources.toString(Resources.getResource("agent-banner.txt"), UTF_8);
       log.info("\n{}", banner);
     } catch (IllegalArgumentException | IOException ignored) {
+      // ignore
     }
   }
 

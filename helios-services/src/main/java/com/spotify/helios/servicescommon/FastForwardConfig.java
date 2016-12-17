@@ -21,7 +21,6 @@
 package com.spotify.helios.servicescommon;
 
 import com.google.common.net.HostAndPort;
-
 import java.util.Optional;
 
 public class FastForwardConfig {
@@ -37,7 +36,7 @@ public class FastForwardConfig {
   }
 
   /**
-   * Connection address, empty means use default
+   * Connection address, empty means use default.
    * @return An {@link Optional} of {@link HostAndPort}
    */
   public Optional<HostAndPort> getAddress() {

@@ -20,30 +20,30 @@
 
 package com.spotify.helios.common;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.junit.Test;
+
 public class PomVersionTest {
 
   @Test
   public void testNormal() {
-    PomVersion v = PomVersion.parse("1.2.9");
-    assertEquals(9, v.getPatch());
-    assertEquals(2, v.getMinor());
-    assertEquals(1, v.getMajor());
-    assertFalse(v.isSnapshot());
-    assertEquals("1.2.9", v.toString());
+    PomVersion pv = PomVersion.parse("1.2.9");
+    assertEquals(9, pv.getPatch());
+    assertEquals(2, pv.getMinor());
+    assertEquals(1, pv.getMajor());
+    assertFalse(pv.isSnapshot());
+    assertEquals("1.2.9", pv.toString());
 
-    v = PomVersion.parse("8.6.5-SNAPSHOT");
-    assertEquals(5, v.getPatch());
-    assertEquals(6, v.getMinor());
-    assertEquals(8, v.getMajor());
-    assertTrue(v.isSnapshot());
-    assertEquals("8.6.5-SNAPSHOT", v.toString());
+    pv = PomVersion.parse("8.6.5-SNAPSHOT");
+    assertEquals(5, pv.getPatch());
+    assertEquals(6, pv.getMinor());
+    assertEquals(8, pv.getMajor());
+    assertTrue(pv.isSnapshot());
+    assertEquals("8.6.5-SNAPSHOT", pv.toString());
   }
 
   @Test

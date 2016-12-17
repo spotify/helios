@@ -20,10 +20,11 @@
 
 package com.spotify.helios.master.resources;
 
-import com.google.common.collect.Lists;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.collect.Lists;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -39,12 +40,10 @@ import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -53,8 +52,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
-
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/deployment-group")
 public class DeploymentGroupResource {
@@ -112,6 +109,16 @@ public class DeploymentGroupResource {
     }
   }
 
+  @GET
+  @Produces(APPLICATION_JSON)
+  @Timed
+  @ExceptionMetered
+  public List<String> getDeploymentGroup() {
+    final List<String> deploymentGroups = Lists.newArrayList(model.getDeploymentGroups().keySet());
+    Collections.sort(deploymentGroups);
+    return deploymentGroups;
+  }
+
   @DELETE
   @Path("/{name}")
   @Produces(APPLICATION_JSON)
@@ -126,16 +133,6 @@ public class DeploymentGroupResource {
       return Response.ok(new RemoveDeploymentGroupResponse(
           RemoveDeploymentGroupResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND)).build();
     }
-  }
-
-  @GET
-  @Produces(APPLICATION_JSON)
-  @Timed
-  @ExceptionMetered
-  public List<String> getDeploymentGroup() {
-    final List<String> deploymentGroups = Lists.newArrayList(model.getDeploymentGroups().keySet());
-    Collections.sort(deploymentGroups);
-    return deploymentGroups;
   }
 
   @POST

@@ -30,6 +30,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
@@ -45,16 +47,6 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -62,13 +54,19 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.zookeeper.KeeperException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 public class TaskHistoryWriterTest {
 
   private static final long TIMESTAMP = 8675309L;
   private static final String HOSTNAME = "hostname";
   private static final Job JOB = Job.newBuilder()
-      .setCommand(ImmutableList.<String>of())
+      .setCommand(ImmutableList.of())
       .setImage("image")
       .setName("foo")
       .setVersion("version")
@@ -207,19 +205,19 @@ public class TaskHistoryWriterTest {
     }
     // Should converge to 30 items
     List<TaskStatusEvent> events = Polling.await(1, TimeUnit.MINUTES,
-      new Callable<List<TaskStatusEvent>>() {
-      @Override
-      public List<TaskStatusEvent> call() throws Exception {
-        if (!writer.isEmpty()) {
-          return null;
-        }
-        final List<TaskStatusEvent> events = masterModel.getJobHistory(JOB_ID);
-        if (events.size() == TaskHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN) {
-          return events;
-        }
-        return null;
-      }
-    });
+        new Callable<List<TaskStatusEvent>>() {
+          @Override
+          public List<TaskStatusEvent> call() throws Exception {
+            if (!writer.isEmpty()) {
+              return null;
+            }
+            final List<TaskStatusEvent> events = masterModel.getJobHistory(JOB_ID);
+            if (events.size() == TaskHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN) {
+              return events;
+            }
+            return null;
+          }
+        });
     assertEquals(TIMESTAMP + TaskHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN + 19,
         Iterables.getLast(events).getTimestamp());
     assertEquals(TIMESTAMP + 20, Iterables.get(events, 0).getTimestamp());

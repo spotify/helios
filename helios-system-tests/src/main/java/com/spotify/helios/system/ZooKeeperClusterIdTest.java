@@ -36,15 +36,13 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 public class ZooKeeperClusterIdTest extends SystemTestBase {
 
@@ -84,6 +82,7 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
       client.ensurePath(Paths.configJobs());
       fail("ZooKeeper operation should have failed because cluster ID was removed");
     } catch (IllegalStateException ignore) {
+      // ignored
     }
   }
 

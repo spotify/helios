@@ -28,19 +28,16 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
 
-import com.spotify.helios.Polling;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.HostStatus;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-
-import org.junit.Test;
-
+import com.spotify.helios.Polling;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.HostStatus;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class LabelTest extends SystemTestBase {
 

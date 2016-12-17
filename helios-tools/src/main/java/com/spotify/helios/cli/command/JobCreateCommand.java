@@ -20,6 +20,27 @@
 
 package com.spotify.helios.cli.command;
 
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
+import static com.spotify.helios.common.descriptors.PortMapping.TCP;
+import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.regex.Pattern.compile;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.fileType;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
@@ -32,22 +53,6 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.common.protocol.CreateJobResponse;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.joda.time.DateTime;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -62,19 +67,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
-import static com.spotify.helios.common.descriptors.PortMapping.TCP;
-import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static java.util.regex.Pattern.compile;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.fileType;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.joda.time.DateTime;
 
 public class JobCreateCommand extends ControlCommand {
 
@@ -133,11 +129,11 @@ public class JobCreateCommand extends ControlCommand {
     this(parser, DEFAULT_ENV_VAR_SUPPLIER);
   }
 
-  @VisibleForTesting
   /**
    * Allows the supplier of environment variables to be swapped out for testing, for example to
    * avoid unexpected environment variables being present during testing.
    */
+  @VisibleForTesting
   protected JobCreateCommand(final Subparser parser, Supplier<Map<String, String>> envVarSupplier) {
     super(parser);
 
@@ -145,12 +141,12 @@ public class JobCreateCommand extends ControlCommand {
 
     fileArg = parser.addArgument("-f", "--file")
         .type(fileType().acceptSystemIn())
-        .help("Job configuration file. Options specified on the command line will be merged with" +
-              " the contents of this file. Cannot be used together with -t/--template.");
+        .help("Job configuration file. Options specified on the command line will be merged with"
+              + " the contents of this file. Cannot be used together with -t/--template.");
 
     templateArg = parser.addArgument("-t", "--template")
-        .help("Template job id. The new job will be based on this job. Cannot be used together " +
-              "with -f/--file.");
+        .help("Template job id. The new job will be based on this job. Cannot be used together "
+              + "with -f/--file.");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -171,8 +167,8 @@ public class JobCreateCommand extends ControlCommand {
     tokenArg = parser.addArgument("--token")
          .nargs("?")
          .setDefault(EMPTY_TOKEN)
-         .help("Insecure access token meant to prevent accidental changes to your job " +
-               "(e.g. undeploys).");
+         .help("Insecure access token meant to prevent accidental changes to your job "
+               + "(e.g. undeploys).");
 
     envArg = parser.addArgument("--env")
         .action(append())
@@ -187,73 +183,73 @@ public class JobCreateCommand extends ControlCommand {
     portArg = parser.addArgument("-p", "--port")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .help("Port mapping. Specify an endpoint name and a single port (e.g. \"http=8080\") for " +
-              "dynamic port mapping and a name=private:public tuple (e.g. \"http=8080:80\") for " +
-              "static port mapping. E.g., foo=4711 will map the internal port 4711 of the " +
-              "container to an arbitrary external port on the host. Specifying foo=4711:80 " +
-              "will map internal port 4711 of the container to port 80 on the host. The " +
-              "protocol will be TCP by default. For UDP, add /udp. E.g. quic=80/udp or " +
-              "dns=53:53/udp. The endpoint name can be used when specifying service registration " +
-              "using -r/--register.");
+        .help("Port mapping. Specify an endpoint name and a single port (e.g. \"http=8080\") for "
+              + "dynamic port mapping and a name=private:public tuple (e.g. \"http=8080:80\") for "
+              + "static port mapping. E.g., foo=4711 will map the internal port 4711 of the "
+              + "container to an arbitrary external port on the host. Specifying foo=4711:80 "
+              + "will map internal port 4711 of the container to port 80 on the host. The "
+              + "protocol will be TCP by default. For UDP, add /udp. E.g. quic=80/udp or "
+              + "dns=53:53/udp. The endpoint name can be used when specifying service registration "
+              + "using -r/--register.");
 
     registrationArg = parser.addArgument("-r", "--register")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .help("Service discovery registration. Specify a service name, the port name and a " +
-              "protocol on the format service/protocol=port. E.g. -r website/tcp=http will " +
-              "register the port named http with the protocol tcp. Protocol is optional and " +
-              "default is tcp. If there is only one port mapping, this will be used by " +
-              "default and it will be enough to specify only the service name, e.g. " +
-              "-r wordpress.");
+        .help("Service discovery registration. Specify a service name, the port name and a "
+              + "protocol on the format service/protocol=port. E.g. -r website/tcp=http will "
+              + "register the port named http with the protocol tcp. Protocol is optional and "
+              + "default is tcp. If there is only one port mapping, this will be used by "
+              + "default and it will be enough to specify only the service name, e.g. "
+              + "-r wordpress.");
 
     registrationDomainArg = parser.addArgument("--registration-domain")
         .setDefault("")
-        .help("If set, overrides the default domain in which discovery serviceregistration " +
-              "occurs. What is allowed here will vary based upon the discovery service plugin " +
-              "used.");
+        .help("If set, overrides the default domain in which discovery serviceregistration "
+              + "occurs. What is allowed here will vary based upon the discovery service plugin "
+              + "used.");
 
     gracePeriodArg = parser.addArgument("--grace-period")
         .type(Integer.class)
         .setDefault((Object) null)
-        .help("if --grace-period is specified, Helios will unregister from service discovery and " +
-              "wait the specified number of seconds before undeploying, default 0 seconds");
+        .help("if --grace-period is specified, Helios will unregister from service discovery and "
+              + "wait the specified number of seconds before undeploying, default 0 seconds");
 
     volumeArg = parser.addArgument("--volume")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .help("Container volumes. Specify either a single path to create a data volume, " +
-              "or a source path and a container path to mount a file or directory from the host. " +
-              "The container path can be suffixed with \"rw\" or \"ro\" to create a read-write " +
-              "or read-only volume, respectively. Format: [container-path]:[host-path]:[rw|ro].");
+        .help("Container volumes. Specify either a single path to create a data volume, "
+              + "or a source path and a container path to mount a file or directory from the host. "
+              + "The container path can be suffixed with \"rw\" or \"ro\" to create a read-write "
+              + "or read-only volume, respectively. Format: [container-path]:[host-path]:[rw|ro].");
 
     argsArg = parser.addArgument("args")
         .nargs("*")
         .help("Command line arguments");
 
     expiresArg = parser.addArgument("-e", "--expires")
-        .help("An ISO-8601 string representing the date/time when this job should expire. The " +
-              "job will be undeployed from all hosts and removed at this time. E.g. " +
-              "2014-06-01T12:00:00Z");
+        .help("An ISO-8601 string representing the date/time when this job should expire. The "
+              + "job will be undeployed from all hosts and removed at this time. E.g. "
+              + "2014-06-01T12:00:00Z");
 
     healthCheckExecArg = parser.addArgument("--exec-check")
-        .help("Run `docker exec` health check with the provided command. The service will not be " +
-              "registered in service discovery until the command executes successfully in the " +
-              "container, i.e. with exit code 0. E.g. --exec-check ping google.com");
+        .help("Run `docker exec` health check with the provided command. The service will not be "
+              + "registered in service discovery until the command executes successfully in the "
+              + "container, i.e. with exit code 0. E.g. --exec-check ping google.com");
 
     healthCheckHttpArg = parser.addArgument("--http-check")
-        .help("Run HTTP health check against the provided port name and path. The service will " +
-              "not be registered in service discovery until the container passes the HTTP health " +
-              "check. Format: [port name]:[path].");
+        .help("Run HTTP health check against the provided port name and path. The service will "
+              + "not be registered in service discovery until the container passes the HTTP health "
+              + "check. Format: [port name]:[path].");
 
     healthCheckTcpArg = parser.addArgument("--tcp-check")
-        .help("Run TCP health check against the provided port name. The service will not be " +
-              "registered in service discovery until the container passes the TCP health check.");
+        .help("Run TCP health check against the provided port name. The service will not be "
+              + "registered in service discovery until the container passes the TCP health check.");
 
     securityOptArg = parser.addArgument("--security-opt")
         .action(append())
         .setDefault(Lists.newArrayList())
-        .help("Run the Docker container with a security option. " +
-              "See https://docs.docker.com/reference/run/#security-configuration.");
+        .help("Run the Docker container with a security option. "
+              + "See https://docs.docker.com/reference/run/#security-configuration.");
 
     networkModeArg = parser.addArgument("--network-mode")
         .help("Sets the networking mode for the container. Supported values are: bridge, host, and "
@@ -305,7 +301,7 @@ public class JobCreateCommand extends ControlCommand {
       final String config = new String(bytes, UTF_8);
       final Job job = Json.read(config, Job.class);
       builder = job.toBuilder();
-     } else if (templateJobId != null) {
+    } else if (templateJobId != null) {
       final Map<JobId, Job> jobs = client.jobs(templateJobId).get();
       if (jobs.size() == 0) {
         if (!json) {
@@ -549,12 +545,12 @@ public class JobCreateCommand extends ControlCommand {
       builder.setToken(token);
     }
 
-    final List<String> addCaps = options.<String>getList(addCapabilityArg.getDest());
+    final List<String> addCaps = options.getList(addCapabilityArg.getDest());
     if (addCaps != null && !addCaps.isEmpty()) {
       builder.setAddCapabilities(addCaps);
     }
 
-    final List<String> dropCaps = options.<String>getList(dropCapabilityArg.getDest());
+    final List<String> dropCaps = options.getList(dropCapabilityArg.getDest());
     if (dropCaps != null && !dropCaps.isEmpty()) {
       builder.setDropCapabilities(dropCaps);
     }
@@ -651,8 +647,8 @@ public class JobCreateCommand extends ControlCommand {
     return pairs;
   }
 
-  private Integer nullOrInteger(final String s) {
-    return s == null ? null : Integer.valueOf(s);
+  private Integer nullOrInteger(final String str) {
+    return str == null ? null : Integer.valueOf(str);
   }
 }
 

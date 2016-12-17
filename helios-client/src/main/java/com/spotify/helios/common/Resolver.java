@@ -20,21 +20,19 @@
 
 package com.spotify.helios.common;
 
+import static java.lang.String.format;
+import static java.lang.System.getenv;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-
 import com.spotify.dns.DnsSrvResolver;
 import com.spotify.dns.DnsSrvResolvers;
 import com.spotify.dns.LookupResult;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-
-import static java.lang.String.format;
-import static java.lang.System.getenv;
 
 public abstract class Resolver {
 

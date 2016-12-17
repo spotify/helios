@@ -33,14 +33,12 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
-
-import org.hamcrest.CustomTypeSafeMatcher;
-import org.hamcrest.Matcher;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.ListIterator;
 import java.util.concurrent.Callable;
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
+import org.junit.Test;
 
 public class JobHistoryTest extends SystemTestBase {
 
@@ -58,32 +56,32 @@ public class JobHistoryTest extends SystemTestBase {
     awaitTaskGone(client, testHost(), jobId, LONG_WAIT_SECONDS, SECONDS);
     final TaskStatusEvents events = Polling.await(
         WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<TaskStatusEvents>() {
-      @Override
-      public TaskStatusEvents call() throws Exception {
-        final TaskStatusEvents events = client.jobHistory(jobId).get();
-        final int size = events.getEvents().size();
-        if (size == 0) {
-          return null;
-        }
-        // We sometimes get more than one PULLING_IMAGE in the history if a pull tempfails.
-        int requiredEventCount = -1;
-        for (int i = 0; i < size; i++) {
-          if (events.getEvents().get(i).getStatus().getState() != State.PULLING_IMAGE) {
-            requiredEventCount = i + 5;
-            break;
+          @Override
+          public TaskStatusEvents call() throws Exception {
+            final TaskStatusEvents events = client.jobHistory(jobId).get();
+            final int size = events.getEvents().size();
+            if (size == 0) {
+              return null;
+            }
+            // We sometimes get more than one PULLING_IMAGE in the history if a pull tempfails.
+            int requiredEventCount = -1;
+            for (int i = 0; i < size; i++) {
+              if (events.getEvents().get(i).getStatus().getState() != State.PULLING_IMAGE) {
+                requiredEventCount = i + 5;
+                break;
+              }
+            }
+
+            if (requiredEventCount == -1) {
+              return null;
+            }
+
+            if (size < requiredEventCount) {
+              return null;
+            }
+            return events;
           }
-        }
-
-        if (requiredEventCount == -1) {
-          return null;
-        }
-
-        if (size < requiredEventCount) {
-          return null;
-        }
-        return events;
-      }
-    });
+        });
     final ListIterator<TaskStatusEvent> it = events.getEvents().listIterator();
 
     while (true) {

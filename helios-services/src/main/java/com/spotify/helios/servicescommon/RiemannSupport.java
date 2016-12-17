@@ -20,21 +20,18 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.Iterables;
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.aphyr.riemann.client.RiemannClient;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.riemann.Riemann;
 import com.codahale.metrics.riemann.RiemannReporter;
-
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 import io.dropwizard.lifecycle.Managed;
-
 import java.io.IOException;
-
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Ties together construction of the Riemann client, metrics reporting via Riemann and exposing

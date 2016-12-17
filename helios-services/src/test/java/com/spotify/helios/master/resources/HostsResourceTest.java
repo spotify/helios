@@ -28,24 +28,20 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.master.MasterModel;
-
 import com.google.common.collect.ImmutableList;
+import com.spotify.helios.master.MasterModel;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 
 public class HostsResourceTest {
 
@@ -68,20 +64,11 @@ public class HostsResourceTest {
   public void setUp() {
     when(model.listHosts()).thenReturn(hosts);
 
-    final HostStatus.Builder statusBuilder = HostStatus.newBuilder()
-        .setStatus(HostStatus.Status.UP)
-        .setJobs(emptyMap())
-        .setStatuses(emptyMap());
-
-    int i = 1;
+    int idx = 1;
     for (final String host : hosts) {
       final Map<String, String> labels = new HashMap<>();
       labels.put("site", "foo");
-      labels.put("index", String.valueOf(i++));
-
-      final HostStatus hostStatus = statusBuilder
-          .setLabels(labels)
-          .build();
+      labels.put("index", String.valueOf(idx++));
 
       when(model.getHostLabels(host)).thenReturn(labels);
     }
@@ -129,7 +116,7 @@ public class HostsResourceTest {
                contains("host2.foo.example.com"));
   }
 
-  /** Test behavior when both a name pattern and selector list is specified */
+  // Test behavior when both a name pattern and selector list is specified.
   @Test
   public void listHostsNameAndSelectorFilter() {
     assertThat(resource.list("foo.example.com", ImmutableList.of("site=foo")), equalTo(hosts));

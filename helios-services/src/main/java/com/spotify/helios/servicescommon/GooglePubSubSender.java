@@ -28,15 +28,13 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import io.dropwizard.lifecycle.Managed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** An EventSender that publishes events to Google Cloud PubSub. */
 public class GooglePubSubSender implements EventSender {
@@ -92,8 +90,8 @@ public class GooglePubSubSender implements EventSender {
             }
 
             @Override
-            public void onFailure(final Throwable t) {
-              log.warn("Unable to send an event to Google PubSub, topic: {}", combinedTopic, t);
+            public void onFailure(final Throwable th) {
+              log.warn("Unable to send an event to Google PubSub, topic: {}", combinedTopic, th);
             }
           });
     } catch (Exception e) {

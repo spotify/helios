@@ -20,15 +20,13 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.google.common.collect.Maps;
+import static com.codahale.metrics.MetricRegistry.name;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.Maps;
 import com.spotify.helios.servicescommon.MasterRequestMetrics;
-
 import java.util.Map;
-
-import static com.codahale.metrics.MetricRegistry.name;
 
 public class MasterMetricsImpl implements MasterMetrics {
   private static final String TYPE = "master";
@@ -65,12 +63,12 @@ public class MasterMetricsImpl implements MasterMetrics {
   }
 
   private MasterRequestMetrics request(final String name) {
-    MasterRequestMetrics m = requestMetrics.get(name);
-    if (m == null) {
-      m = new MasterRequestMetrics(group, TYPE, name, registry);
-      requestMetrics.put(name, m);
+    MasterRequestMetrics metrics = requestMetrics.get(name);
+    if (metrics == null) {
+      metrics = new MasterRequestMetrics(group, TYPE, name, registry);
+      requestMetrics.put(name, metrics);
     }
-    return m;
+    return metrics;
   }
 
   @Override

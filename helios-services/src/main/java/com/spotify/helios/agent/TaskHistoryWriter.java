@@ -20,6 +20,10 @@
 
 package com.spotify.helios.agent;
 
+import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
@@ -29,21 +33,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.ConnectionLossException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
@@ -57,18 +52,20 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.google.common.base.Preconditions.checkState;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.ConnectionLossException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Writes task history to ZK, and attempts to gracefully handle the case where ZK is down, and tries
  * to lose the right things if it has to lose stuff.
  *
- * Just some breadcrumbs so next time, the person that follows me can understand why things are
+ * <p>Just some breadcrumbs so next time, the person that follows me can understand why things are
  * the way they are.
  *
- * Theory of operation:
+ * <p>Theory of operation:
  * 1. saveHistoryItem should never block for any significant amount of time.  Specifically, it
  *    should not block on ZK being in any particular state, and ideally not while a file write is
  *    occurring, as the file may get large if ZK has been away for a long time.
@@ -311,11 +308,11 @@ public class TaskHistoryWriter extends AbstractIdleService implements Runnable {
     // All this to sort numerically instead of lexically....
     final List<Long> eventsAsLongs = Lists.newArrayList(
         Iterables.transform(events, new Function<String, Long>() {
-            @Override
-            public Long apply(String name) {
-              return Long.valueOf(name);
-            }
-    }));
+          @Override
+          public Long apply(String name) {
+            return Long.valueOf(name);
+          }
+        }));
     Collections.sort(eventsAsLongs);
 
     for (int i = 0; i < (eventsAsLongs.size() - MAX_NUMBER_STATUS_EVENTS_TO_RETAIN); i++) {

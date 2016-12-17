@@ -20,35 +20,6 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import com.spotify.helios.Parallelized;
-import com.spotify.helios.Polling;
-import com.spotify.helios.ZooKeeperTestManager;
-import com.spotify.helios.ZooKeeperTestingServerManager;
-import com.spotify.helios.common.Json;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.SettableFuture;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.zookeeper.KeeperException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.zookeeper.KeeperException.NoNodeException;
 import static org.junit.Assert.assertEquals;
@@ -60,6 +31,32 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.SettableFuture;
+import com.spotify.helios.Parallelized;
+import com.spotify.helios.Polling;
+import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
+import com.spotify.helios.common.Json;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import org.apache.commons.io.FileUtils;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.utils.ZKPaths;
+import org.apache.zookeeper.KeeperException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 @RunWith(Parallelized.class)
 public class PersistentPathChildrenCacheTest {
@@ -78,15 +75,15 @@ public class PersistentPathChildrenCacheTest {
     public Map<String, String> baz = ImmutableMap.of("foos", "bars");
 
     @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
+    public boolean equals(final Object obj) {
+      if (this == obj) {
         return true;
       }
-      if (o == null || getClass() != o.getClass()) {
+      if (obj == null || getClass() != obj.getClass()) {
         return false;
       }
 
-      final DataPojo dataPojo = (DataPojo) o;
+      final DataPojo dataPojo = (DataPojo) obj;
 
       if (bar != dataPojo.bar) {
         return false;
@@ -166,13 +163,14 @@ public class PersistentPathChildrenCacheTest {
     try {
       zk.curatorWithSuperAuth().delete().forPath("/foos/foo");
     } catch (NoNodeException ignore) {
+      // ignored
     }
     verify(listener, timeout(60000).atLeastOnce()).nodesChanged(cache);
     assertTrue(cache.getNodes().isEmpty());
   }
 
   @Test
-  public void verifyNodesAreRetainedWhenZKGoesDown() throws Exception {
+  public void verifyNodesAreRetainedWhenZkGoesDown() throws Exception {
     // Create two nodes
     final String foo1 = "/foos/foo1";
     final String foo2 = "/foos/foo2";
@@ -241,6 +239,7 @@ public class PersistentPathChildrenCacheTest {
     try {
       zk.curatorWithSuperAuth().delete().forPath(foo1);
     } catch (NoNodeException ignore) {
+      // ignored
     }
 
     // Start the cache
@@ -275,6 +274,7 @@ public class PersistentPathChildrenCacheTest {
     try {
       zk.curatorWithSuperAuth().create().forPath(path, Json.asBytesUnchecked(value));
     } catch (KeeperException.NodeExistsException ignore) {
+      // ignored
     }
 
   }

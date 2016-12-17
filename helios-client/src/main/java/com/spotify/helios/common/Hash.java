@@ -20,10 +20,10 @@
 
 package com.spotify.helios.common;
 
+import static com.google.common.base.Throwables.propagate;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
-import static com.google.common.base.Throwables.propagate;
 
 public class Hash {
 

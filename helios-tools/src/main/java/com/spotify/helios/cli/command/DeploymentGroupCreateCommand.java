@@ -20,26 +20,23 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.Lists;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import com.google.common.collect.Lists;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class DeploymentGroupCreateCommand extends ControlCommand {
 
@@ -60,10 +57,10 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
         .action(append())
         .setDefault(Lists.newArrayList())
         .nargs("+")
-        .help("Host selector expression. Hosts matching this expression will be part of the " +
-              "deployment-group. Multiple conditions can be specified, separated by spaces (as " +
-              "separate arguments). If multiple conditions are given, all must be fulfilled. " +
-              "Operators supported are =, !=, in and notin. Example: foo=bar baz!=qux");
+        .help("Host selector expression. Hosts matching this expression will be part of the "
+              + "deployment-group. Multiple conditions can be specified, separated by spaces (as "
+              + "separate arguments). If multiple conditions are given, all must be fulfilled. "
+              + "Operators supported are =, !=, in and notin. Example: foo=bar baz!=qux");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())

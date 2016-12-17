@@ -65,11 +65,11 @@ public class KafkaSender implements EventSender {
   private static class LoggingCallback implements Callback {
 
     @Override
-    public void onCompletion(RecordMetadata metadata, Exception e) {
-      if (e == null) {
+    public void onCompletion(RecordMetadata metadata, Exception ex) {
+      if (ex == null) {
         log.debug("Sent an event to Kafka, meta: {}", metadata);
       } else {
-        log.warn("Unable to send an event to Kafka", e);
+        log.warn("Unable to send an event to Kafka", ex);
       }
     }
   }

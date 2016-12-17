@@ -21,7 +21,6 @@
 package com.spotify.helios.client;
 
 import com.spotify.helios.common.HeliosException;
-
 import java.io.Closeable;
 import java.net.HttpURLConnection;
 import java.net.URI;

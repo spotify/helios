@@ -20,11 +20,9 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.ImmutableList;
-
 import com.aphyr.riemann.Proto.Event;
 import com.aphyr.riemann.client.IPromise;
-
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 

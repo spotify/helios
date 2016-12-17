@@ -35,11 +35,9 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-
-import org.junit.Test;
-
 import java.security.SecureRandom;
 import java.util.List;
+import org.junit.Test;
 
 public class NamespaceTest extends SystemTestBase {
 

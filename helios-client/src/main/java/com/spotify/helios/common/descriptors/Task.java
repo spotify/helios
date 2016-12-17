@@ -20,12 +20,11 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.jetbrains.annotations.Nullable;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Basically, a pair of {@link Job} and {@link Goal}.  This is different than {@link Deployment}
@@ -76,15 +75,15 @@ public class Task extends Descriptor {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final Task task = (Task) o;
+    final Task task = (Task) obj;
 
     if (job != null ? !job.equals(task.job) : task.job != null) {
       return false;
@@ -118,12 +117,12 @@ public class Task extends Descriptor {
 
   @Override
   public String toString() {
-    return "Task{" +
-           "job=" + job +
-           ", goal=" + goal +
-           ", deployerUser='" + deployerUser + '\'' +
-           ", deployerMaster='" + deployerMaster + '\'' +
-           ", deploymentGroupName='" + deploymentGroupName + '\'' +
-           '}';
+    return "Task{"
+           + "job=" + job
+           + ", goal=" + goal
+           + ", deployerUser='" + deployerUser + '\''
+           + ", deployerMaster='" + deployerMaster + '\''
+           + ", deploymentGroupName='" + deploymentGroupName + '\''
+           + '}';
   }
 }

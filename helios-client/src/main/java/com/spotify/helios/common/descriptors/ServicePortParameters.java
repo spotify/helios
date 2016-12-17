@@ -23,17 +23,15 @@ package com.spotify.helios.common.descriptors;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Stores metadata for a service port. Currently, only tags are supported.
  *
- * The tags can be used in service registration plugins trough ServiceRegistration.Endpoint.
+ * <p>The tags can be used in service registration plugins trough ServiceRegistration.Endpoint.
  *
- * An example expression of a Helios job with service port metadata might be:
+ * <p>An example expression of a Helios job with service port metadata might be:
  * <pre>
  * {
  *   "ports" : {
@@ -69,15 +67,15 @@ public class ServicePortParameters extends Descriptor {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final ServicePortParameters that = (ServicePortParameters) o;
+    final ServicePortParameters that = (ServicePortParameters) obj;
 
     if (tags != null ? !tags.equals(that.tags) : that.tags != null) {
       return false;
@@ -93,8 +91,8 @@ public class ServicePortParameters extends Descriptor {
 
   @Override
   public String toString() {
-    return "ServicePortParameters{" +
-           "tags=" + tags +
-           '}';
+    return "ServicePortParameters{"
+           + "tags=" + tags
+           + '}';
   }
 }

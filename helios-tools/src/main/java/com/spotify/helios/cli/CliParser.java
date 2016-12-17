@@ -31,6 +31,9 @@ import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.spotify.helios.cli.command.CliCommand;
 import com.spotify.helios.cli.command.DeploymentGroupCreateCommand;
 import com.spotify.helios.cli.command.DeploymentGroupInspectCommand;
@@ -58,11 +61,12 @@ import com.spotify.helios.cli.command.RollingUpdateCommand;
 import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.common.Version;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Argument;
@@ -73,13 +77,6 @@ import net.sourceforge.argparse4j.inf.FeatureControl;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 public class CliParser {
 
@@ -199,38 +196,38 @@ public class CliParser {
 
   private void setupCommands() {
     // Job commands
-    new JobCreateCommand(p("create"));
-    new JobRemoveCommand(p("remove"));
-    new JobInspectCommand(p("inspect"));
-    new JobDeployCommand(p("deploy"));
-    new JobUndeployCommand(p("undeploy"));
-    new JobStartCommand(p("start"));
-    new JobStopCommand(p("stop"));
-    new JobHistoryCommand(p("history"));
-    new JobListCommand(p("jobs"));
-    new JobStatusCommand(p("status"));
-    new JobWatchCommand(p("watch"));
+    new JobCreateCommand(parse("create"));
+    new JobRemoveCommand(parse("remove"));
+    new JobInspectCommand(parse("inspect"));
+    new JobDeployCommand(parse("deploy"));
+    new JobUndeployCommand(parse("undeploy"));
+    new JobStartCommand(parse("start"));
+    new JobStopCommand(parse("stop"));
+    new JobHistoryCommand(parse("history"));
+    new JobListCommand(parse("jobs"));
+    new JobStatusCommand(parse("status"));
+    new JobWatchCommand(parse("watch"));
 
     // Host commands
-    new HostListCommand(p("hosts"));
-    new HostRegisterCommand(p("register"));
-    new HostDeregisterCommand(p("deregister"));
+    new HostListCommand(parse("hosts"));
+    new HostRegisterCommand(parse("register"));
+    new HostDeregisterCommand(parse("deregister"));
 
     // Master commands
-    new MasterListCommand(p("masters"));
+    new MasterListCommand(parse("masters"));
 
     // Deployment group commands
-    new DeploymentGroupCreateCommand(p("create-deployment-group"));
-    new DeploymentGroupRemoveCommand(p("remove-deployment-group"));
-    new DeploymentGroupListCommand(p("list-deployment-groups"));
-    new DeploymentGroupInspectCommand(p("inspect-deployment-group"));
-    new DeploymentGroupStatusCommand(p("deployment-group-status"));
-    new DeploymentGroupWatchCommand(p("watch-deployment-group"));
-    new RollingUpdateCommand(p("rolling-update"));
-    new DeploymentGroupStopCommand(p("stop-deployment-group"));
+    new DeploymentGroupCreateCommand(parse("create-deployment-group"));
+    new DeploymentGroupRemoveCommand(parse("remove-deployment-group"));
+    new DeploymentGroupListCommand(parse("list-deployment-groups"));
+    new DeploymentGroupInspectCommand(parse("inspect-deployment-group"));
+    new DeploymentGroupStatusCommand(parse("deployment-group-status"));
+    new DeploymentGroupWatchCommand(parse("watch-deployment-group"));
+    new RollingUpdateCommand(parse("rolling-update"));
+    new DeploymentGroupStopCommand(parse("stop-deployment-group"));
 
     // Version Command
-    final Subparser version = p("version").help("print version of master and client");
+    final Subparser version = parse("version").help("print version of master and client");
     new VersionCommand(version);
   }
 
@@ -238,14 +235,14 @@ public class CliParser {
    * Use this instead of calling parser.handle error directly. This will print a header with
    * links to jira and documentation before the standard error message is printed.
    * @param parser the parser which will print the standard error message
-   * @param e the exception that will be printed
+   * @param ex the exception that will be printed
    */
   @SuppressWarnings("UseOfSystemOutOrSystemErr")
-  private void handleError(ArgumentParser parser, ArgumentParserException e) {
+  private void handleError(ArgumentParser parser, ArgumentParserException ex) {
     System.err.println("# " + HELP_ISSUES);
     System.err.println("# " + HELP_WIKI);
     System.err.println("# ---------------------------------------------------------------");
-    parser.handleError(e);
+    parser.handleError(ex);
   }
 
   public List<Target> getTargets() {
@@ -321,8 +318,7 @@ public class CliParser {
           .help("Disables hostname verification of HTTPS connections. "
                 + "Similar to 'curl -k'. "
                 + "Useful when using -z flag to connect directly to a master using HTTPS which "
-                + "presents a certificate whose subject does not match the actual hostname."
-          );
+                + "presents a certificate whose subject does not match the actual hostname.");
 
       addArgument("--http-timeout")
           .type(Integer.class)
@@ -364,11 +360,11 @@ public class CliParser {
     return loggingConfig;
   }
 
-  private Subparser p(final String name) {
-    return p(commandParsers, name);
+  private Subparser parse(final String name) {
+    return parse(commandParsers, name);
   }
 
-  private Subparser p(final Subparsers subparsers, final String name) {
+  private Subparser parse(final Subparsers subparsers, final String name) {
     final Subparser subparser = subparsers.addParser(name, true);
     addGlobalArgs(subparser, cliConfig);
     return subparser;

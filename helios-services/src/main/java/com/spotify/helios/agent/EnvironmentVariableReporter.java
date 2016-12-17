@@ -20,17 +20,16 @@
 
 package com.spotify.helios.agent;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
 import com.spotify.helios.common.Json;
 import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Puts the environment variables the Agent has been configured to set in all child containers

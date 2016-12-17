@@ -20,19 +20,16 @@
 
 package com.spotify.helios.servicescommon;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-
-import com.codahale.metrics.MetricRegistry;
 import com.readytalk.metrics.StatsDReporter;
-
-import java.util.List;
-
 import io.dropwizard.lifecycle.Managed;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import java.util.List;
 
 public class ManagedStatsdReporter implements Managed {
 
@@ -44,8 +41,8 @@ public class ManagedStatsdReporter implements Managed {
     Preconditions.checkArgument(!Strings.isNullOrEmpty(endpoint));
 
     final List<String> parts = Splitter.on(":").splitToList(endpoint);
-    checkArgument(parts.size() == 2, "Specification of statsd host port has wrong number of " +
-                                     "parts. Should be host:port");
+    checkArgument(parts.size() == 2, "Specification of statsd host port has wrong number of "
+                                     + "parts. Should be host:port");
     final String host = parts.get(0);
     final int port = Integer.valueOf(parts.get(1));
     statsdReporter = StatsDReporter.forRegistry(registry).build(host, port);

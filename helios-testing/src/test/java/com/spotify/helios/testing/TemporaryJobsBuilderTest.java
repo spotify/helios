@@ -20,13 +20,11 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.collect.ImmutableMap;
-
-import org.junit.Test;
-
-import java.util.Map;
-
 import static org.junit.Assert.assertNotNull;
+
+import com.google.common.collect.ImmutableMap;
+import java.util.Map;
+import org.junit.Test;
 
 public class TemporaryJobsBuilderTest {
 

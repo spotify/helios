@@ -20,16 +20,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.helios.common.descriptors.PortMapping;
-
-import org.junit.Test;
-
-import java.util.Map;
-import java.util.Set;
-
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -37,6 +27,13 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.spotify.helios.common.descriptors.PortMapping;
+import java.util.Map;
+import java.util.Set;
+import org.junit.Test;
 
 public class PortAllocatorTest {
 

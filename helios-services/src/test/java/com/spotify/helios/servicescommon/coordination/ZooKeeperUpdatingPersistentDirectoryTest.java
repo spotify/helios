@@ -20,9 +20,19 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import static com.spotify.helios.Polling.await;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter.noop;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
+import static org.junit.Assert.assertArrayEquals;
+
 import com.spotify.helios.Parallelized;
 import com.spotify.helios.ZooKeeperTestingServerManager;
-
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.concurrent.Callable;
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -30,18 +40,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.concurrent.Callable;
-
-import static com.spotify.helios.Polling.await;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter.noop;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.zookeeper.KeeperException.NodeExistsException;
-import static org.junit.Assert.assertArrayEquals;
 
 @RunWith(Parallelized.class)
 public class ZooKeeperUpdatingPersistentDirectoryTest {
@@ -101,6 +99,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     try {
       zk.curatorWithSuperAuth().create().forPath(FOO_PATH, "old".getBytes());
     } catch (NodeExistsException ignore) {
+      // ignored
     }
     sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
@@ -120,6 +119,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     try {
       zk.curatorWithSuperAuth().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
+      // ignored
     }
     sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
@@ -149,6 +149,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     try {
       zk.curatorWithSuperAuth().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
+      // ignored
     }
     sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);

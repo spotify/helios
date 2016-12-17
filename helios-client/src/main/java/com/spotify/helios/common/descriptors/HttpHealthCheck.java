@@ -20,10 +20,10 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HttpHealthCheck extends HealthCheck {
@@ -60,15 +60,15 @@ public class HttpHealthCheck extends HealthCheck {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final HttpHealthCheck that = (HttpHealthCheck) o;
+    final HttpHealthCheck that = (HttpHealthCheck) obj;
 
     if (path != null ? !path.equals(that.path) : that.path != null) {
       return false;
@@ -89,10 +89,10 @@ public class HttpHealthCheck extends HealthCheck {
 
   @Override
   public String toString() {
-    return "HttpHealthCheck{" +
-           "path='" + path + '\'' +
-           ", port='" + port + '\'' +
-           "} " + super.toString();
+    return "HttpHealthCheck{"
+           + "path='" + path + '\''
+           + ", port='" + port + '\''
+           + "} " + super.toString();
   }
 
   static Builder newBuilder() {

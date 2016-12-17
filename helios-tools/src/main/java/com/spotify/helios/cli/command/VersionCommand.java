@@ -23,13 +23,11 @@ package com.spotify.helios.cli.command;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.protocol.VersionResponse;
-
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class VersionCommand extends ControlCommand {
 

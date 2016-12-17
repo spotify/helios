@@ -20,18 +20,16 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
-import com.spotify.helios.common.descriptors.PortMapping;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+
+import com.google.common.base.Optional;
+import com.spotify.helios.common.descriptors.PortMapping;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class ProberTest extends TemporaryJobsTestBase {
 

@@ -20,28 +20,24 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.ImmutableList;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JobUndeployCommand extends WildcardJobCommand {
 
@@ -93,8 +89,8 @@ public class JobUndeployCommand extends WildcardJobCommand {
     final List<String> hosts;
 
     if (force) {
-      log.warn("If you are using '--force' to skip the interactive prompt, " +
-               "note that we have deprecated it. Please use '--yes'.");
+      log.warn("If you are using '--force' to skip the interactive prompt, "
+               + "note that we have deprecated it. Please use '--yes'.");
     }
 
     if (all) {

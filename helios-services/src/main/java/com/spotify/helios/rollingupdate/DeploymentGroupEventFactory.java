@@ -21,10 +21,8 @@
 package com.spotify.helios.rollingupdate;
 
 import com.google.common.collect.Maps;
-
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.RolloutTask;
-
 import java.util.Collections;
 import java.util.Map;
 

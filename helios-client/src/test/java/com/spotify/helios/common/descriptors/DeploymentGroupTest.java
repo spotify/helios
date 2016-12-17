@@ -20,14 +20,12 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.ImmutableList;
-
-import org.junit.Test;
-
-import java.util.List;
-
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static org.junit.Assert.assertEquals;
+
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import org.junit.Test;
 
 public class DeploymentGroupTest {
 

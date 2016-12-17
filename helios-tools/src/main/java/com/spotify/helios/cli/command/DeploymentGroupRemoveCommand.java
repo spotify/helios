@@ -20,19 +20,17 @@
 
 package com.spotify.helios.cli.command;
 
+import static java.lang.String.format;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
-
-import static java.lang.String.format;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class DeploymentGroupRemoveCommand extends ControlCommand {
 
@@ -41,8 +39,8 @@ public class DeploymentGroupRemoveCommand extends ControlCommand {
   public DeploymentGroupRemoveCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("remove a deployment-group. Note that this does not undeploy jobs previously " +
-                "deployed by the deployment-group");
+    parser.help("remove a deployment-group. Note that this does not undeploy jobs previously "
+                + "deployed by the deployment-group");
 
     nameArg = parser.addArgument("deployment-group-name")
         .required(true)

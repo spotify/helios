@@ -20,9 +20,8 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.spotify.helios.common.Json;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 public class VersionResponse {
 
@@ -45,10 +44,10 @@ public class VersionResponse {
 
   @Override
   public String toString() {
-    return "VersionResponse{" +
-           "clientVersion='" + clientVersion + '\'' +
-           ", masterVersion='" + masterVersion + '\'' +
-           '}';
+    return "VersionResponse{"
+           + "clientVersion='" + clientVersion + '\''
+           + ", masterVersion='" + masterVersion + '\''
+           + '}';
   }
 
   public String toJsonString() {

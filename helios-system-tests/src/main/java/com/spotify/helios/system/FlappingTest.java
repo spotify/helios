@@ -37,12 +37,10 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class FlappingTest extends SystemTestBase {
 

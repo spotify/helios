@@ -29,12 +29,12 @@ public class NoOpRiemannClientTest {
     // quick test to make sure nothing goes kaboom since we assume some behavior of the
     // abstract client
     final NoOpRiemannClient c = new NoOpRiemannClient();
-    c.event().
-        service("fridge").
-        state("running").
-        metric(5.3).
-        tags("appliance", "cold").
-        send();
+    c.event()
+        .service("fridge")
+        .state("running")
+        .metric(5.3)
+        .tags("appliance", "cold")
+        .send();
   }
 
 }

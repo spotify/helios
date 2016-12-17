@@ -23,18 +23,20 @@ package com.spotify.helios;
 import static com.spotify.helios.system.SystemTestBase.ALPINE;
 import static com.spotify.helios.system.SystemTestBase.NGINX;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.net.HostAndPort;
 import com.spotify.helios.testing.HeliosDeploymentResource;
 import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.InMemoryLogStreamFollower;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
-
-import com.google.common.net.HostAndPort;
-
+import java.net.Socket;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.IOUtils;
 import org.awaitility.Awaitility;
 import org.junit.ClassRule;
@@ -42,10 +44,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.net.Socket;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-
+@SuppressWarnings("AbbreviationAsWordInName")
 public class HeliosSoloIT {
 
   @Rule
@@ -108,11 +107,11 @@ public class HeliosSoloIT {
         .image(ALPINE)
         .port("nc", 4711, ports.localPort("nc"))
         .command("sh", "-c",
-                 "apk add --update bind-tools " +
-                 "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) " +
-                 "&& export HOST=$(echo $SRV | cut -d' ' -f4) " +
-                 "&& export PORT=$(echo $SRV | cut -d' ' -f3) " +
-                 "&& nc -lk -p 4711 -e curl http://$HOST:$PORT"
+                 "apk add --update bind-tools "
+                 + "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) "
+                 + "&& export HOST=$(echo $SRV | cut -d' ' -f4) "
+                 + "&& export PORT=$(echo $SRV | cut -d' ' -f3) "
+                 + "&& nc -lk -p 4711 -e curl http://$HOST:$PORT"
         )
         .deploy();
 
@@ -146,7 +145,7 @@ public class HeliosSoloIT {
     expected.expect(AssertionError.class);
     jobs.job()
       .image("nginx:1.9.9")
-      .addCapabilities(asList("NET_RAW"))
+      .addCapabilities(singletonList("NET_RAW"))
       .deploy();
   }
 }

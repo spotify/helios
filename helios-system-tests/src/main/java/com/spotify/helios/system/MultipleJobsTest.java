@@ -25,17 +25,14 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableSet;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
-
-import com.google.common.collect.ImmutableSet;
-
-import org.junit.Test;
-
 import java.util.Map;
+import org.junit.Test;
 
 public class MultipleJobsTest extends SystemTestBase {
   @Test

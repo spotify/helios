@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Represents something that has happened to a Task.
  *
- * A typical JSON representation of a task might be:
+ * <p>A typical JSON representation of a task might be:
  * <pre>
  * {
  *   "status" : { #... see definition of TaskStatus },
@@ -73,10 +73,10 @@ public class TaskStatusEvent extends Descriptor {
 
   @Override
   public String toString() {
-    return "TaskStatusEvent{" +
-           "status=" + status +
-           ", timestamp=" + timestamp +
-           ", host='" + host + '\'' +
-           '}';
+    return "TaskStatusEvent{"
+           + "status=" + status
+           + ", timestamp=" + timestamp
+           + ", host='" + host + '\''
+           + '}';
   }
 }

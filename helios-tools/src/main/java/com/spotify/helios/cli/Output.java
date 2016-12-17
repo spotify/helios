@@ -22,13 +22,12 @@ package com.spotify.helios.cli;
 
 import static java.lang.String.format;
 
+import java.io.PrintStream;
 import org.joda.time.Duration;
 import org.joda.time.Period;
 import org.xbill.DNS.Name;
 import org.xbill.DNS.ResolverConfig;
 import org.xbill.DNS.TextParseException;
-
-import java.io.PrintStream;
 
 public class Output {
 
@@ -36,19 +35,19 @@ public class Output {
     return humanDuration(Duration.millis(millis));
   }
 
-  public static String humanDuration(final Duration d) {
-    final Period p = d.toPeriod().normalizedStandard();
+  public static String humanDuration(final Duration dur) {
+    final Period p = dur.toPeriod().normalizedStandard();
 
-    if (d.getStandardSeconds() == 0) {
+    if (dur.getStandardSeconds() == 0) {
       return "0 seconds";
-    } else if (d.getStandardSeconds() < 60) {
+    } else if (dur.getStandardSeconds() < 60) {
       return format("%d second%s", p.getSeconds(), p.getSeconds() > 1 ? "s" : "");
-    } else if (d.getStandardMinutes() < 60) {
+    } else if (dur.getStandardMinutes() < 60) {
       return format("%d minute%s", p.getMinutes(), p.getMinutes() > 1 ? "s" : "");
-    } else if (d.getStandardHours() < 24) {
+    } else if (dur.getStandardHours() < 24) {
       return format("%d hour%s", p.getHours(), p.getHours() > 1 ? "s" : "");
     } else {
-      return format("%d day%s", d.getStandardDays(), d.getStandardDays() > 1 ? "s" : "");
+      return format("%d day%s", dur.getStandardDays(), dur.getStandardDays() > 1 ? "s" : "");
     }
   }
 

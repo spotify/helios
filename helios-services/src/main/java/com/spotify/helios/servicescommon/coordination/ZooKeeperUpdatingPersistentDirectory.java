@@ -20,6 +20,14 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import static com.google.common.collect.MapDifference.ValueDifference;
+import static com.google.common.util.concurrent.Service.State.STOPPING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.ConnectionLossException;
+import static org.apache.zookeeper.KeeperException.NoNodeException;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
@@ -29,14 +37,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryScheduler;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.Reactor;
-
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -45,21 +57,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.common.PathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static com.google.common.collect.MapDifference.ValueDifference;
-import static com.google.common.util.concurrent.Service.State.STOPPING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.zookeeper.KeeperException.ConnectionLossException;
-import static org.apache.zookeeper.KeeperException.NoNodeException;
-import static org.apache.zookeeper.KeeperException.NodeExistsException;
 
 /**
  * A map that persists modification locally on disk and attempt to replicate modifications to
@@ -81,8 +78,8 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
   private static final Equivalence<? super byte[]> BYTE_ARRAY_EQUIVALENCE =
       new Equivalence<byte[]>() {
         @Override
-        protected boolean doEquivalent(final byte[] a, final byte[] b) {
-          return Arrays.equals(a, b);
+        protected boolean doEquivalent(final byte[] bytes1, final byte[] bytes2) {
+          return Arrays.equals(bytes1, bytes2);
         }
 
         @Override
@@ -114,8 +111,8 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
           reactor.signal();
           break;
         case LOST:
-          break;
         case READ_ONLY:
+        default:
           break;
       }
     }
@@ -285,27 +282,27 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
 
     private boolean parentExists() throws KeeperException {
       return client("parentExists").exists(path) != null;
-      }
+    }
 
     private void delete(final String node) throws KeeperException {
       final ZooKeeperClient client = client("delete");
       final String nodePath = ZKPaths.makePath(path, node);
-        if (client.stat(nodePath) != null) {
-          log.debug("deleting node: {}", nodePath);
-          client.delete(nodePath);
-        }
+      if (client.stat(nodePath) != null) {
+        log.debug("deleting node: {}", nodePath);
+        client.delete(nodePath);
+      }
     }
 
     private void write(final String node, final byte[] data) throws KeeperException {
       final ZooKeeperClient client = client("write");
       final String nodePath = ZKPaths.makePath(path, node);
-        if (client.stat(nodePath) != null) {
-          log.debug("setting node: {}", nodePath);
-          client.setData(nodePath, data);
-        } else {
-          log.debug("creating node: {}", nodePath);
-          client.createAndSetData(nodePath, data);
-        }
+      if (client.stat(nodePath) != null) {
+        log.debug("setting node: {}", nodePath);
+        client.setData(nodePath, data);
+      } else {
+        log.debug("creating node: {}", nodePath);
+        client.createAndSetData(nodePath, data);
+      }
     }
 
     private void syncChecked() throws KeeperException {

@@ -22,7 +22,6 @@ package com.spotify.helios.master;
 
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.JobId;
-
 import java.util.List;
 
 public class JobStillDeployedException extends HeliosException {

@@ -20,9 +20,9 @@
 
 package com.spotify.helios.agent;
 
-import com.spotify.helios.common.descriptors.ThrottleState;
-
 import static java.lang.Math.max;
+
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 /**
  * Return the proper docker container restart delay based upon the throttle state of the task.

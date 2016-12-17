@@ -21,14 +21,11 @@
 package com.spotify.helios.master.metrics;
 
 import com.google.common.collect.Maps;
-
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.api.model.AbstractResourceMethod;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
-
 import java.util.concurrent.ConcurrentMap;
-
 import javax.ws.rs.WebApplicationException;
 
 public class ReportingResourceMethodDispatcher implements RequestDispatcher {
@@ -69,8 +66,8 @@ public class ReportingResourceMethodDispatcher implements RequestDispatcher {
   private String getKey(final AbstractResourceMethod resourceMethod) {
     final String key = keys.get(resourceMethod);
     if (key == null) {
-      final String name = resourceMethod.getMethod().getDeclaringClass().getSimpleName() + "#" +
-                          resourceMethod.getMethod().getName();
+      final String name = resourceMethod.getMethod().getDeclaringClass().getSimpleName() + "#"
+                          + resourceMethod.getMethod().getName();
       keys.put(resourceMethod, name);
       return name;
     }

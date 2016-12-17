@@ -22,7 +22,6 @@ package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -75,15 +74,15 @@ public class Resources extends Descriptor {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final Resources that = (Resources) o;
+    final Resources that = (Resources) obj;
 
     if (cpuShares != null ? !cpuShares.equals(that.cpuShares) : that.cpuShares != null) {
       return false;
@@ -112,11 +111,11 @@ public class Resources extends Descriptor {
 
   @Override
   public String toString() {
-    return "Resources{" +
-           "memory=" + memory +
-           ", memorySwap=" + memorySwap +
-           ", cpuShares=" + cpuShares +
-           ", cpuset='" + cpuset + '\'' +
-           '}';
+    return "Resources{"
+           + "memory=" + memory
+           + ", memorySwap=" + memorySwap
+           + ", cpuShares=" + cpuShares
+           + ", cpuset='" + cpuset + '\''
+           + '}';
   }
 }

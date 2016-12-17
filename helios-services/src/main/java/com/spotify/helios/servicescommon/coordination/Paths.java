@@ -21,7 +21,6 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.spotify.helios.common.descriptors.JobId;
-
 import java.util.UUID;
 
 public class Paths {

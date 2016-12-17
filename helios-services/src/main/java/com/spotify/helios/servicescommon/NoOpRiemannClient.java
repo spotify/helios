@@ -24,7 +24,6 @@ import com.aphyr.riemann.Proto.Msg;
 import com.aphyr.riemann.client.AbstractRiemannClient;
 import com.aphyr.riemann.client.IPromise;
 import com.aphyr.riemann.client.Promise;
-
 import java.io.IOException;
 
 /**
@@ -33,8 +32,9 @@ import java.io.IOException;
 public class NoOpRiemannClient extends AbstractRiemannClient {
   private static final Msg OK_MESSAGE = Msg.newBuilder().setOk(true).build();
   private static final IPromise<Msg> OK_PROMISE;
+
   static {
-    OK_PROMISE = new Promise<Msg>();
+    OK_PROMISE = new Promise<>();
     OK_PROMISE.deliver(OK_MESSAGE);
   }
 

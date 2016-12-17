@@ -22,12 +22,10 @@ package com.spotify.helios.rollingupdate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.RolloutTask;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.RolloutTask;
 import java.util.List;
 
 public class RollingUndeployPlanner implements RolloutPlanner {

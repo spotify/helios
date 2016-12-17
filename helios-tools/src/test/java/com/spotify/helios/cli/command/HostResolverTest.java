@@ -20,12 +20,11 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.ImmutableSet;
+import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableSet;
 import org.junit.Test;
 import org.xbill.DNS.Name;
-
-import static org.junit.Assert.assertEquals;
 
 public class HostResolverTest {
 

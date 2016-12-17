@@ -20,21 +20,18 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Optional;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.jetbrains.annotations.Nullable;
-
+import com.google.common.base.Optional;
 import java.util.concurrent.TimeUnit;
-
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a deployment group's rollout options.
  *
- * An sample expression of it in JSON might be:
+ * <p>An sample expression of it in JSON might be:
  * <pre>
  * {
  *   "name": "foo-group",
@@ -118,15 +115,15 @@ public class RolloutOptions {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final RolloutOptions that = (RolloutOptions) o;
+    final RolloutOptions that = (RolloutOptions) obj;
 
     if (migrate != that.migrate) {
       return false;
@@ -159,13 +156,13 @@ public class RolloutOptions {
 
   @Override
   public String toString() {
-    return "RolloutOptions{" +
-           "timeout=" + timeout +
-           ", parallelism=" + parallelism +
-           ", migrate=" + migrate +
-           ", overlap=" + overlap +
-           ", token=" + token +
-           '}';
+    return "RolloutOptions{"
+           + "timeout=" + timeout
+           + ", parallelism=" + parallelism
+           + ", migrate=" + migrate
+           + ", overlap=" + overlap
+           + ", token=" + token
+           + '}';
   }
 
   public static class Builder {

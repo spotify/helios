@@ -20,7 +20,10 @@
 
 package com.spotify.helios.common;
 
-import com.google.common.base.Throwables;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
+import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS;
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
@@ -33,17 +36,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-
+import com.google.common.base.Throwables;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.Map;
-
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
-import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS;
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 
 public class Json {
 
@@ -276,16 +274,20 @@ public class Json {
     return OBJECT_MAPPER.readTree(bytes);
   }
 
+  public static JsonNode readTree(final String content) throws IOException {
+    return OBJECT_MAPPER.readTree(content);
+  }
+
+  public static JsonNode readTree(final File file) throws IOException {
+    return OBJECT_MAPPER.readTree(file);
+  }
+
   public static JsonNode readTreeUnchecked(final byte[] bytes) {
     try {
       return readTree(bytes);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
-  }
-
-  public static JsonNode readTree(final String content) throws IOException {
-    return OBJECT_MAPPER.readTree(content);
   }
 
   public static JsonNode readTreeUnchecked(final String content) {
@@ -296,10 +298,6 @@ public class Json {
     }
   }
 
-  public static JsonNode readTree(final File file) throws IOException {
-    return OBJECT_MAPPER.readTree(file);
-  }
-
   public static JsonNode readTreeUnchecked(final File file) {
     try {
       return readTree(file);
@@ -308,8 +306,8 @@ public class Json {
     }
   }
 
-  public static JavaType type(Type t) {
-    return OBJECT_MAPPER.constructType(t);
+  public static JavaType type(Type type) {
+    return OBJECT_MAPPER.constructType(type);
   }
 
   public static JavaType type(final TypeReference<?> typeReference) {
@@ -328,14 +326,14 @@ public class Json {
     return OBJECT_MAPPER.writer();
   }
 
-  public static byte[] sha1digest(final Object o) throws IOException {
-    final String json = NORMALIZING_OBJECT_WRITER.writeValueAsString(o);
+  public static byte[] sha1digest(final Object obj) throws IOException {
+    final String json = NORMALIZING_OBJECT_WRITER.writeValueAsString(obj);
     final Map<String, Object> map = OBJECT_MAPPER.readValue(json, MAP_TYPE);
     return sha1digest(map);
   }
 
-  public static byte[] sha1digest(final Map<String, ?> o) throws IOException {
-    final byte[] bytes = NORMALIZING_OBJECT_WRITER.writeValueAsBytes(o);
+  public static byte[] sha1digest(final Map<String, ?> obj) throws IOException {
+    final byte[] bytes = NORMALIZING_OBJECT_WRITER.writeValueAsBytes(obj);
     return Hash.sha1digest(bytes);
   }
 }

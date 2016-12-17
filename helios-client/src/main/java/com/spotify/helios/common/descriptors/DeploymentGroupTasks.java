@@ -20,13 +20,12 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Collections;
 import java.util.List;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DeploymentGroupTasks extends Descriptor {
@@ -74,15 +73,15 @@ public class DeploymentGroupTasks extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final DeploymentGroupTasks that = (DeploymentGroupTasks) o;
+    final DeploymentGroupTasks that = (DeploymentGroupTasks) obj;
 
     if (taskIndex != that.taskIndex) {
       return false;
@@ -109,11 +108,11 @@ public class DeploymentGroupTasks extends Descriptor {
 
   @Override
   public String toString() {
-    return "DeploymentGroupTasks{" +
-           "rolloutTasks=" + rolloutTasks +
-           ", taskIndex=" + taskIndex +
-           ", deploymentGroup=" + deploymentGroup +
-           '}';
+    return "DeploymentGroupTasks{"
+           + "rolloutTasks=" + rolloutTasks
+           + ", taskIndex=" + taskIndex
+           + ", deploymentGroup=" + deploymentGroup
+           + '}';
   }
 
   public static class Builder {

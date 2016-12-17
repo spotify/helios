@@ -20,23 +20,20 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.Sets;
+import static com.spotify.helios.cli.Output.formatHostname;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import com.google.common.collect.Sets;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
-
-import static com.spotify.helios.cli.Output.formatHostname;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class MasterListCommand extends ControlCommand {
 

@@ -29,7 +29,6 @@ import static org.junit.Assert.assertTrue;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.protocol.CreateJobResponse;
-
 import org.junit.Test;
 
 /**

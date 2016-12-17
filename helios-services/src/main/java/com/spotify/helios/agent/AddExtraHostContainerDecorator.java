@@ -23,15 +23,15 @@ package com.spotify.helios.agent;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
-
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.Job;
-
 import java.util.List;
 
-/** ContainerDecorator that adds to {@link HostConfig#extraHosts}. */
+/**
+ * ContainerDecorator that adds to {@link HostConfig#extraHosts}.
+ */
 public class AddExtraHostContainerDecorator implements ContainerDecorator {
 
   private final List<String> extraHosts;

@@ -22,13 +22,12 @@ package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 
 /**
  * Information about the Helios Agent (aka "host").
  *
- * A typical JSON representation might look like this:
+ * <p>A typical JSON representation might look like this:
  * <pre>
  * {
  *   "inputArguments" : [ "-Xmx256m", "-Dcom.sun.management.jmxremote.port=9203",
@@ -160,15 +159,15 @@ public class AgentInfo extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final AgentInfo agentInfo = (AgentInfo) o;
+    final AgentInfo agentInfo = (AgentInfo) obj;
 
     if (startTime != agentInfo.startTime) {
       return false;
@@ -228,18 +227,18 @@ public class AgentInfo extends Descriptor {
 
   @Override
   public String toString() {
-    return "AgentInfo{" +
-           "name='" + name + '\'' +
-           ", vmName='" + vmName + '\'' +
-           ", vmVendor='" + vmVendor + '\'' +
-           ", vmVersion='" + vmVersion + '\'' +
-           ", specName='" + specName + '\'' +
-           ", specVendor='" + specVendor + '\'' +
-           ", specVersion='" + specVersion + '\'' +
-           ", inputArguments=" + inputArguments +
-           ", uptime=" + uptime +
-           ", startTime=" + startTime +
-           '}';
+    return "AgentInfo{"
+           + "name='" + name + '\''
+           + ", vmName='" + vmName + '\''
+           + ", vmVendor='" + vmVendor + '\''
+           + ", vmVersion='" + vmVersion + '\''
+           + ", specName='" + specName + '\''
+           + ", specVendor='" + specVendor + '\''
+           + ", specVersion='" + specVersion + '\''
+           + ", inputArguments=" + inputArguments
+           + ", uptime=" + uptime
+           + ", startTime=" + startTime
+           + '}';
   }
 
   public static Builder newBuilder() {

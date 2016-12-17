@@ -20,13 +20,11 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.spotify.helios.common.Json;
-
-import org.junit.Test;
-
-import java.io.IOException;
-
 import static org.junit.Assert.assertEquals;
+
+import com.spotify.helios.common.Json;
+import java.io.IOException;
+import org.junit.Test;
 
 public class JobIdTest {
 

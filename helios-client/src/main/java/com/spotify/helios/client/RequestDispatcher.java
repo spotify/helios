@@ -21,7 +21,6 @@
 package com.spotify.helios.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
-
 import java.io.Closeable;
 import java.net.URI;
 import java.util.List;

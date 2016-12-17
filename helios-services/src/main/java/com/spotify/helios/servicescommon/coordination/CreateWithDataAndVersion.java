@@ -20,9 +20,8 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-
 import java.util.Arrays;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
 class CreateWithDataAndVersion implements ZooKeeperOperation {
 
@@ -45,22 +44,22 @@ class CreateWithDataAndVersion implements ZooKeeperOperation {
 
   @Override
   public String toString() {
-    return "CreateWithDataAndVersion{" +
-           "path='" + path + '\'' +
-           ", version=" + version +
-           '}';
+    return "CreateWithDataAndVersion{"
+           + "path='" + path + '\''
+           + ", version=" + version
+           + '}';
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final CreateWithDataAndVersion that = (CreateWithDataAndVersion) o;
+    final CreateWithDataAndVersion that = (CreateWithDataAndVersion) obj;
 
     if (version != that.version) {
       return false;

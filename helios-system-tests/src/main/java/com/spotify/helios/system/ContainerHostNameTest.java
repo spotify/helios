@@ -34,10 +34,8 @@ import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import org.junit.Test;
-
 import java.util.List;
+import org.junit.Test;
 
 public class ContainerHostNameTest extends SystemTestBase {
 

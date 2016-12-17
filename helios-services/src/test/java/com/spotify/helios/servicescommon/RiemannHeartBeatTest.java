@@ -20,16 +20,14 @@
 
 package com.spotify.helios.servicescommon;
 
+import static org.junit.Assert.assertEquals;
+
 import com.aphyr.riemann.Proto.Event;
 import com.spotify.helios.Polling;
-
-import org.junit.Test;
-
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class RiemannHeartBeatTest {
 

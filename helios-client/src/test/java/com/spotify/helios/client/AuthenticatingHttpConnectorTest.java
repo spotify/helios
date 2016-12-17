@@ -20,30 +20,6 @@
 
 package com.spotify.helios.client;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.net.InetAddresses;
-
-import com.spotify.helios.client.HttpsHandlers.CertificateFileHttpsHandler;
-import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
-import com.spotify.sshagentproxy.AgentProxy;
-import com.spotify.sshagentproxy.Identity;
-
-import org.hamcrest.CustomTypeSafeMatcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentMatcher;
-
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-
-import javax.net.ssl.HttpsURLConnection;
-
 import static com.google.common.io.Resources.getResource;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
@@ -53,6 +29,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.net.InetAddresses;
+import com.spotify.helios.client.HttpsHandlers.CertificateFileHttpsHandler;
+import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
+import com.spotify.sshagentproxy.AgentProxy;
+import com.spotify.sshagentproxy.Identity;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import javax.net.ssl.HttpsURLConnection;
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 public class AuthenticatingHttpConnectorTest {
 
@@ -109,9 +105,9 @@ public class AuthenticatingHttpConnectorTest {
           final InetAddress ip = endpoint.getIp();
           final URI uri = endpoint.getUri();
 
-          if (item.getScheme().equals(uri.getScheme()) &&
-              item.getHost().equals(ip.getHostAddress()) &&
-              item.getPath().equals(path)) {
+          if (item.getScheme().equals(uri.getScheme())
+              && item.getHost().equals(ip.getHostAddress())
+              && item.getPath().equals(path)) {
             return true;
           }
         }
@@ -127,7 +123,7 @@ public class AuthenticatingHttpConnectorTest {
   }
 
   @Test
-  public void testNoIdentities_ResponseIsOK() throws Exception {
+  public void testNoIdentities_ResponseIsOk() throws Exception {
     final AuthenticatingHttpConnector authConnector = createAuthenticatingConnector(
         Optional.<AgentProxy>absent(),
         ImmutableList.<Identity>of());
@@ -150,7 +146,7 @@ public class AuthenticatingHttpConnectorTest {
   }
 
   @Test
-  public void testCertFile_ResponseIsOK() throws Exception {
+  public void testCertFile_ResponseIsOk() throws Exception {
     final AuthenticatingHttpConnector authConnector = createAuthenticatingConnectorWithCertFile();
 
     final String path = "/foo/bar";
@@ -172,7 +168,7 @@ public class AuthenticatingHttpConnectorTest {
   }
 
   @Test
-  public void testOneIdentity_ResponseIsOK() throws Exception {
+  public void testOneIdentity_ResponseIsOk() throws Exception {
 
     final AgentProxy proxy = mock(AgentProxy.class);
     final Identity identity = mockIdentity();
@@ -289,9 +285,9 @@ public class AuthenticatingHttpConnectorTest {
         }
 
         final SshAgentHttpsHandler authHandler = (SshAgentHttpsHandler) handler;
-        return authHandler.getUser().equals(user) &&
-               authHandler.getAgentProxy().equals(agentProxy) &&
-               authHandler.getIdentity().equals(identity);
+        return authHandler.getUser().equals(user)
+               && authHandler.getAgentProxy().equals(agentProxy)
+               && authHandler.getIdentity().equals(identity);
       }
     });
   }
@@ -310,8 +306,8 @@ public class AuthenticatingHttpConnectorTest {
         final ClientCertificatePath expectedCertPath =
             new ClientCertificatePath(certificatePath, keyPath);
 
-        return authHandler.getUser().equals(user) &&
-               authHandler.getClientCertificatePath().equals(expectedCertPath);
+        return authHandler.getUser().equals(user)
+               && authHandler.getClientCertificatePath().equals(expectedCertPath);
       }
     });
   }

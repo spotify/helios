@@ -20,11 +20,15 @@
 
 package com.spotify.helios.cli.command;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
+import static java.lang.String.format;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
@@ -32,11 +36,6 @@ import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -44,11 +43,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
-import static java.lang.String.format;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class RollingUpdateCommand extends WildcardJobCommand {
 
@@ -112,28 +109,28 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     rolloutTimeoutArg = parser.addArgument("-T", "--rollout-timeout")
         .setDefault(60L)
         .type(Long.class)
-        .help("Exit if rolling-update takes longer than the given value (minutes). Note that " +
-              "this will NOT abort the rolling update, it will just cause this command to exit.");
+        .help("Exit if rolling-update takes longer than the given value (minutes). Note that "
+              + "this will NOT abort the rolling update, it will just cause this command to exit.");
 
     migrateArg = parser.addArgument("--migrate")
         .setDefault(false)
         .action(storeTrue())
-        .help("When specified a rolling-update will undeploy not only jobs previously deployed " +
-              "by the deployment-group but also jobs with the same job id. Use it ONCE when " +
-              "migrating a service to using deployment-groups");
+        .help("When specified a rolling-update will undeploy not only jobs previously deployed "
+              + "by the deployment-group but also jobs with the same job id. Use it ONCE when "
+              + "migrating a service to using deployment-groups");
 
     overlapArg = parser.addArgument("--overlap")
         .setDefault(false)
         .action(storeTrue())
-        .help("When specified a rolling-update will, for every host, first deploy the new " +
-              "version of a job before undeploying the old one. Note that the command will fail " +
-              "if the job contains static port assignments.");
+        .help("When specified a rolling-update will, for every host, first deploy the new "
+              + "version of a job before undeploying the old one. Note that the command will fail "
+              + "if the job contains static port assignments.");
 
     tokenArg = parser.addArgument("--token")
         .nargs("?")
         .setDefault(EMPTY_TOKEN)
-        .help("Insecure access token meant to prevent accidental changes to your job " +
-              "(e.g. undeploys).");
+        .help("Insecure access token meant to prevent accidental changes to your job "
+              + "(e.g. undeploys).");
   }
 
   @Override
@@ -175,8 +172,8 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     }
 
     if (!json) {
-      out.println(format("Rolling update%s started: %s -> %s " +
-                         "(parallelism=%d, timeout=%d, overlap=%b, token=%s)%s",
+      out.println(format("Rolling update%s started: %s -> %s "
+                         + "(parallelism=%d, timeout=%d, overlap=%b, token=%s)%s",
                          async ? " (async)" : "",
                          name, jobId.toShortString(), parallelism, timeout, overlap, token,
                          async ? "" : "\n"));
@@ -221,9 +218,9 @@ public class RollingUpdateCommand extends WildcardJobCommand {
           final JobId hostJobId = hostStatus.getJobId();
           final String host = hostStatus.getHost();
           final TaskStatus.State state = hostStatus.getState();
-          final boolean done = hostJobId != null &&
-                               hostJobId.equals(jobId) &&
-                               state == TaskStatus.State.RUNNING;
+          final boolean done = hostJobId != null
+                               && hostJobId.equals(jobId)
+                               && state == TaskStatus.State.RUNNING;
 
           if (done && reported.add(host)) {
             out.println(format("%s -> %s (%d/%d)", host, state,

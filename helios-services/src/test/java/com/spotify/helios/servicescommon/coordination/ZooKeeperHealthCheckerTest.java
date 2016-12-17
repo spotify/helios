@@ -20,22 +20,20 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
 import com.aphyr.riemann.Proto.Event;
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.servicescommon.CapturingRiemannClient;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ZooKeeperHealthCheckerTest {
   private CapturingRiemannClient riemannClient;

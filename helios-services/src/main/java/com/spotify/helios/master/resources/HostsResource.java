@@ -32,6 +32,10 @@ import static com.spotify.helios.master.http.Responses.forbidden;
 import static com.spotify.helios.master.http.Responses.notFound;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
+import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -41,6 +45,7 @@ import com.spotify.helios.common.protocol.HostRegisterResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
+import com.spotify.helios.master.HostMatcher;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.master.JobAlreadyDeployedException;
@@ -50,22 +55,12 @@ import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.master.http.PATCH;
-import com.spotify.helios.master.HostMatcher;
-
-import com.codahale.metrics.annotation.ExceptionMetered;
-import com.codahale.metrics.annotation.Timed;
-import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -78,6 +73,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Path("/hosts")
 public class HostsResource {
@@ -198,8 +195,8 @@ public class HostsResource {
       @QueryParam("status") @DefaultValue("") final String statusFilter) {
     final HostStatus status = model.getHostStatus(host);
     final Optional<HostStatus> response;
-    if (status != null &&
-        (isNullOrEmpty(statusFilter) || statusFilter.equals(status.getStatus().toString()))) {
+    if (status != null
+        && (isNullOrEmpty(statusFilter) || statusFilter.equals(status.getStatus().toString()))) {
       response = Optional.of(status);
     } else {
       response = Optional.absent();

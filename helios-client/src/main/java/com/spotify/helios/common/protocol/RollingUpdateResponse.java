@@ -20,9 +20,8 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.spotify.helios.common.Json;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 public class RollingUpdateResponse {
 
@@ -44,9 +43,9 @@ public class RollingUpdateResponse {
 
   @Override
   public String toString() {
-    return "RollingUpdateResponse{" +
-           "status=" + status +
-           '}';
+    return "RollingUpdateResponse{"
+           + "status=" + status
+           + '}';
   }
 
   public String toJsonString() {
@@ -54,15 +53,15 @@ public class RollingUpdateResponse {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final RollingUpdateResponse response = (RollingUpdateResponse) o;
+    final RollingUpdateResponse response = (RollingUpdateResponse) obj;
 
     if (status != response.status) {
       return false;

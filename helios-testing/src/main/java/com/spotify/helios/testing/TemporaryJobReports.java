@@ -21,15 +21,13 @@
 package com.spotify.helios.testing;
 
 import com.google.common.collect.Maps;
-
-import org.junit.runner.Description;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import org.junit.runner.Description;
 
 /**
- * Reports a stream of TemporaryJobEvent events
+ * Reports a stream of TemporaryJobEvent events.
  */
 public abstract class TemporaryJobReports {
 

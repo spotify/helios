@@ -37,21 +37,21 @@ public class Delete implements ZooKeeperOperation {
 
   @Override
   public String toString() {
-    return "Delete{" +
-           "path='" + path + '\'' +
-           '}';
+    return "Delete{"
+           + "path='" + path + '\''
+           + '}';
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final Delete delete = (Delete) o;
+    final Delete delete = (Delete) obj;
 
     if (path != null ? !path.equals(delete.path) : delete.path != null) {
       return false;

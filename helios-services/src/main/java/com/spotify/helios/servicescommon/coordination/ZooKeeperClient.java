@@ -21,7 +21,10 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.fasterxml.jackson.databind.JavaType;
-
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
@@ -32,11 +35,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Exists because the Curator library makes things ununit-testable without this. Also it avoids
@@ -54,7 +52,6 @@ public interface ZooKeeperClient {
    *
    * @param path The path to ensure exists.
    * @param data The data to write at the base of the path, if it does not exist.
-   * @throws KeeperException
    */
   void ensurePathAndSetData(String path, byte[] data) throws KeeperException;
 
@@ -63,6 +60,8 @@ public interface ZooKeeperClient {
   List<String> getChildren(String path) throws KeeperException;
 
   void delete(String path) throws KeeperException;
+
+  void delete(String path, int version) throws KeeperException;
 
   void setData(String path, byte[] bytes) throws KeeperException;
 
@@ -87,8 +86,6 @@ public interface ZooKeeperClient {
 
   Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations)
       throws KeeperException;
-
-  void delete(String path, int version) throws KeeperException;
 
   Node getNode(String path) throws KeeperException;
 

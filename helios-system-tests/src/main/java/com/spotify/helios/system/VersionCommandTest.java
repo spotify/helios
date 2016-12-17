@@ -26,7 +26,6 @@ import static org.junit.Assert.assertTrue;
 
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.protocol.VersionResponse;
-
 import org.junit.Test;
 
 public class VersionCommandTest extends SystemTestBase {

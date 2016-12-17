@@ -29,6 +29,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.agent.AgentMain;
@@ -39,16 +42,11 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ClusterDeploymentTest extends SystemTestBase {
 
@@ -115,23 +113,23 @@ public class ClusterDeploymentTest extends SystemTestBase {
     }
   }
 
-  private String host(final int i) throws InterruptedException, ExecutionException {
-    return testHost() + i;
+  private String host(final int hostNumber) throws InterruptedException, ExecutionException {
+    return testHost() + hostNumber;
   }
 
   private void deploy(final Job job, final String host) throws Exception {
     Futures.addCallback(client.deploy(Deployment.of(job.getId(), START), host),
-                        new FutureCallback<JobDeployResponse>() {
-                          @Override
-                          public void onSuccess(final JobDeployResponse result) {
-                            assertEquals(JobDeployResponse.Status.OK, result.getStatus());
-                          }
+        new FutureCallback<JobDeployResponse>() {
+          @Override
+          public void onSuccess(final JobDeployResponse result) {
+            assertEquals(JobDeployResponse.Status.OK, result.getStatus());
+          }
 
-                          @Override
-                          public void onFailure(final Throwable t) {
-                            fail("deploy failed");
-                          }
-                        });
+          @Override
+          public void onFailure(@NotNull final Throwable th) {
+            fail("deploy failed");
+          }
+        });
   }
 
   private void undeploy(final JobId jobId, final String host) throws Exception {
@@ -143,7 +141,7 @@ public class ClusterDeploymentTest extends SystemTestBase {
       }
 
       @Override
-      public void onFailure(final Throwable t) {
+      public void onFailure(@NotNull final Throwable th) {
         fail("undeploy failed");
       }
     });

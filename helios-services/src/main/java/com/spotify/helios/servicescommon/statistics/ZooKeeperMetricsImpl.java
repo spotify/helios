@@ -22,9 +22,8 @@ package com.spotify.helios.servicescommon.statistics;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import org.apache.curator.framework.state.ConnectionState;
-
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.state.ConnectionState;
 
 public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
 

@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -22,7 +22,11 @@ package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import javax.annotation.Nullable;
+import javax.validation.constraints.NotNull;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -30,13 +34,6 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import javax.annotation.Nullable;
-import javax.validation.constraints.NotNull;
 
 public class KafkaClientProvider {
 

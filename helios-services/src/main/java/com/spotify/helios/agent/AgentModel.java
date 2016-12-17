@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
 import java.util.Map;
 
 /**

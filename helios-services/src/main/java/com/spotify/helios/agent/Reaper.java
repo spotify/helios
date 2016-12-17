@@ -22,16 +22,13 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
-
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.Container;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Find containers running in our namespace for which we don't have a record that we started, and
@@ -57,6 +54,11 @@ public class Reaper {
     }
   }
 
+  private void reap(final String containerId) throws InterruptedException, DockerException {
+    log.info("reaping {}", containerId);
+    docker.killContainer(containerId);
+  }
+
   private void reap0(final Supplier<Set<String>> activeSupplier)
       throws DockerException, InterruptedException {
     final List<String> candidates = Lists.newArrayList();
@@ -78,10 +80,5 @@ public class Reaper {
         reap(candidate);
       }
     }
-  }
-
-  private void reap(final String containerId) throws InterruptedException, DockerException {
-    log.info("reaping {}", containerId);
-    docker.killContainer(containerId);
   }
 }

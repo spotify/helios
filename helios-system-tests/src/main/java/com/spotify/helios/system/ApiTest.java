@@ -25,20 +25,17 @@ import static com.spotify.helios.common.protocol.CreateJobResponse.Status.OK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.protocol.CreateJobResponse;
-
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
-
-import org.junit.Test;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import org.junit.Test;
 
-public class APITest extends SystemTestBase {
+public class ApiTest extends SystemTestBase {
 
   /**
    * Verify that the Helios master generates and returns a hash if the submitted job creation

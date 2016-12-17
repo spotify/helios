@@ -20,20 +20,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
-
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.Namespace;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse.Status;
 import static java.lang.String.format;
@@ -41,6 +27,17 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.Namespace;
+import org.junit.Before;
+import org.junit.Test;
 
 public class DeploymentGroupRemoveCommandTest {
 

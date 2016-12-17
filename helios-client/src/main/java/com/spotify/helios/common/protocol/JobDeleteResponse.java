@@ -20,9 +20,8 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.spotify.helios.common.Json;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 public class JobDeleteResponse {
   public enum Status { OK, STILL_IN_USE, JOB_NOT_FOUND, FORBIDDEN }
@@ -39,9 +38,9 @@ public class JobDeleteResponse {
 
   @Override
   public String toString() {
-    return "JobDeleteResponse{" +
-           "status=" + status +
-           '}';
+    return "JobDeleteResponse{"
+           + "status=" + status
+           + '}';
   }
 
   public String toJsonString() {

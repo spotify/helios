@@ -20,10 +20,10 @@
 
 package com.spotify.helios.serviceregistration;
 
+import static java.util.Collections.unmodifiableList;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.Collections.unmodifiableList;
 
 /**
  * A list of endpoints to for service registration.
@@ -47,6 +47,7 @@ public class ServiceRegistration {
   public static class Builder {
 
     private List<Endpoint> endpoints = new ArrayList<>();
+
     @Deprecated
     public Builder endpoint(final String name,
                             final String protocol,
@@ -100,7 +101,8 @@ public class ServiceRegistration {
     private final String protocol;
     private final int port;
     private final String domain;
-    /** The hostname on which we will advertise this service in service discovery */
+
+    // The hostname on which we will advertise this service in service discovery.
     private final String host;
     private final List<String> tags;
     private final EndpointHealthCheck healthCheck;
@@ -147,15 +149,15 @@ public class ServiceRegistration {
 
     @Override
     public String toString() {
-      return "Endpoint{" +
-             "name='" + name + '\'' +
-             ", protocol='" + protocol + '\'' +
-             ", port=" + port +
-             ", domain='" + domain + '\'' +
-             ", host='" + host + '\'' +
-             ", tags=" + tags +
-             ", healthCheck=" + healthCheck +
-             '}';
+      return "Endpoint{"
+             + "name='" + name + '\''
+             + ", protocol='" + protocol + '\''
+             + ", port=" + port
+             + ", domain='" + domain + '\''
+             + ", host='" + host + '\''
+             + ", tags=" + tags
+             + ", healthCheck=" + healthCheck
+             + '}';
     }
   }
 
@@ -189,10 +191,10 @@ public class ServiceRegistration {
 
     @Override
     public String toString() {
-      return "EndpointHealthCheck{" +
-             "type='" + type + '\'' +
-             ", path='" + path + '\'' +
-             '}';
+      return "EndpointHealthCheck{"
+             + "type='" + type + '\''
+             + ", path='" + path + '\''
+             + '}';
     }
   }
 }

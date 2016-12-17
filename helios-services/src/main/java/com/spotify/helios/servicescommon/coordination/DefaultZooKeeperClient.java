@@ -20,8 +20,24 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import com.fasterxml.jackson.databind.JavaType;
+import static com.google.common.base.Strings.emptyToNull;
+import static com.google.common.base.Throwables.propagate;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Lists.newLinkedList;
+import static com.google.common.collect.Lists.reverse;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 
+import com.fasterxml.jackson.databind.JavaType;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
@@ -41,24 +57,6 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Deque;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.regex.Pattern;
-
-import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.base.Throwables.propagateIfInstanceOf;
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.collect.Lists.newLinkedList;
-import static com.google.common.collect.Lists.reverse;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 
 public class DefaultZooKeeperClient implements ZooKeeperClient {
 

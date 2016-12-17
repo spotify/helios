@@ -20,18 +20,16 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Optional;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.google.common.base.Optional;
 import org.jetbrains.annotations.Nullable;
 
 
 /**
  * Represents a mapping from a port inside the container to be exposed on the agent.
  *
- * A typical JSON representation might be:
+ * <p>A typical JSON representation might be:
  * <pre>
  * {
  *   "externalPort" : 8061,
@@ -109,15 +107,15 @@ public class PortMapping extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final PortMapping that = (PortMapping) o;
+    final PortMapping that = (PortMapping) obj;
 
     if (internalPort != that.internalPort) {
       return false;
@@ -143,10 +141,10 @@ public class PortMapping extends Descriptor {
 
   @Override
   public String toString() {
-    return "PortMapping{" +
-           "internalPort=" + internalPort +
-           ", externalPort=" + externalPort +
-           ", protocol='" + protocol + '\'' +
-           '}';
+    return "PortMapping{"
+           + "internalPort=" + internalPort
+           + ", externalPort=" + externalPort
+           + ", protocol='" + protocol + '\''
+           + '}';
   }
 }

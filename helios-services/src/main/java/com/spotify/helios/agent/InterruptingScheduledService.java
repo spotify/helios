@@ -20,29 +20,27 @@
 
 package com.spotify.helios.agent;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runs {@link #runOneIteration()} on a {@link ScheduledExecutorService} (see {@link #schedule})
  * to do periodic operations.
- * <p>
- * This class is similar to {@link com.google.common.util.concurrent.AbstractScheduledService}
+ *
+ * <p>This class is similar to {@link com.google.common.util.concurrent.AbstractScheduledService}
  * except that this class's {@link #shutDown()} method will interrupt the thread running the
- * periodic operation.</p>
+ * periodic operation.
  */
 public abstract class InterruptingScheduledService extends AbstractIdleService {
 
@@ -76,7 +74,9 @@ public abstract class InterruptingScheduledService extends AbstractIdleService {
 
   private ScheduledFuture<?> future;
 
-  /** A hook for subclasses to insert extra steps before {@link #runOneIteration()}  */
+  /**
+   * A hook for subclasses to insert extra steps before {@link #runOneIteration()}.
+   */
   protected void beforeIteration() throws InterruptedException {}
 
   protected abstract void runOneIteration() throws InterruptedException;

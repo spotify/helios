@@ -20,6 +20,12 @@
 
 package com.spotify.helios.cli.command;
 
+import static com.google.common.base.Predicates.containsPattern;
+import static com.spotify.helios.cli.Output.formatHostname;
+import static com.spotify.helios.cli.Output.jobStatusTable;
+import static com.spotify.helios.cli.Utils.allAsMap;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
@@ -27,7 +33,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import com.spotify.helios.cli.JobStatusTable;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -36,23 +41,15 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import static com.google.common.base.Predicates.containsPattern;
-import static com.spotify.helios.cli.Output.formatHostname;
-import static com.spotify.helios.cli.Output.jobStatusTable;
-import static com.spotify.helios.cli.Utils.allAsMap;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class JobStatusCommand extends ControlCommand {
 
@@ -128,14 +125,14 @@ public class JobStatusCommand extends ControlCommand {
     final JobStatusTable table = jobStatusTable(out, full);
 
     final boolean noHostMatchedEver = showStatusesForHosts(hostPattern, jobIds, statuses,
-      new HostStatusDisplayer() {
-        @Override
-        public void matchedStatus(JobStatus jobStatus, Iterable<String> matchingHosts,
-                                  Map<String, TaskStatus> taskStatuses) {
-          displayTask(full, table, jobStatus.getJob().getId(), jobStatus, taskStatuses,
-              matchingHosts);
-        }
-    });
+        new HostStatusDisplayer() {
+          @Override
+          public void matchedStatus(JobStatus jobStatus, Iterable<String> matchingHosts,
+                                    Map<String, TaskStatus> taskStatuses) {
+            displayTask(full, table, jobStatus.getJob().getId(), jobStatus, taskStatuses,
+                matchingHosts);
+          }
+        });
 
     if (noHostMatchedEver) {
       String domainsSwitchString = "";
@@ -144,8 +141,8 @@ public class JobStatusCommand extends ControlCommand {
       if (domains.size() > 0) {
         domainsSwitchString = "-d " + Joiner.on(",").join(domains);
       }
-      out.printf("There are no jobs deployed to hosts with the host pattern '%s'%n" +
-                 "Run 'helios %s hosts %s' to check your host exists and is up.%n",
+      out.printf("There are no jobs deployed to hosts with the host pattern '%s'%n"
+                 + "Run 'helios %s hosts %s' to check your host exists and is up.%n",
                  hostPattern, domainsSwitchString, hostPattern);
       return 1;
     }
@@ -233,8 +230,8 @@ public class JobStatusCommand extends ControlCommand {
           .from(taskStatuses.keySet())
           .filter(containsPattern(hostPattern));
 
-      if (Strings.isNullOrEmpty(hostPattern) ||
-          !Strings.isNullOrEmpty(hostPattern) && !matchingHosts.isEmpty()) {
+      if (Strings.isNullOrEmpty(hostPattern)
+          || !Strings.isNullOrEmpty(hostPattern) && !matchingHosts.isEmpty()) {
         noHostMatchedEver = false;
       }
 

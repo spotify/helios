@@ -30,7 +30,7 @@ import com.spotify.helios.common.descriptors.Job;
  * An interface to allow you to change the {@link HostConfig} and {@link ContainerConfig} objects
  * before they are sent to Docker.  This way you can set defaults, or intercept various things.
  *
- * See: {@link SyslogRedirectingContainerDecorator} for an example.
+ * <p>See: {@link SyslogRedirectingContainerDecorator} for an example.
  */
 public interface ContainerDecorator {
 

@@ -20,29 +20,26 @@
 
 package com.spotify.helios.cli.command;
 
+import static com.spotify.helios.cli.Output.formatHostname;
+import static com.spotify.helios.cli.Output.table;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-
-import static com.spotify.helios.cli.Output.formatHostname;
-import static com.spotify.helios.cli.Output.table;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class DeploymentGroupStatusCommand extends ControlCommand {
 
@@ -125,8 +122,8 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     for (final DeploymentGroupStatusResponse.HostStatus hostStatus : hosts) {
       final String displayHostName = formatHostname(full, hostStatus.getHost());
 
-      final boolean upToDate = hostStatus.getJobId() != null &&
-                               hostStatus.getJobId().equals(jobId);
+      final boolean upToDate = hostStatus.getJobId() != null
+                               && hostStatus.getJobId().equals(jobId);
 
       final String job;
       if (hostStatus.getJobId() == null) {
@@ -137,8 +134,8 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
         job = hostStatus.getJobId().toShortString();
       }
 
-      final String state = hostStatus.getState() != null ?
-                           hostStatus.getState().toString() : "-";
+      final String state = hostStatus.getState() != null
+                           ? hostStatus.getState().toString() : "-";
 
       table.row(displayHostName, upToDate ? "X" : "", job, state);
     }

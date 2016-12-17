@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.helios.servicescommon.CommonConfiguration;
 import com.spotify.helios.servicescommon.FastForwardConfig;
-
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.List;
@@ -185,6 +184,7 @@ public class AgentConfig extends CommonConfiguration<AgentConfig> {
   public String getStatsdHostPort() {
     return statsdHostPort;
   }
+
   public AgentConfig setRiemannHostPort(String hostPort) {
     this.riemannHostPort = hostPort;
     return this;

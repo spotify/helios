@@ -20,26 +20,6 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
-import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
-
-import com.google.common.base.Optional;
-
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.net.Socket;
-import java.nio.file.Files;
-import java.util.Map;
-
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -54,6 +34,23 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+
+import com.google.common.base.Optional;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
+import java.io.File;
+import java.net.Socket;
+import java.nio.file.Files;
+import java.util.Map;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class SimpleTest extends TemporaryJobsTestBase {
 

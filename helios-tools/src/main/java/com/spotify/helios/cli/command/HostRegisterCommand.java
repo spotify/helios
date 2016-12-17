@@ -20,17 +20,15 @@
 
 package com.spotify.helios.cli.command;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import com.spotify.helios.client.HeliosClient;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class HostRegisterCommand extends ControlCommand {
 

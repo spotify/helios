@@ -25,22 +25,18 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.ImmutableList;
-
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.concurrent.Callable;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import org.junit.Before;
+import org.junit.Test;
 
 public class CliHostListTest extends SystemTestBase {
 

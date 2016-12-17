@@ -28,14 +28,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("ParameterName")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HostSelector extends Descriptor {
 
@@ -115,7 +115,7 @@ public class HostSelector extends Descriptor {
 
       if (operator == Operator.IN || operator == Operator.NOT_IN) {
         final List<String> parts = Lists.newArrayList(Sets.newHashSet(
-          Arrays.asList(value.replaceAll("\\(|\\)| ", "").split(","))));
+            Arrays.asList(value.replaceAll("\\(|\\)| ", "").split(","))));
         return new HostSelector(label, operator, parts);
       } else {
         return new HostSelector(label, operator, value);
@@ -166,15 +166,15 @@ public class HostSelector extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final HostSelector that = (HostSelector) o;
+    final HostSelector that = (HostSelector) obj;
 
     if (label != null ? !label.equals(that.label) : that.label != null) {
       return false;
@@ -199,10 +199,10 @@ public class HostSelector extends Descriptor {
 
   @Override
   public String toString() {
-    return "HostSelector{" +
-           "label='" + label + '\'' +
-           ", operator=" + operator +
-           ", operand=" + operand +
-           '}';
+    return "HostSelector{"
+           + "label='" + label + '\''
+           + ", operator=" + operator
+           + ", operand=" + operand
+           + '}';
   }
 }

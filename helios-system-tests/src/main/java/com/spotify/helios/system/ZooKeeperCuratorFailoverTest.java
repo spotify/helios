@@ -25,7 +25,6 @@ import static org.junit.Assert.assertArrayEquals;
 
 import com.spotify.helios.Parallelized;
 import com.spotify.helios.ZooKeeperTestingClusterManager;
-
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
@@ -35,8 +34,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
-@Ignore("This is an expensive test that tests the curator framework, not helios. " +
-        "It is disabled as it likely gives travis grief")
+@Ignore("This is an expensive test that tests the curator framework, not helios. "
+        + "It is disabled as it likely gives travis grief")
 @RunWith(Parallelized.class)
 public class ZooKeeperCuratorFailoverTest {
 
@@ -70,6 +69,7 @@ public class ZooKeeperCuratorFailoverTest {
       zk.curatorWithSuperAuth().create().forPath(FOO, FOO_DATA);
       assertArrayEquals(FOO_DATA, zk.curatorWithSuperAuth().getData().forPath(FOO));
     } catch (KeeperException.NodeExistsException ignore) {
+      // ignored
     }
   }
 
@@ -99,6 +99,7 @@ public class ZooKeeperCuratorFailoverTest {
       zk.curatorWithSuperAuth().create().forPath(FOO, FOO_DATA);
       assertArrayEquals(FOO_DATA, zk.curatorWithSuperAuth().getData().forPath(FOO));
     } catch (KeeperException.NodeExistsException ignore) {
+      // ignored
     }
   }
 
@@ -108,6 +109,7 @@ public class ZooKeeperCuratorFailoverTest {
       zk.curatorWithSuperAuth().create().forPath(FOO, FOO_DATA);
       assertArrayEquals(FOO_DATA, zk.curatorWithSuperAuth().getData().forPath(FOO));
     } catch (KeeperException.NodeExistsException ignore) {
+      // ignored
     }
 
     zk.stopPeer(0);

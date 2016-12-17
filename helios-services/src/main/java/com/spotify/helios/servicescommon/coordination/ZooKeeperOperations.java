@@ -21,7 +21,6 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.spotify.helios.common.descriptors.Descriptor;
-
 import java.util.List;
 import java.util.Map;
 

@@ -20,17 +20,16 @@
 
 package com.spotify.helios.common;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.Before;
+import org.junit.Test;
 
 public class JsonTest {
 
@@ -46,6 +45,7 @@ public class JsonTest {
     expectedDigest = sha1.digest(EXPECTED_JSON.getBytes());
   }
 
+  @SuppressWarnings("MemberName")
   public static class Foo {
 
     public int b;
@@ -59,6 +59,7 @@ public class JsonTest {
     public List<String> ignoredEmptyList;
   }
 
+  @SuppressWarnings("MemberName")
   public static class Bar {
 
     public String c;
@@ -67,23 +68,29 @@ public class JsonTest {
 
   @Test
   public void testObjectSha1() throws Exception {
-    final Bar bar = new Bar() { {
-      c = "bar";
-      foo = new Foo() { {
-        b = 17;
-        a = "hello";
-        c = new LinkedHashMap<String, Object>() { {
-          put("2", "two");
-          put("1", 1);
-        } };
-        ignoredNullString = null;
-        ignoredNullMap = null;
-        ignoredNullList = null;
-        ignoredEmptyString = "";
-        ignoredEmptyMap = Collections.emptyMap();
-        ignoredEmptyList = Collections.emptyList();
-      } };
-    } };
+    final Bar bar = new Bar() {
+      {
+        c = "bar";
+        foo = new Foo() {
+          {
+            b = 17;
+            a = "hello";
+            c = new LinkedHashMap<String, Object>() {
+              {
+                put("2", "two");
+                put("1", 1);
+              }
+            };
+            ignoredNullString = null;
+            ignoredNullMap = null;
+            ignoredNullList = null;
+            ignoredEmptyString = "";
+            ignoredEmptyMap = Collections.emptyMap();
+            ignoredEmptyList = Collections.emptyList();
+          }
+        };
+      }
+    };
     final String barJson = Json.asNormalizedString(bar);
     assertEquals(EXPECTED_JSON, barJson);
     final byte[] digest = Json.sha1digest(bar);
@@ -102,9 +109,13 @@ public class JsonTest {
 
   @Test
   public void verifyPrettyOutput() {
-    final String json = Json.asPrettyStringUnchecked(new SomePojo() { { foo = "bar"; } });
-    assertEquals("{\n" +
-                 "  \"foo\" : \"bar\"\n" +
-                 "}", json);
+    final String json = Json.asPrettyStringUnchecked(new SomePojo() {
+      {
+        foo = "bar";
+      }
+    });
+    assertEquals("{\n"
+                 + "  \"foo\" : \"bar\"\n"
+                 + "}", json);
   }
 }

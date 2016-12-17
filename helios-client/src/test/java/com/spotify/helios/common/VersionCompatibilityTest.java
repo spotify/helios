@@ -20,10 +20,10 @@
 
 package com.spotify.helios.common;
 
-import org.junit.Test;
-
 import static com.spotify.helios.common.VersionCompatibility.Status;
 import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
 
 public class VersionCompatibilityTest {
 

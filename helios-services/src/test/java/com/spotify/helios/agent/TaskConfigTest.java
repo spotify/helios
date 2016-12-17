@@ -20,9 +20,14 @@
 
 package com.spotify.helios.agent;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
-
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
@@ -31,16 +36,8 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.serviceregistration.ServiceRegistration.EndpointHealthCheck;
-
-import org.junit.Test;
-
 import java.util.Set;
-
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 public class TaskConfigTest {
   private static final String HOST = "HOST";
@@ -65,16 +62,16 @@ public class TaskConfigTest {
     final String path = "/health";
 
     final Job job = JOB.toBuilder()
-      .setHealthCheck(HealthCheck.newHttpHealthCheck()
-        .setPath(path)
-        .setPort(PORT_NAME).build())
-      .build();
+        .setHealthCheck(HealthCheck.newHttpHealthCheck()
+            .setPath(path)
+            .setPort(PORT_NAME).build())
+        .build();
 
     final TaskConfig taskConfig = TaskConfig.builder()
-      .namespace("test")
-      .host(HOST)
-      .job(job)
-      .build();
+        .namespace("test")
+        .host(HOST)
+        .job(job)
+        .build();
 
     final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertEquals(path, endpoint.getHealthCheck().getPath());
@@ -85,15 +82,15 @@ public class TaskConfigTest {
   @Test
   public void testRegistrationWithTcpHealthCheck() throws Exception {
     final Job job = JOB.toBuilder()
-      .setHealthCheck(HealthCheck.newTcpHealthCheck()
-        .setPort(PORT_NAME).build())
-      .build();
+        .setHealthCheck(HealthCheck.newTcpHealthCheck()
+            .setPort(PORT_NAME).build())
+        .build();
 
     final TaskConfig taskConfig = TaskConfig.builder()
-      .namespace("test")
-      .host(HOST)
-      .job(job)
-      .build();
+        .namespace("test")
+        .host(HOST)
+        .job(job)
+        .build();
 
     final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertEquals(EndpointHealthCheck.TCP, endpoint.getHealthCheck().getType());
@@ -103,10 +100,10 @@ public class TaskConfigTest {
   @Test
   public void testRegistrationWithoutHealthCheck() throws Exception {
     final TaskConfig taskConfig = TaskConfig.builder()
-      .namespace("test")
-      .host(HOST)
-      .job(JOB)
-      .build();
+        .namespace("test")
+        .host(HOST)
+        .job(JOB)
+        .build();
 
     final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertNull(endpoint.getHealthCheck());

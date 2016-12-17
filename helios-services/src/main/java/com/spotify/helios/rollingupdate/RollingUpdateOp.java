@@ -21,9 +21,7 @@
 package com.spotify.helios.rollingupdate;
 
 import com.google.common.collect.ImmutableList;
-
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-
 import java.util.Map;
 
 public class RollingUpdateOp {

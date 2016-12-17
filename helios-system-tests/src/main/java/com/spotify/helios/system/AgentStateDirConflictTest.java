@@ -20,23 +20,19 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.util.concurrent.Service;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
-
-import com.google.common.util.concurrent.Service;
-
+import java.nio.file.Files;
+import java.nio.file.Path;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 public class AgentStateDirConflictTest {
   @Rule
@@ -55,7 +51,7 @@ public class AgentStateDirConflictTest {
 
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       @Override
-      public void uncaughtException(final Thread t, final Throwable e) {}
+      public void uncaughtException(final Thread thread, final Throwable th) {}
     });
 
     stateDir = Files.createTempDirectory("helios-agent-conflict-test");
@@ -90,6 +86,7 @@ public class AgentStateDirConflictTest {
     try {
       service.stopAsync().awaitTerminated();
     } catch (Exception ignore) {
+      // ignored
     }
   }
 

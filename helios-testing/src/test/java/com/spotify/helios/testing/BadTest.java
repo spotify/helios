@@ -20,15 +20,14 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
-import org.junit.Rule;
-import org.junit.Test;
-
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.hasFailureContaining;
+
+import com.google.common.base.Optional;
+import org.junit.Rule;
+import org.junit.Test;
 
 
 public class BadTest extends TemporaryJobsTestBase {

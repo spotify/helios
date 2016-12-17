@@ -23,14 +23,12 @@ package com.spotify.helios.testing;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.collect.Iterators;
 import com.spotify.docker.client.LogMessage;
 import com.spotify.helios.common.descriptors.JobId;
-
-import com.google.common.collect.Iterators;
-import org.junit.Test;
-
 import java.nio.ByteBuffer;
 import java.util.Iterator;
+import org.junit.Test;
 
 public class InMemoryLogStreamFollowerTest {
 

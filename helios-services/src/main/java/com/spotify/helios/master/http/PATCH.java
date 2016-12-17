@@ -24,12 +24,12 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
 import javax.ws.rs.HttpMethod;
 
 /**
  * So we can do @PATCH, like we do @GET or @POST.
  */
+@SuppressWarnings("AbbreviationAsWordInName")
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @HttpMethod("PATCH")

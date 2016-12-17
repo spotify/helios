@@ -20,10 +20,9 @@
 
 package com.spotify.helios.common.protocol;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SetGoalResponse {
 
@@ -63,11 +62,11 @@ public class SetGoalResponse {
 
   @Override
   public String toString() {
-    return "SetGoalResponse{" +
-           "status=" + status +
-           ", job=" + job +
-           ", host='" + host + '\'' +
-           '}';
+    return "SetGoalResponse{"
+           + "status=" + status
+           + ", job=" + job
+           + ", host='" + host + '\''
+           + '}';
   }
 
   public String toJsonString() {

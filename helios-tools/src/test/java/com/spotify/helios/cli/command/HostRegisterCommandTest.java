@@ -20,24 +20,21 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.client.HeliosClient;
-
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.spotify.helios.client.HeliosClient;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.junit.Before;
+import org.junit.Test;
 
 public class HostRegisterCommandTest {
 
@@ -59,7 +56,7 @@ public class HostRegisterCommandTest {
   }
 
   @Test
-  public void testNoID() throws Exception {
+  public void testNoId() throws Exception {
     when(options.getString("host")).thenReturn(HOST);
 
     final int ret = command.run(options, client, out, false, null);

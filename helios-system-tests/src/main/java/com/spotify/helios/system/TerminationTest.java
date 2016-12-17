@@ -38,7 +38,6 @@ import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
 import org.junit.Before;
 import org.junit.Test;
 

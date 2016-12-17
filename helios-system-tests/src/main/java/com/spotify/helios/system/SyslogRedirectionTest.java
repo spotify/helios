@@ -32,6 +32,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -42,25 +46,18 @@ import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class SyslogRedirectionTest extends SystemTestBase {
 
   private static final Pattern DEFAULT_GATEWAY_PATTERN =
-      Pattern.compile("^default via (?<gateway>[0-9\\.]+)");
+      Pattern.compile("^default via (?<gateway>[0-9.]+)");
 
   private final String testImage = testTag + "_helios-syslog-test";
 
@@ -140,8 +137,8 @@ public class SyslogRedirectionTest extends SystemTestBase {
       final ContainerInfo containerInfo = docker.inspectContainer(syslogContainerId);
       assertThat(containerInfo.state().running(), equalTo(true));
 
-      final String syslogEndpoint = syslogHost + ":" +
-          containerInfo.networkSettings().ports().get(expose).get(0).hostPort();
+      final String syslogEndpoint =
+          syslogHost + ":" + containerInfo.networkSettings().ports().get(expose).get(0).hostPort();
 
       // Run a Helios job that logs to syslog.
       startDefaultMaster();

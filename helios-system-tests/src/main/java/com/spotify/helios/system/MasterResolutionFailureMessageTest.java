@@ -23,11 +23,9 @@ package com.spotify.helios.system;
 import static org.junit.Assert.assertTrue;
 
 import com.spotify.helios.cli.CliMain;
-
-import org.junit.Test;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import org.junit.Test;
 
 public class MasterResolutionFailureMessageTest {
 

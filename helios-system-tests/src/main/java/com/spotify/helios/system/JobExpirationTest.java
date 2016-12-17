@@ -32,15 +32,13 @@ import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
+import java.util.concurrent.Callable;
 import org.joda.time.DateTime;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import java.util.concurrent.Callable;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JobExpirationTest extends SystemTestBase {

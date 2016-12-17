@@ -20,6 +20,8 @@
 
 package com.spotify.helios.agent;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -28,7 +30,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
@@ -43,10 +44,6 @@ import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
@@ -54,8 +51,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides docker container configuration for running a task.
@@ -192,7 +189,7 @@ public class TaskConfig {
   }
 
   /**
-   * Get endpoint health check for a given port
+   * Get endpoint health check for a given port.
    * @param portName The port name
    * @return An EndpointHealthCheck or null if no check exists
    */
@@ -423,16 +420,16 @@ public class TaskConfig {
 
   @Override
   public String toString() {
-    return "TaskConfig{" +
-           "host='" + host + '\'' +
-           ", ports=" + ports +
-           ", job=" + job +
-           ", envVars=" + envVars +
-           ", containerDecorators=" + containerDecorators +
-           ", namespace='" + namespace + '\'' +
-           ", defaultRegistrationDomain='" + defaultRegistrationDomain + '\'' +
-           ", dns=" + dns +
-           '}';
+    return "TaskConfig{"
+           + "host='" + host + '\''
+           + ", ports=" + ports
+           + ", job=" + job
+           + ", envVars=" + envVars
+           + ", containerDecorators=" + containerDecorators
+           + ", namespace='" + namespace + '\''
+           + ", defaultRegistrationDomain='" + defaultRegistrationDomain + '\''
+           + ", dns=" + dns
+           + '}';
   }
 }
 

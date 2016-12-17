@@ -27,13 +27,12 @@ import static org.mockito.Mockito.when;
 
 import com.google.cloud.pubsub.PubSub;
 import com.google.cloud.pubsub.PubSubException;
-import org.junit.After;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import org.junit.After;
+import org.junit.Test;
 
 public class GooglePubSubDefaultHealthCheckerTest {
 

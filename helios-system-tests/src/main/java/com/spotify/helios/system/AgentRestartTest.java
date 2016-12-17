@@ -45,10 +45,8 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
-
-import org.junit.Test;
-
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class AgentRestartTest extends SystemTestBase {
 
@@ -132,9 +130,9 @@ public class AgentRestartTest extends SystemTestBase {
           public TaskStatus call() throws Exception {
             final HostStatus hostStatus = client.hostStatus(testHost()).get();
             final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-            return (taskStatus != null && taskStatus.getContainerId() != null &&
-                    taskStatus.getState() == RUNNING &&
-                    !taskStatus.getContainerId().equals(firstTaskStatus.getContainerId()))
+            return (taskStatus != null && taskStatus.getContainerId() != null
+                    && taskStatus.getState() == RUNNING
+                    && !taskStatus.getContainerId().equals(firstTaskStatus.getContainerId()))
                    ? taskStatus
                    : null;
           }
@@ -157,17 +155,17 @@ public class AgentRestartTest extends SystemTestBase {
     // Wait for the task to be restarted in a new container
     final TaskStatus thirdTaskStatus = Polling.await(
         LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
-      @Override
-      public TaskStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(testHost()).get();
-        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-        return (taskStatus != null && taskStatus.getContainerId() != null &&
-                taskStatus.getState() == RUNNING &&
-                !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId()))
-               ? taskStatus
-               : null;
-      }
-    });
+          @Override
+          public TaskStatus call() throws Exception {
+            final HostStatus hostStatus = client.hostStatus(testHost()).get();
+            final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
+            return (taskStatus != null && taskStatus.getContainerId() != null
+                    && taskStatus.getState() == RUNNING
+                    && !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId()))
+                   ? taskStatus
+                   : null;
+          }
+        });
     assertEquals(1, listContainers(dockerClient, testTag).size());
     assertTrue(dockerClient.inspectContainer(thirdTaskStatus.getContainerId()).state().running());
 

@@ -24,16 +24,12 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 
-import com.spotify.helios.cli.CliMain;
-import com.spotify.helios.common.descriptors.JobId;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-
-import org.junit.Test;
-
+import com.spotify.helios.cli.CliMain;
+import com.spotify.helios.common.descriptors.JobId;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,6 +37,7 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.Test;
 
 public class JobWatchTest extends SystemTestBase {
 
@@ -79,14 +76,14 @@ public class JobWatchTest extends SystemTestBase {
       final byte[] lineBuffer = new byte[8192];
 
       @Override
-      public void write(int b) throws IOException {
+      public void write(int val) throws IOException {
         if (System.currentTimeMillis() > deadline) {
           throw new IOException("timed out trying to succeed");
         }
-        lineBuffer[counter] = (byte) b;
+        lineBuffer[counter] = (byte) val;
         counter++;
 
-        if (b != 10) {
+        if (val != 10) {
           return;
         }
 

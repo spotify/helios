@@ -22,12 +22,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-
 import com.spotify.helios.common.descriptors.PortMapping;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Collections;
@@ -36,18 +31,21 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A simple port allocator.
  *
- * Given a port range and a set of used ports it will randomly search through the port range until
- * it finds an available port and claim it. Static ports are simply checked against the used ports.
+ * <p>Given a port range and a set of used ports it will randomly search through the port range
+ * until it finds an available port and claim it. Static ports are simply checked against the used
+ * ports.
  */
 public class PortAllocator {
 
   private static final Logger log = LoggerFactory.getLogger(Agent.class);
 
-  private int i = 0;
+  private int idx = 0;
   private final List<Integer> potentialPorts;
 
   public PortAllocator(final int start, final int end) {
@@ -123,12 +121,12 @@ public class PortAllocator {
   }
 
   private Integer nextPotentialPort() {
-    if (this.i >= this.potentialPorts.size()) {
-      this.i = 0;
+    if (this.idx >= this.potentialPorts.size()) {
+      this.idx = 0;
     }
 
-    final Integer nextPort = this.potentialPorts.get(this.i);
-    this.i++;
+    final Integer nextPort = this.potentialPorts.get(this.idx);
+    this.idx++;
 
     return nextPort;
   }
@@ -139,16 +137,16 @@ public class PortAllocator {
    * @return True if port is available. False otherwise.
    */
   private boolean portAvailable(final int port) {
-    ServerSocket s = null;
+    ServerSocket socket = null;
     try {
-      s = new ServerSocket(port);
+      socket = new ServerSocket(port);
       return true;
     } catch (IOException ignored) {
       return false;
     } finally {
-      if (s != null) {
+      if (socket != null) {
         try {
-          s.close();
+          socket.close();
         } catch (IOException e) {
           log.error("Couldn't close socket on port {} when checking availability: {}", port, e);
         }

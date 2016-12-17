@@ -21,7 +21,6 @@
 package com.spotify.helios.testing;
 
 import com.spotify.helios.common.descriptors.Job;
-
 import java.util.List;
 import java.util.Set;
 

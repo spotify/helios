@@ -20,18 +20,18 @@
 
 package com.spotify.helios.agent;
 
-import java.util.concurrent.TimeUnit;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Range.closed;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * A retry policy that provides exponential backoff with randomization.
  *
- * interval' = interval * (2.0 + rnd(-1.0, 1.0) * randomFactor)
+ * <p>interval' = interval * (2.0 + rnd(-1.0, 1.0) * randomFactor)
  */
 public class BoundedRandomExponentialBackoff implements RetryIntervalPolicy {
 

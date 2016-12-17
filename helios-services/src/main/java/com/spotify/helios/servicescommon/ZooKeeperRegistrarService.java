@@ -20,8 +20,11 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.util.concurrent.AbstractIdleService;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.util.concurrent.Service.State.STOPPING;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryIntervalPolicy;
 import com.spotify.helios.agent.RetryScheduler;
@@ -29,21 +32,15 @@ import com.spotify.helios.agent.Sleeper;
 import com.spotify.helios.agent.ThreadSleeper;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.util.concurrent.Service.State.STOPPING;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Common logic to have agents and masters register their "up" nodes in ZK, and to keep trying if
@@ -102,7 +99,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
       return this;
     }
 
-    public Builder setZKRegistrationSignal(final CountDownLatch zkRegistrationSignal) {
+    public Builder setZkRegistrationSignal(final CountDownLatch zkRegistrationSignal) {
       this.zkRegistrationSignal = zkRegistrationSignal;
       return this;
     }

@@ -20,17 +20,15 @@
 
 package com.spotify.helios.servicescommon;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.common.base.Charsets;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class ResolverConfReaderTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();

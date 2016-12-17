@@ -20,23 +20,20 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
-import com.spotify.helios.common.Json;
-import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
-
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.nio.file.Files;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.hasSingleFailureContaining;
+
+import com.google.common.base.Optional;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
+import java.nio.file.Files;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class TempJobFailureTest extends TemporaryJobsTestBase {
 

@@ -20,15 +20,19 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.util.concurrent.Service.State.STOPPING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.Watcher.Event.EventType.NodeDataChanged;
+
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.MapType;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
-
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.MapType;
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryIntervalPolicy;
 import com.spotify.helios.agent.RetryScheduler;
@@ -36,7 +40,15 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.Reactor;
-
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.state.ConnectionState;
@@ -48,26 +60,11 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.util.concurrent.Service.State.STOPPING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.zookeeper.Watcher.Event.EventType.NodeDataChanged;
-
 /**
  * A view of the children of a zookeeper node, kept up to date with zookeeper using watches and
  * persisted to disk in order to guarantee availability when zookeeper is unavailable.
  *
- * The view is persisted to disk as json and the node values must be valid json.
+ * <p>The view is persisted to disk as json and the node values must be valid json.
  *
  * @param <T> The deserialized node value type.
  */
@@ -230,7 +227,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
   }
 
   /**
-   * Fetch new snapshot and register watchers
+   * Fetch new snapshot and register watchers.
    */
   private Map<String, T> sync() throws KeeperException {
     log.debug("syncing: {}", path);

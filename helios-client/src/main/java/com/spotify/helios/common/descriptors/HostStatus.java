@@ -20,22 +20,20 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Joiner;
+import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.jetbrains.annotations.Nullable;
-
+import com.google.common.base.Joiner;
 import java.util.Collections;
 import java.util.Map;
-
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Gives the Helios host status for the agent, which includes all jobs, their statuses, as well
  * as host and agent information.
+ *
  * <pre>
  * {
  *   "agentInfo" : { #... see the description of AgentInfo },
@@ -198,15 +196,15 @@ public class HostStatus extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final HostStatus that = (HostStatus) o;
+    final HostStatus that = (HostStatus) obj;
 
     if (hostInfo != null ? !hostInfo.equals(that.hostInfo) : that.hostInfo != null) {
       return false;
@@ -247,15 +245,15 @@ public class HostStatus extends Descriptor {
 
   @Override
   public String toString() {
-    return "HostStatus{" +
-           "status=" + status +
-           ", hostInfo=" + hostInfo +
-           ", agentInfo=" + agentInfo +
-           ", jobs=" + jobs +
-           ", statuses=" + statuses +
-           ", environment=" + stringMapToString(environment) +
-           ", labels=" + stringMapToString(labels) +
-           '}';
+    return "HostStatus{"
+           + "status=" + status
+           + ", hostInfo=" + hostInfo
+           + ", agentInfo=" + agentInfo
+           + ", jobs=" + jobs
+           + ", statuses=" + statuses
+           + ", environment=" + stringMapToString(environment)
+           + ", labels=" + stringMapToString(labels)
+           + '}';
   }
 
   private static String stringMapToString(final Map<String, String> map) {

@@ -20,36 +20,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.HostSelector;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.RolloutOptions;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
-
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Map;
-
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -58,6 +28,32 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutOptions;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Map;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class DeploymentGroupStatusCommandTest {
 
@@ -115,16 +111,16 @@ public class DeploymentGroupStatusCommandTest {
     final String output = baos.toString().replaceAll("\\s+", "");
 
     final String expected =
-        format("Name: %s" +
-               "Job Id: %s" +
-               "Status: ROLLING_OUT" +
-               "Host selectors:" +
-               "  a = b" +
-               "  foo = bar" +
-               "HOST UP-TO-DATE JOB STATE" +
-               "host1. X %s RUNNING" +
-               "host2. X %s PULLING_IMAGE" +
-               "host3. - -",
+        format("Name: %s"
+               + "Job Id: %s"
+               + "Status: ROLLING_OUT"
+               + "Host selectors:"
+               + "  a = b"
+               + "  foo = bar"
+               + "HOST UP-TO-DATE JOB STATE"
+               + "host1. X %s RUNNING"
+               + "host2. X %s PULLING_IMAGE"
+               + "host3. - -",
                GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
@@ -158,16 +154,16 @@ public class DeploymentGroupStatusCommandTest {
     final String output = baos.toString().replaceAll("\\s+", "");
 
     final String expected =
-        format("Name: %s" +
-               "Job Id: null" +
-               "Status: IDLE" +
-               "Host selectors:" +
-               "  a = b" +
-               "  foo = bar" +
-               "HOST UP-TO-DATE JOB STATE" +
-               "host1. - -" +
-               "host2. - -" +
-               "host3. - -",
+        format("Name: %s"
+               + "Job Id: null"
+               + "Status: IDLE"
+               + "Host selectors:"
+               + "  a = b"
+               + "  foo = bar"
+               + "HOST UP-TO-DATE JOB STATE"
+               + "host1. - -"
+               + "host2. - -"
+               + "host3. - -",
                GROUP_NAME).replace(" ", "");
 
     assertEquals(expected, output);
@@ -195,17 +191,17 @@ public class DeploymentGroupStatusCommandTest {
     final String output = baos.toString().replaceAll("\\s+", "");
 
     final String expected =
-        format("Name: %s" +
-               "Job Id: %s" +
-               "Status: ROLLING_OUT" +
-               "Host selectors:" +
-               "  a = b" +
-               "  foo = bar" +
-               "Error: Oops!" +
-               "HOST UP-TO-DATE JOB STATE" +
-               "host1. X %s RUNNING" +
-               "host2. X %s PULLING_IMAGE" +
-               "host3. - -",
+        format("Name: %s"
+               + "Job Id: %s"
+               + "Status: ROLLING_OUT"
+               + "Host selectors:"
+               + "  a = b"
+               + "  foo = bar"
+               + "Error: Oops!"
+               + "HOST UP-TO-DATE JOB STATE"
+               + "host1. X %s RUNNING"
+               + "host2. X %s PULLING_IMAGE"
+               + "host3. - -",
                GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);

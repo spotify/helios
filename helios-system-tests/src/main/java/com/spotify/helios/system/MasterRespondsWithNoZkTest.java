@@ -30,7 +30,8 @@ import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
-
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.RetryPolicy;
@@ -46,11 +47,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-
 @RunWith(MockitoJUnitRunner.class)
-public class MasterRespondsWithNoZKTest extends SystemTestBase {
+public class MasterRespondsWithNoZkTest extends SystemTestBase {
 
   @Override
   protected ZooKeeperTestManager zooKeeperTestManager() {
@@ -67,7 +65,7 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
 
-    startDefaultMasterDontWaitForZK(new MockCuratorClientFactory(), "--zk-connection-timeout", "1");
+    startDefaultMasterDontWaitForZk(new MockCuratorClientFactory(), "--zk-connection-timeout", "1");
 
     final HeliosClient client = defaultClient();
 

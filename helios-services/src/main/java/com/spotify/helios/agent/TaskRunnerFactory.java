@@ -20,20 +20,18 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-
-import com.spotify.docker.client.DockerClient;
-import com.spotify.helios.serviceregistration.ServiceRegistrar;
-
-import java.util.List;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static java.util.Collections.singletonList;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import java.util.List;
+
 /**
- * As you might guess, creates {@link TaskRunner}s
+ * As you might guess, creates {@link TaskRunner}s.
  */
 public class TaskRunnerFactory {
 
@@ -121,9 +119,9 @@ public class TaskRunnerFactory {
     }
 
     @Override
-    public void failed(final Throwable t, final String containerError) {
+    public void failed(final Throwable th, final String containerError) {
       for (final TaskRunner.Listener l : listeners) {
-        l.failed(t, containerError);
+        l.failed(th, containerError);
       }
     }
 

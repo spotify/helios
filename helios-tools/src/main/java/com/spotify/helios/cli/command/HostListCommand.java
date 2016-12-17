@@ -32,15 +32,6 @@ import static java.lang.System.currentTimeMillis;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
-import com.spotify.helios.cli.Table;
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DockerVersion;
-import com.spotify.helios.common.descriptors.HostInfo;
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
-
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
@@ -50,10 +41,14 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
+import com.spotify.helios.cli.Table;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DockerVersion;
+import com.spotify.helios.common.descriptors.HostInfo;
+import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -64,6 +59,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class HostListCommand extends ControlCommand {
 

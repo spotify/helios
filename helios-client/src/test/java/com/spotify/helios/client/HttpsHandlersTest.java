@@ -20,24 +20,22 @@
 
 package com.spotify.helios.client;
 
-import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
-import com.spotify.helios.client.tls.CertificateAndPrivateKey;
-import com.spotify.sshagentproxy.AgentProxy;
-import com.spotify.sshagentproxy.Identity;
-
-import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.nio.file.Paths;
-import java.util.Random;
-
 import static com.google.common.io.Resources.getResource;
 import static com.spotify.helios.common.Hash.sha1digest;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
+import com.spotify.helios.client.tls.CertificateAndPrivateKey;
+import com.spotify.sshagentproxy.AgentProxy;
+import com.spotify.sshagentproxy.Identity;
+import java.nio.file.Paths;
+import java.util.Random;
+import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 public class HttpsHandlersTest {
 

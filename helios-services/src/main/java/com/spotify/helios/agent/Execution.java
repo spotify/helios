@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
-
 import java.util.Map;
 
 public class Execution {
@@ -66,10 +65,10 @@ public class Execution {
 
   @Override
   public String toString() {
-    return "Execution{" +
-           "job=" + job +
-           ", ports=" + ports +
-           ", goal=" + goal +
-           '}';
+    return "Execution{"
+           + "job=" + job
+           + ", ports=" + ports
+           + ", goal=" + goal
+           + '}';
   }
 }

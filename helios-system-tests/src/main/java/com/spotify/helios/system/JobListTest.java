@@ -28,19 +28,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.JobId;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.Map.Entry;
+import org.junit.Test;
 
 public class JobListTest extends SystemTestBase {
   private static final TypeReference<Map<String, Object>> MAP_TYPE =
@@ -71,6 +68,7 @@ public class JobListTest extends SystemTestBase {
       // It might conceivably get here at some point, but better be empty if it does
       assertTrue(resultObj2.isEmpty());
     } catch (JsonParseException ignored) {
+      // ignored
     }
 
     final String result3 = cli("jobs", "-y", "--json");
@@ -78,6 +76,7 @@ public class JobListTest extends SystemTestBase {
       final Map<String, Object> resultObj3 = OBJECT_MAPPER.readValue(result3, MAP_TYPE);
       assertTrue(result3, resultObj3.isEmpty());
     } catch (JsonParseException ignored) {
+      // ignored
     }
 
     final HeliosClient client = defaultClient();
@@ -89,6 +88,7 @@ public class JobListTest extends SystemTestBase {
       final Map<String, Object> resultObj4 = OBJECT_MAPPER.readValue(result4, MAP_TYPE);
       assertFalse(resultObj4.isEmpty());
     } catch (JsonParseException ignored) {
+      // ignored
     }
   }
 }

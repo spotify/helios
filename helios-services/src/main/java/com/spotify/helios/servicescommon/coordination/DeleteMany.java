@@ -20,9 +20,8 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-
 import java.util.List;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
 public class DeleteMany implements ZooKeeperOperation {
 
@@ -41,21 +40,21 @@ public class DeleteMany implements ZooKeeperOperation {
 
   @Override
   public String toString() {
-    return "DeleteMany{" +
-           "paths=" + paths +
-           '}';
+    return "DeleteMany{"
+           + "paths=" + paths
+           + '}';
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final DeleteMany that = (DeleteMany) o;
+    final DeleteMany that = (DeleteMany) obj;
 
     return paths != null ? paths.equals(that.paths) : that.paths == null;
 

@@ -23,19 +23,16 @@ package com.spotify.helios.system;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.Sets;
 import com.spotify.helios.Polling;
 import com.spotify.helios.servicescommon.coordination.Paths;
-
-import com.google.common.collect.Sets;
-
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.data.ACL;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 public class ZooKeeperAclTest extends SystemTestBase {
 
@@ -43,7 +40,7 @@ public class ZooKeeperAclTest extends SystemTestBase {
                                                             AGENT_USER, AGENT_DIGEST);
 
   /**
-   * Verify that the master sets the correct ACLs on the root node on start-up
+   * Verify that the master sets the correct ACLs on the root node on start-up.
    */
   @Test
   public void testMasterSetsRootNodeAcls() throws Exception {

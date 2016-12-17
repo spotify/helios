@@ -35,6 +35,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Maps;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.Polling;
@@ -54,10 +56,11 @@ import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
-
-import com.google.common.base.Splitter;
-import com.google.common.collect.Maps;
-
+import java.io.IOException;
+import java.net.Socket;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.Callable;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -69,12 +72,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
 @RunWith(MockitoJUnitRunner.class)
 public class HealthCheckTest extends ServiceRegistrationTestBase {
 
@@ -84,7 +81,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
   @Captor
   public ArgumentCaptor<ServiceRegistration> registrationCaptor;
 
-  final String registryAddress = uniqueRegistryAddress();
+  private final String registryAddress = uniqueRegistryAddress();
 
   @Before
   public void setup() {

@@ -20,11 +20,9 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.collect.ImmutableSet;
 import com.spotify.helios.servicescommon.CommonConfiguration;
 import com.spotify.helios.servicescommon.FastForwardConfig;
-
-import com.google.common.collect.ImmutableSet;
-
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.Set;

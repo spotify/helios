@@ -22,12 +22,10 @@ package com.spotify.helios.rollingupdate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.RolloutTask;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.RolloutTask;
 import java.util.List;
 
 public class RollingUpdatePlanner implements RolloutPlanner {
@@ -46,10 +44,10 @@ public class RollingUpdatePlanner implements RolloutPlanner {
   public List<RolloutTask> plan(final List<String> hosts) {
     // generate the rollout tasks
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
-    final int parallelism = deploymentGroup.getRolloutOptions() != null ?
-                            deploymentGroup.getRolloutOptions().getParallelism() : 1;
-    final boolean overlap = deploymentGroup.getRolloutOptions() != null &&
-                            deploymentGroup.getRolloutOptions().getOverlap();
+    final int parallelism = deploymentGroup.getRolloutOptions() != null
+                            ? deploymentGroup.getRolloutOptions().getParallelism() : 1;
+    final boolean overlap = deploymentGroup.getRolloutOptions() != null
+                            && deploymentGroup.getRolloutOptions().getOverlap();
 
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
       rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition) : rolloutTasks(partition));

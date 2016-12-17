@@ -24,6 +24,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
@@ -43,24 +54,8 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -72,6 +67,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A HeliosSoloDeployment represents a deployment of Helios Solo, which is to say one Helios
@@ -93,9 +90,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private static final int DEFAULT_WAIT_SECONDS = 30;
 
   private final DockerClient dockerClient;
-  /** The DockerHost we use to communicate with docker */
+  // The DockerHost we use to communicate with docker.
   private final DockerHost dockerHost;
-  /** The DockerHost the container uses to communicate with docker */
+  // The DockerHost the container uses to communicate with docker.
   private final DockerHost containerDockerHost;
   private final String heliosSoloImage;
   private final boolean pullBeforeCreate;
@@ -217,7 +214,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   @Override
   public HostAndPort address() {
-      return deploymentAddress;
+    return deploymentAddress;
   }
 
   public String agentName() {
@@ -258,8 +255,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * This method also gets the gateway IP address for this HeliosSoloDeployment.
    *
    * @return The gateway IP address of the gateway probe container.
-   * @throws HeliosDeploymentException if we can't deploy the probe container or can't reach the
-   * Docker daemon's API from inside the container.
+   * @throws HeliosDeploymentException if we can't deploy the probe container or can't reach
+   *         Docker daemon's API from inside the container.
    */
   private String checkDockerAndGetGateway() throws HeliosDeploymentException {
     final String probeName = randomString();
@@ -408,6 +405,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       log.warn("unable to kill container {}", id, e);
     }
   }
+
   private void removeContainer(String id) {
     try {
       dockerClient.removeContainer(id);
@@ -517,9 +515,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
 
             if (undeployResponse.getStatus() != JobUndeployResponse.Status.OK) {
-              log.warn("Undeploy response for job {} was not OK. This could mean that something " +
-                       "beat the helios-solo master in telling the helios-solo agent to undeploy.",
-                       jobId);
+              log.warn("Undeploy response for job {} was not OK. This could mean that something "
+                       + "beat the helios-solo master in telling the helios-solo agent to "
+                       + "undeploy.", jobId);
             }
           }
 
@@ -538,29 +536,30 @@ public class HeliosSoloDeployment implements HeliosDeployment {
                                      final TimeUnit timeunit) throws Exception {
     return Polling.await(timeout, timeunit, "Job " + jobId + " did not undeploy after %d %s",
         new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
-        if (hostStatus == null) {
-          log.debug("Job {} host status is null. Waiting...", jobId);
-          return null;
-        }
-        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-        if (taskStatus != null) {
-          log.debug("Job {} task status is {}.", jobId, taskStatus.getState());
-          return null;
-        }
-        log.info("Task status is null which means job {} has been successfully undeployed.", jobId);
-        return true;
-      }
-    });
+          @Override
+          public Boolean call() throws Exception {
+            final HostStatus hostStatus = getOrNull(client.hostStatus(host));
+            if (hostStatus == null) {
+              log.debug("Job {} host status is null. Waiting...", jobId);
+              return null;
+            }
+            final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
+            if (taskStatus != null) {
+              log.debug("Job {} task status is {}.", jobId, taskStatus.getState());
+              return null;
+            }
+            log.info("Task status is null which means job {} has been successfully undeployed.",
+                jobId);
+            return true;
+          }
+        });
   }
 
   private <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
     return Futures.catching(future, Exception.class, new Function<Exception, T>() {
       @Override
-      public T apply(@NotNull final Exception e) {
+      public T apply(final Exception ex) {
         return null;
       }
     }).get();
@@ -583,8 +582,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   /**
    * @return A Builder with its Docker Client configured automatically using the
-   * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or sensible
-   * defaults if they are absent.
+   *         <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
+   *         sensible defaults if they are absent.
    */
   public static Builder fromEnv() {
     return fromEnv(null);
@@ -593,24 +592,24 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   /**
    * @param profile A configuration profile used to populate builder options.
    * @return A Builder with its Docker Client configured automatically using the
-   * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or sensible
-   * defaults if they are absent.
+   *         <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
+   *         sensible defaults if they are absent.
    */
   public static Builder fromEnv(final String profile)  {
     try {
       return builder(profile).dockerClient(DefaultDockerClient.fromEnv().build());
-    } catch (DockerCertificateException e) {
-      throw new RuntimeException("unable to create Docker client from environment", e);
+    } catch (DockerCertificateException ex) {
+      throw new RuntimeException("unable to create Docker client from environment", ex);
     }
   }
 
   @Override
   public String toString() {
-    return "HeliosSoloDeployment{" +
-           "deploymentAddress=" + deploymentAddress +
-           ", dockerHost=" + dockerHost +
-           ", heliosContainerId=" + heliosContainerId +
-           '}';
+    return "HeliosSoloDeployment{"
+           + "deploymentAddress=" + deploymentAddress
+           + ", dockerHost=" + dockerHost
+           + ", heliosContainerId=" + heliosContainerId
+           + '}';
   }
 
   public static class Builder {

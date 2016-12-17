@@ -23,7 +23,6 @@ package com.spotify.helios.system;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.client.HeliosClient;
-
 import org.junit.Test;
 
 public class ZooKeeperBadNodeTest extends SystemTestBase {

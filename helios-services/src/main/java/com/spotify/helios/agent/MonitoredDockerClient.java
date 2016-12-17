@@ -24,7 +24,6 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.helios.servicescommon.RiemannFacade;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -79,5 +78,5 @@ public abstract class MonitoredDockerClient {
         throw e.getCause();
       }
     }
-}
+  }
 }

@@ -20,6 +20,19 @@
 
 package com.spotify.helios.testing;
 
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.spotify.helios.testing.Jobs.undeploy;
+import static java.lang.String.format;
+import static java.lang.System.getProperty;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
@@ -28,7 +41,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -40,14 +52,6 @@ import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
 import com.typesafe.config.ConfigValueType;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.MultipleFailureException;
-import org.junit.runners.model.Statement;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -66,19 +70,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Lists.newArrayList;
-import static com.spotify.helios.testing.Jobs.undeploy;
-import static java.lang.String.format;
-import static java.lang.System.getProperty;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.MultipleFailureException;
+import org.junit.runners.model.Statement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TemporaryJobs implements TestRule {
   private static final Logger log = LoggerFactory.getLogger(TemporaryJobs.class);
@@ -165,7 +162,7 @@ public class TemporaryJobs implements TestRule {
    * Perform setup. This is normally called by JUnit when TemporaryJobs is used with @Rule.
    * If @Rule cannot be used, call this method before calling {@link #job()}.
    *
-   * Note: When not being used as a @Rule, jobs will not be monitored during test runs.
+   * <p>Note: When not being used as a @Rule, jobs will not be monitored during test run.
    */
   public void before() {
     deployer.readyToDeploy();
@@ -197,6 +194,7 @@ public class TemporaryJobs implements TestRule {
         log.warn("Failed to stop test runner thread");
       }
     } catch (InterruptedException ignore) {
+      // ignored
     }
 
     final List<AssertionError> errors = newArrayList();
@@ -232,27 +230,9 @@ public class TemporaryJobs implements TestRule {
     return this.job(Job.newBuilder());
   }
 
-  public TemporaryJobBuilder jobWithConfig(final String configFile) throws IOException {
-    checkNotNull(configFile);
-
-    final Path configPath = Paths.get(configFile);
-    final File file = configPath.toFile();
-
-    if (!file.exists() || !file.isFile() || !file.canRead()) {
-      throw new IllegalArgumentException("Cannot read file " + file);
-    }
-
-    final byte[] bytes = Files.readAllBytes(configPath);
-    final String config = new String(bytes, UTF_8);
-    final Job job = Json.read(config, Job.class);
-
-    return this.job(job.toBuilder());
-  }
-
   private TemporaryJobBuilder job(final Job.Builder jobBuilder) {
-    final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober, env, reportWriter.get(),
-                                                                jobBuilder);
+    final TemporaryJobBuilder builder = new TemporaryJobBuilder(
+        deployer, jobPrefixFile.prefix(), prober, env, reportWriter.get(), jobBuilder);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");
@@ -288,6 +268,23 @@ public class TemporaryJobs implements TestRule {
     // allocations are not likely to be common -- but PR's welcome if I'm wrong. - drewc@spotify.com
     builder.hostFilter(defaultHostFilter);
     return builder;
+  }
+
+  public TemporaryJobBuilder jobWithConfig(final String configFile) throws IOException {
+    checkNotNull(configFile);
+
+    final Path configPath = Paths.get(configFile);
+    final File file = configPath.toFile();
+
+    if (!file.exists() || !file.isFile() || !file.canRead()) {
+      throw new IllegalArgumentException("Cannot read file " + file);
+    }
+
+    final byte[] bytes = Files.readAllBytes(configPath);
+    final String config = new String(bytes, UTF_8);
+    final Job job = Json.read(config, Job.class);
+
+    return this.job(job.toBuilder());
   }
 
   private static List<String> getListByKey(final String key, final Config config) {
@@ -416,9 +413,6 @@ public class TemporaryJobs implements TestRule {
    * during previous runs. The method will undeploy and delete any jobs that have a matching
    * prefix, and the delete the file. If the file is locked, it is currently in use, and will be
    * skipped.
-   * @throws ExecutionException
-   * @throws InterruptedException
-   * @throws IOException
    */
   private void removeOldJobs(final Path prefixDirectory)
       throws ExecutionException, InterruptedException, IOException {
@@ -667,19 +661,19 @@ public class TemporaryJobs implements TestRule {
       return endpointStrings(asList(endpoints));
     }
 
-    public Builder endpointStrings(final List<String> endpoints) {
-      return client(clientBuilder.setUser(user)
-                        .setEndpointStrings(endpoints)
-                        .build());
-    }
-
     public Builder endpoints(final URI... endpoints) {
       return endpoints(asList(endpoints));
     }
 
     public Builder endpoints(final List<URI> endpoints) {
       return client(clientBuilder.setUser(user)
-                        .setEndpoints(endpoints)
+          .setEndpoints(endpoints)
+          .build());
+    }
+
+    public Builder endpointStrings(final List<String> endpoints) {
+      return client(clientBuilder.setUser(user)
+                        .setEndpointStrings(endpoints)
                         .build());
     }
 

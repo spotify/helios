@@ -20,11 +20,10 @@
 
 package com.spotify.helios.client;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class HostnameVerifierProvider {
 
@@ -46,7 +45,7 @@ class HostnameVerifierProvider {
       log.debug("hostname verification disabled");
       return new HostnameVerifier() {
         @Override
-        public boolean verify(final String s, final SSLSession sslSession) {
+        public boolean verify(final String str, final SSLSession sslSession) {
           return true;
         }
       };
@@ -59,7 +58,7 @@ class HostnameVerifierProvider {
 
     return new HostnameVerifier() {
       @Override
-      public boolean verify(final String s, final SSLSession sslSession) {
+      public boolean verify(final String str, final SSLSession sslSession) {
         return delegate.verify(tHostname, sslSession);
       }
     };

@@ -20,10 +20,10 @@
 
 package com.spotify.helios.testing;
 
+import static java.lang.Math.floor;
+
 import java.util.List;
 import java.util.Random;
-
-import static java.lang.Math.floor;
 
 public class HostPickingStrategies {
   private static class RandomHostPickingStrategy implements HostPickingStrategy {
@@ -60,7 +60,7 @@ public class HostPickingStrategies {
   }
 
   /**
-   * For any given invocation returns a random host
+   * For any given invocation returns a random host.
    *
    * @return The strategy object
    * */

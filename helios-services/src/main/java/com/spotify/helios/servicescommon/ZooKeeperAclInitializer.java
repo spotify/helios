@@ -20,12 +20,18 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.Lists;
+import static com.google.common.base.Throwables.propagate;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.collect.Sets.newHashSet;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 
+import com.google.common.collect.Lists;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,23 +40,14 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.ACL;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.base.Throwables.propagateIfInstanceOf;
-import static com.google.common.collect.Sets.newHashSet;
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
-
 public class ZooKeeperAclInitializer {
 
   public static void main(final String[] args) throws Exception {
     if (args.length == 6) {
       initializeAcl(args[0], args[1], args[2], args[3], args[4], args[5]);
     } else {
-      System.out.println("usage: <ZK connect string> <ZK cluster ID> " +
-                         "<master user> <master password> <agent user> <agent password>");
+      System.out.println("usage: <ZK connect string> <ZK cluster ID> "
+                         + "<master user> <master password> <agent user> <agent password>");
       System.exit(-1);
     }
   }
@@ -87,7 +84,7 @@ public class ZooKeeperAclInitializer {
   }
 
   static void initializeAclRecursive(final ZooKeeperClient client, final String path,
-                                            final ACLProvider aclProvider)
+                                     final ACLProvider aclProvider)
       throws KeeperException {
     try {
       final List<ACL> expected = aclProvider.getAclForPath(path);

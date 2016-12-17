@@ -20,9 +20,14 @@
 
 package com.spotify.helios.servicescommon;
 
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.collect.Lists.reverse;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.HostNotFoundException;
@@ -30,20 +35,12 @@ import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-
+import java.util.List;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.collect.Lists.reverse;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 
 public class ZooKeeperRegistrarUtil {
 

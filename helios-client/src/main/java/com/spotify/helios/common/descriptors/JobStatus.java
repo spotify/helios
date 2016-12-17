@@ -20,17 +20,16 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.collect.ImmutableMap.copyOf;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Map;
-
-import static com.google.common.collect.ImmutableMap.copyOf;
 
 /**
  * Represents the status of a job.
  *
- * A typical JSON representation might be:
+ * <p>A typical JSON representation might be:
  * <pre>
  * {
  *   "deployments" : {
@@ -81,26 +80,30 @@ public class JobStatus {
     return job;
   }
 
-  /** @return a map of host to task status */
+  /**
+   * @return a map of host to task status.
+   */
   public Map<String, TaskStatus> getTaskStatuses() {
     return taskStatuses;
   }
 
-  /** @return a map of host to deployment */
+  /**
+   * @return a map of host to deployment.
+   */
   public Map<String, Deployment> getDeployments() {
     return deployments;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final JobStatus jobStatus = (JobStatus) o;
+    final JobStatus jobStatus = (JobStatus) obj;
 
     if (deployments != null ? !deployments.equals(jobStatus.deployments)
                             : jobStatus.deployments != null) {
@@ -127,11 +130,11 @@ public class JobStatus {
 
   @Override
   public String toString() {
-    return "JobStatus{" +
-           "job=" + job +
-           ", taskStatuses=" + taskStatuses +
-           ", deployments=" + deployments +
-           '}';
+    return "JobStatus{"
+           + "job=" + job
+           + ", taskStatuses=" + taskStatuses
+           + ", deployments=" + deployments
+           + '}';
   }
 
   public static Builder newBuilder() {

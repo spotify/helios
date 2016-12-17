@@ -25,7 +25,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.common.descriptors.Job;
-
 import org.hamcrest.Matchers;
 import org.junit.Test;
 

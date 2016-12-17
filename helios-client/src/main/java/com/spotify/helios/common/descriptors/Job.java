@@ -29,8 +29,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 
-import com.spotify.helios.common.Json;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
@@ -40,10 +38,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
+import com.spotify.helios.common.Json;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
@@ -51,11 +46,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a Helios job.
  *
- * An sample expression of it in JSON might be:
+ * <p>An sample expression of it in JSON might be:
  * <pre>
  * {
  *   "addCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
@@ -174,27 +171,26 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param ports The ports you wish to expose from the container.
    * @param registration Configuration information for the discovery service (if applicable)
    * @param gracePeriod How long to let the container run after deregistering with the discovery
-   *    service.  If nothing is configured in registration, this option is ignored.
+   *                    service.  If nothing is configured in registration, this option is ignored.
    * @param volumes Docker volumes to mount.
    * @param expires If set, a timestamp at which the job and any deployments will be removed.
    * @param registrationDomain If set, overrides the default domain in which discovery service
-   *    registration occurs.  What is allowed here will vary based upon the discovery service
-   *    plugin used.
+   *                           registration occurs.  What is allowed here will vary based upon the
+   *                           discovery service plugin used.
    * @param creatingUser The user creating the job.
    * @param token The token needed to manipulate this job.
    * @param healthCheck A health check Helios will execute on the container.
    * @param securityOpt A list of strings denoting security options for running Docker containers,
-   *    i.e. `docker run --security-opt`.
-   *    See <a href="https://docs.docker.com/reference/run/#security-configuration">Docker docs</a>.
+   *                    i.e. `docker run --security-opt`. See
+   *                    <a href="https://docs.docker.com/reference/run/#security-configuration">Docker docs</a>.
    * @param networkMode Sets the networking mode for the container. Supported values are: bridge,
-   *    host, and container:&lt;name|id&gt;.
-   *    See <a href="https://docs.docker.com/reference/run/#network-settings">Docker docs</a>.
+   *                    host, and container:&lt;name|id&gt;. See <a href="https://docs.docker.com/reference/run/#network-settings">Docker docs</a>.
    * @param metadata Arbitrary key-value pairs that can be stored with the Job. Optional.
    * @param addCapabilities Linux capabilities to add for the container. Optional.
    * @param dropCapabilities Linux capabilities to drop for the container. Optional.
    * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
    * @param secondsToWaitBeforeKill The time to ask Docker to wait after sending a SIGTERM to the
-   *    container's main process before sending it a SIGKILL. Optional.
+   *                                container's main process before sending it a SIGKILL. Optional.
    */
   public Job(
       @JsonProperty("id") final JobId id,
@@ -246,31 +242,31 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
   }
 
-  private Job(final JobId id, final Builder.Parameters p) {
+  private Job(final JobId id, final Builder.Parameters pm) {
     this.id = id;
-    this.image = p.image;
+    this.image = pm.image;
 
-    this.hostname = p.hostname;
-    this.created = p.created;
-    this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
-    this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
-    this.resources = p.resources;
-    this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
-    this.registration = ImmutableMap.copyOf(checkNotNull(p.registration, "registration"));
-    this.gracePeriod = p.gracePeriod;
-    this.volumes = ImmutableMap.copyOf(checkNotNull(p.volumes, "volumes"));
-    this.expires = p.expires;
-    this.registrationDomain = Optional.fromNullable(p.registrationDomain)
+    this.hostname = pm.hostname;
+    this.created = pm.created;
+    this.command = ImmutableList.copyOf(checkNotNull(pm.command, "command"));
+    this.env = ImmutableMap.copyOf(checkNotNull(pm.env, "env"));
+    this.resources = pm.resources;
+    this.ports = ImmutableMap.copyOf(checkNotNull(pm.ports, "ports"));
+    this.registration = ImmutableMap.copyOf(checkNotNull(pm.registration, "registration"));
+    this.gracePeriod = pm.gracePeriod;
+    this.volumes = ImmutableMap.copyOf(checkNotNull(pm.volumes, "volumes"));
+    this.expires = pm.expires;
+    this.registrationDomain = Optional.fromNullable(pm.registrationDomain)
         .or(EMPTY_REGISTRATION_DOMAIN);
-    this.creatingUser = p.creatingUser;
-    this.token = p.token;
-    this.healthCheck = p.healthCheck;
-    this.securityOpt = p.securityOpt;
-    this.networkMode = p.networkMode;
-    this.metadata = ImmutableMap.copyOf(p.metadata);
-    this.addCapabilities = ImmutableSet.copyOf(p.addCapabilities);
-    this.dropCapabilities = ImmutableSet.copyOf(p.dropCapabilities);
-    this.secondsToWaitBeforeKill = p.secondsToWaitBeforeKill;
+    this.creatingUser = pm.creatingUser;
+    this.token = pm.token;
+    this.healthCheck = pm.healthCheck;
+    this.securityOpt = pm.securityOpt;
+    this.networkMode = pm.networkMode;
+    this.metadata = ImmutableMap.copyOf(pm.metadata);
+    this.addCapabilities = ImmutableSet.copyOf(pm.addCapabilities);
+    this.dropCapabilities = ImmutableSet.copyOf(pm.dropCapabilities);
+    this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
   }
 
   public JobId getId() {
@@ -366,43 +362,43 @@ public class Job extends Descriptor implements Comparable<Job> {
   }
 
   @Override
-  public int compareTo(@NotNull final Job o) {
-    return id.compareTo(o.getId());
+  public int compareTo(@NotNull final Job job) {
+    return id.compareTo(job.getId());
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final Job that = (Job) o;
+    final Job that = (Job) obj;
 
-    return Objects.equals(this.id, that.id) &&
-           Objects.equals(this.image, that.image) &&
-           Objects.equals(this.hostname, that.hostname) &&
-           Objects.equals(this.expires, that.expires) &&
-           Objects.equals(this.created, that.created) &&
-           Objects.equals(this.command, that.command) &&
-           Objects.equals(this.env, that.env) &&
-           Objects.equals(this.resources, that.resources) &&
-           Objects.equals(this.ports, that.ports) &&
-           Objects.equals(this.registration, that.registration) &&
-           Objects.equals(this.registrationDomain, that.registrationDomain) &&
-           Objects.equals(this.gracePeriod, that.gracePeriod) &&
-           Objects.equals(this.volumes, that.volumes) &&
-           Objects.equals(this.creatingUser, that.creatingUser) &&
-           Objects.equals(this.token, that.token) &&
-           Objects.equals(this.healthCheck, that.healthCheck) &&
-           Objects.equals(this.securityOpt, that.securityOpt) &&
-           Objects.equals(this.networkMode, that.networkMode) &&
-           Objects.equals(this.metadata, that.metadata) &&
-           Objects.equals(this.addCapabilities, that.addCapabilities) &&
-           Objects.equals(this.dropCapabilities, that.dropCapabilities) &&
-           Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill);
+    return Objects.equals(this.id, that.id)
+           && Objects.equals(this.image, that.image)
+           && Objects.equals(this.hostname, that.hostname)
+           && Objects.equals(this.expires, that.expires)
+           && Objects.equals(this.created, that.created)
+           && Objects.equals(this.command, that.command)
+           && Objects.equals(this.env, that.env)
+           && Objects.equals(this.resources, that.resources)
+           && Objects.equals(this.ports, that.ports)
+           && Objects.equals(this.registration, that.registration)
+           && Objects.equals(this.registrationDomain, that.registrationDomain)
+           && Objects.equals(this.gracePeriod, that.gracePeriod)
+           && Objects.equals(this.volumes, that.volumes)
+           && Objects.equals(this.creatingUser, that.creatingUser)
+           && Objects.equals(this.token, that.token)
+           && Objects.equals(this.healthCheck, that.healthCheck)
+           && Objects.equals(this.securityOpt, that.securityOpt)
+           && Objects.equals(this.networkMode, that.networkMode)
+           && Objects.equals(this.metadata, that.metadata)
+           && Objects.equals(this.addCapabilities, that.addCapabilities)
+           && Objects.equals(this.dropCapabilities, that.dropCapabilities)
+           && Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill);
   }
 
   @Override
@@ -416,30 +412,30 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   @Override
   public String toString() {
-    return "Job{" +
-           "id=" + id +
-           ", image='" + image + '\'' +
-           ", hostname='" + hostname + '\'' +
-           ", created=" + created +
-           ", command=" + command +
-           ", env=" + env +
-           ", resources=" + resources +
-           ", ports=" + ports +
-           ", registration=" + registration +
-           ", gracePeriod=" + gracePeriod +
-           ", volumes=" + volumes +
-           ", expires=" + expires +
-           ", registrationDomain='" + registrationDomain + '\'' +
-           ", creatingUser='" + creatingUser + '\'' +
-           ", token='" + token + '\'' +
-           ", healthCheck=" + healthCheck +
-           ", securityOpt=" + securityOpt +
-           ", networkMode='" + networkMode + '\'' +
-           ", metadata=" + metadata +
-           ", addCapabilities=" + addCapabilities +
-           ", dropCapabilities=" + dropCapabilities +
-           ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill +
-           '}';
+    return "Job{"
+           + "id=" + id
+           + ", image='" + image + '\''
+           + ", hostname='" + hostname + '\''
+           + ", created=" + created
+           + ", command=" + command
+           + ", env=" + env
+           + ", resources=" + resources
+           + ", ports=" + ports
+           + ", registration=" + registration
+           + ", gracePeriod=" + gracePeriod
+           + ", volumes=" + volumes
+           + ", expires=" + expires
+           + ", registrationDomain='" + registrationDomain + '\''
+           + ", creatingUser='" + creatingUser + '\''
+           + ", token='" + token + '\''
+           + ", healthCheck=" + healthCheck
+           + ", securityOpt=" + securityOpt
+           + ", networkMode='" + networkMode + '\''
+           + ", metadata=" + metadata
+           + ", addCapabilities=" + addCapabilities
+           + ", dropCapabilities=" + dropCapabilities
+           + ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill
+           + '}';
   }
 
   public Builder toBuilder() {
@@ -475,16 +471,16 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public static class Builder implements Cloneable {
 
-    private final Parameters p;
+    private final Parameters pm;
     private String hash;
 
     private Builder() {
-      this.p = new Parameters();
+      this.pm = new Parameters();
     }
 
     public Builder(final String hash, final Parameters parameters) {
       this.hash = hash;
-      this.p = parameters;
+      this.pm = parameters;
     }
 
     private static class Parameters implements Cloneable {
@@ -532,30 +528,30 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.dropCapabilities = EMPTY_CAPS;
       }
 
-      private Parameters(final Parameters p) {
-        this.name = p.name;
-        this.version = p.version;
-        this.image = p.image;
-        this.hostname = p.hostname;
-        this.created = p.created;
-        this.command = ImmutableList.copyOf(p.command);
-        this.env = Maps.newHashMap(p.env);
-        this.resources = p.resources;
-        this.ports = Maps.newHashMap(p.ports);
-        this.registration = Maps.newHashMap(p.registration);
-        this.gracePeriod = p.gracePeriod;
-        this.volumes = Maps.newHashMap(p.volumes);
-        this.expires = p.expires;
-        this.registrationDomain = p.registrationDomain;
-        this.creatingUser = p.creatingUser;
-        this.token = p.token;
-        this.healthCheck = p.healthCheck;
-        this.securityOpt = p.securityOpt;
-        this.networkMode = p.networkMode;
-        this.metadata = p.metadata;
-        this.addCapabilities = p.addCapabilities;
-        this.dropCapabilities = p.dropCapabilities;
-        this.secondsToWaitBeforeKill = p.secondsToWaitBeforeKill;
+      private Parameters(final Parameters pm) {
+        this.name = pm.name;
+        this.version = pm.version;
+        this.image = pm.image;
+        this.hostname = pm.hostname;
+        this.created = pm.created;
+        this.command = ImmutableList.copyOf(pm.command);
+        this.env = Maps.newHashMap(pm.env);
+        this.resources = pm.resources;
+        this.ports = Maps.newHashMap(pm.ports);
+        this.registration = Maps.newHashMap(pm.registration);
+        this.gracePeriod = pm.gracePeriod;
+        this.volumes = Maps.newHashMap(pm.volumes);
+        this.expires = pm.expires;
+        this.registrationDomain = pm.registrationDomain;
+        this.creatingUser = pm.creatingUser;
+        this.token = pm.token;
+        this.healthCheck = pm.healthCheck;
+        this.securityOpt = pm.securityOpt;
+        this.networkMode = pm.networkMode;
+        this.metadata = pm.metadata;
+        this.addCapabilities = pm.addCapabilities;
+        this.dropCapabilities = pm.dropCapabilities;
+        this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
       }
 
       private Parameters withoutMetaParameters() {
@@ -568,17 +564,17 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Builder setRegistrationDomain(final String domain) {
-      this.p.registrationDomain = domain;
+      this.pm.registrationDomain = domain;
       return this;
     }
 
     public Builder setCreatingUser(final String creatingUser) {
-      this.p.creatingUser = creatingUser;
+      this.pm.creatingUser = creatingUser;
       return this;
     }
 
     public Builder setToken(final String token) {
-      this.p.token = token;
+      this.pm.token = token;
       return this;
     }
 
@@ -588,229 +584,229 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Builder setName(final String name) {
-      p.name = name;
+      pm.name = name;
       return this;
     }
 
     public Builder setVersion(final String version) {
-      p.version = version;
+      pm.version = version;
       return this;
     }
 
     public Builder setImage(final String image) {
-      p.image = image;
+      pm.image = image;
       return this;
     }
 
     public Builder setHostname(final String hostname) {
-        p.hostname = hostname;
-        return this;
-      }
+      pm.hostname = hostname;
+      return this;
+    }
 
     public Builder setCreated(final Long created) {
-      p.created = created;
+      pm.created = created;
       return this;
     }
 
     public Builder setCommand(final List<String> command) {
-      p.command = ImmutableList.copyOf(command);
+      pm.command = ImmutableList.copyOf(command);
       return this;
     }
 
     public Builder setEnv(final Map<String, String> env) {
-      p.env = Maps.newHashMap(env);
+      pm.env = Maps.newHashMap(env);
       return this;
     }
 
     public Builder setResources(final Resources resources) {
-      p.resources = resources;
+      pm.resources = resources;
       return this;
     }
 
     public Builder addEnv(final String key, final String value) {
-      p.env.put(key, value);
+      pm.env.put(key, value);
       return this;
     }
 
     public Builder setPorts(final Map<String, PortMapping> ports) {
-      p.ports = Maps.newHashMap(ports);
+      pm.ports = Maps.newHashMap(ports);
       return this;
     }
 
     public Builder addPort(final String name, final PortMapping port) {
-      p.ports.put(name, port);
+      pm.ports.put(name, port);
       return this;
     }
 
     public Builder setRegistration(final Map<ServiceEndpoint, ServicePorts> registration) {
-      p.registration = Maps.newHashMap(registration);
+      pm.registration = Maps.newHashMap(registration);
       return this;
     }
 
     public Builder addRegistration(final ServiceEndpoint endpoint, final ServicePorts ports) {
-      p.registration.put(endpoint, ports);
+      pm.registration.put(endpoint, ports);
       return this;
     }
 
     public Builder setGracePeriod(final Integer gracePeriod) {
-      p.gracePeriod = gracePeriod;
+      pm.gracePeriod = gracePeriod;
       return this;
     }
 
     public Builder setVolumes(final Map<String, String> volumes) {
-      p.volumes = Maps.newHashMap(volumes);
+      pm.volumes = Maps.newHashMap(volumes);
       return this;
     }
 
     public Builder addVolume(final String path) {
-      p.volumes.put(path, EMPTY_MOUNT);
+      pm.volumes.put(path, EMPTY_MOUNT);
       return this;
     }
 
     public Builder addVolume(final String path, final String source) {
-      p.volumes.put(path, source);
+      pm.volumes.put(path, source);
       return this;
     }
 
     public Builder setExpires(final Date expires) {
-      p.expires = expires;
+      pm.expires = expires;
       return this;
     }
 
     public Builder setHealthCheck(final HealthCheck healthCheck) {
-      p.healthCheck = healthCheck;
+      pm.healthCheck = healthCheck;
       return this;
     }
 
     public Builder setSecurityOpt(final List<String> securityOpt) {
-      p.securityOpt = ImmutableList.copyOf(securityOpt);
+      pm.securityOpt = ImmutableList.copyOf(securityOpt);
       return this;
     }
 
     public Builder setNetworkMode(final String networkMode) {
-      p.networkMode = networkMode;
+      pm.networkMode = networkMode;
       return this;
     }
 
     public Builder setMetadata(final Map<String, String> metadata) {
-      p.metadata = Maps.newHashMap(metadata);
+      pm.metadata = Maps.newHashMap(metadata);
       return this;
     }
 
     public Builder addMetadata(final String name, final String value) {
-      p.metadata.put(name, value);
+      pm.metadata.put(name, value);
       return this;
     }
 
     public Builder setAddCapabilities(final Collection<String> addCapabilities) {
-      p.addCapabilities = ImmutableSet.copyOf(addCapabilities);
+      pm.addCapabilities = ImmutableSet.copyOf(addCapabilities);
       return this;
     }
 
     public Builder setDropCapabilities(final Collection<String> dropCapabilities) {
-      p.dropCapabilities = ImmutableSet.copyOf(dropCapabilities);
+      pm.dropCapabilities = ImmutableSet.copyOf(dropCapabilities);
       return this;
     }
 
     public Builder setSecondsToWaitBeforeKill(final Integer secondsToWaitBeforeKill) {
-      p.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
+      pm.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
       return this;
     }
 
     public String getName() {
-      return p.name;
+      return pm.name;
     }
 
     public String getVersion() {
-      return p.version;
+      return pm.version;
     }
 
     public String getImage() {
-      return p.image;
+      return pm.image;
     }
 
     public String getHostname() {
-      return p.hostname;
+      return pm.hostname;
     }
 
     public List<String> getCommand() {
-      return p.command;
+      return pm.command;
     }
 
     public Map<String, String> getEnv() {
-      return ImmutableMap.copyOf(p.env);
+      return ImmutableMap.copyOf(pm.env);
     }
 
     public Map<String, PortMapping> getPorts() {
-      return ImmutableMap.copyOf(p.ports);
+      return ImmutableMap.copyOf(pm.ports);
     }
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
-      return ImmutableMap.copyOf(p.registration);
+      return ImmutableMap.copyOf(pm.registration);
     }
 
     public String getRegistrationDomain() {
-      return p.registrationDomain;
+      return pm.registrationDomain;
     }
 
     public Integer getGracePeriod() {
-      return p.gracePeriod;
+      return pm.gracePeriod;
     }
 
     public Map<String, String> getVolumes() {
-      return ImmutableMap.copyOf(p.volumes);
+      return ImmutableMap.copyOf(pm.volumes);
     }
 
     public Date getExpires() {
-      return p.expires;
+      return pm.expires;
     }
 
     public String getCreatingUser() {
-      return p.creatingUser;
+      return pm.creatingUser;
     }
 
     public Resources getResources() {
-      return p.resources;
+      return pm.resources;
     }
 
     public HealthCheck getHealthCheck() {
-      return p.healthCheck;
+      return pm.healthCheck;
     }
 
     public List<String> getSecurityOpt() {
-      return p.securityOpt;
+      return pm.securityOpt;
     }
 
     public String getNetworkMode() {
-      return p.networkMode;
+      return pm.networkMode;
     }
 
     public Map<String, String> getMetadata() {
-      return ImmutableMap.copyOf(p.metadata);
+      return ImmutableMap.copyOf(pm.metadata);
     }
 
     public Set<String> getAddCapabilities() {
-      return p.addCapabilities;
+      return pm.addCapabilities;
     }
 
     public Set<String> getDropCapabilities() {
-      return p.dropCapabilities;
+      return pm.dropCapabilities;
     }
 
     public Integer secondsToWaitBeforeKill() {
-      return p.secondsToWaitBeforeKill;
+      return pm.secondsToWaitBeforeKill;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
     @Override
     public Builder clone() {
-      return new Builder(hash, new Parameters(p));
+      return new Builder(hash, new Parameters(pm));
     }
 
     public Job build() {
       final String configHash;
       try {
-        configHash = hex(Json.sha1digest(p.withoutMetaParameters()));
+        configHash = hex(Json.sha1digest(pm.withoutMetaParameters()));
       } catch (IOException e) {
         throw propagate(e);
       }
@@ -819,22 +815,22 @@ public class Job extends Descriptor implements Comparable<Job> {
       if (!Strings.isNullOrEmpty(this.hash)) {
         hash = this.hash;
       } else {
-        if (p.name != null && p.version != null) {
-          final String input = String.format("%s:%s:%s", p.name, p.version, configHash);
+        if (pm.name != null && pm.version != null) {
+          final String input = String.format("%s:%s:%s", pm.name, pm.version, configHash);
           hash = hex(sha1digest(input.getBytes(UTF_8)));
         } else {
           hash = null;
         }
       }
 
-      final JobId id = new JobId(p.name, p.version, hash);
+      final JobId id = new JobId(pm.name, pm.version, hash);
 
-      return new Job(id, p);
+      return new Job(id, pm);
     }
 
     public Job buildWithoutHash() {
-      final JobId id = new JobId(p.name, p.version);
-      return new Job(id, p);
+      final JobId id = new JobId(pm.name, pm.version);
+      return new Job(id, pm);
     }
 
     private String hex(final byte[] bytes) {

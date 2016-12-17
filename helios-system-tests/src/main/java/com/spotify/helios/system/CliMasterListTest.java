@@ -23,16 +23,13 @@ package com.spotify.helios.system;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.Lists;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
-
-import com.google.common.collect.Lists;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.List;
 import java.util.concurrent.Callable;
+import org.junit.Before;
+import org.junit.Test;
 
 public class CliMasterListTest extends SystemTestBase {
 

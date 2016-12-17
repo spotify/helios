@@ -24,19 +24,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.master.HostMatcher;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
-
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.AbstractIdleService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Deploys and undeploys jobs to implement the desired deployment group state.

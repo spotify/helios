@@ -20,21 +20,18 @@
 
 package com.spotify.helios.master;
 
+import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 import com.google.common.collect.ImmutableSet;
-
 import com.spotify.helios.servicescommon.ServiceParser;
-
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 /**
  * Parses command-line arguments to produce the {@link MasterConfig}.
@@ -123,15 +120,15 @@ public class MasterParser extends ServiceParser {
     agentReapingTimeout = parser.addArgument("--agent-reaping-timeout")
         .type(Long.class)
         .setDefault(TimeUnit.DAYS.toHours(14))
-        .help("In hours. Agents will be automatically de-registered if they are DOWN for more " +
-              "than the specified timeout. To disable reaping, set to 0.");
+        .help("In hours. Agents will be automatically de-registered if they are DOWN for more "
+              + "than the specified timeout. To disable reaping, set to 0.");
 
     jobRetention = parser.addArgument("--job-retention")
         .type(Long.class)
         .setDefault(-1L)
-        .help("In days. Jobs not deployed anywhere and with a job history showing they were last " +
-              "used before the specified retention time will be removed. " +
-              "This is disabled by default by setting it to a sentinel value of -1.");
+        .help("In days. Jobs not deployed anywhere and with a job history showing they were last "
+              + "used before the specified retention time will be removed. "
+              + "This is disabled by default by setting it to a sentinel value of -1.");
 
     whitelistedCapabilities = parser.addArgument("--whitelisted-capability")
         .action(append())

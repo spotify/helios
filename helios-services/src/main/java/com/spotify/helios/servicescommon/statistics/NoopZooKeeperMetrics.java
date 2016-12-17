@@ -20,9 +20,8 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import org.apache.curator.framework.state.ConnectionState;
-
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.state.ConnectionState;
 
 public class NoopZooKeeperMetrics implements ZooKeeperMetrics {
   @Override

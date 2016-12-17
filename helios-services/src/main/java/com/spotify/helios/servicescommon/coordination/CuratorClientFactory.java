@@ -20,12 +20,11 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import java.util.List;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
-
-import java.util.List;
 
 public interface CuratorClientFactory {
 

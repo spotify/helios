@@ -20,15 +20,16 @@
 
 package com.spotify.helios.common.protocol;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 
 public class TaskStatusEvents {
-  public enum Status {OK, JOB_ID_NOT_FOUND}
+
+  public enum Status {
+    OK, JOB_ID_NOT_FOUND
+  }
 
   private final List<TaskStatusEvent> events;
   private final Status status;
@@ -49,10 +50,10 @@ public class TaskStatusEvents {
 
   @Override
   public String toString() {
-    return "TaskStatusEvents{" +
-           "events=" + events +
-           ", status=" + status +
-           '}';
+    return "TaskStatusEvents{"
+           + "events=" + events
+           + ", status=" + status
+           + '}';
   }
 
   public String toJsonString() {

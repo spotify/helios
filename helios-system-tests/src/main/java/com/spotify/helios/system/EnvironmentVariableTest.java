@@ -30,6 +30,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.Polling;
@@ -37,15 +39,10 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.collect.ImmutableMap;
-
-import org.junit.Test;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class EnvironmentVariableTest extends SystemTestBase {
 
@@ -72,10 +69,10 @@ public class EnvironmentVariableTest extends SystemTestBase {
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<String> command = asList("sh", "-c",
-                                          "echo pod: $SPOTIFY_POD; " +
-                                          "echo role: $SPOTIFY_ROLE; " +
-                                          "echo foo: $FOO; " +
-                                          "echo bar: $BAR");
+                                          "echo pod: $SPOTIFY_POD; "
+                                          + "echo role: $SPOTIFY_ROLE; "
+                                          + "echo foo: $FOO; "
+                                          + "echo bar: $BAR");
 
       // Create job
       final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command,

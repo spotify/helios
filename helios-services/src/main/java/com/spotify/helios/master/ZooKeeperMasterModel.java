@@ -41,6 +41,22 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentInfo;
@@ -75,34 +91,6 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.BadVersionException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.KeeperException.NotEmptyException;
-import org.apache.zookeeper.OpResult;
-import org.apache.zookeeper.data.Stat;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -113,6 +101,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.BadVersionException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.KeeperException.NotEmptyException;
+import org.apache.zookeeper.OpResult;
+import org.apache.zookeeper.data.Stat;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Helios Master's view into ZooKeeper.
@@ -155,8 +153,9 @@ public class ZooKeeperMasterModel implements MasterModel {
   private final String name;
   private final List<EventSender> eventSenders;
   private final String deploymentGroupEventTopic;
+
   /**
-   * Constructor
+   * Constructor.
    * @param provider         {@link ZooKeeperClientProvider}
    * @param name             The hostname of the machine running the {@link MasterModel}
    * @param eventSenders     {@link EventSender}
@@ -260,8 +259,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         throw new JobExistsException(id.toString());
       }
     } catch (NoNodeException e) {
-      throw new HeliosRuntimeException("adding job " + job + " failed due to missing ZK path: " +
-                                       e.getPath(), e);
+      throw new HeliosRuntimeException("adding job " + job + " failed due to missing ZK path: "
+                                       + e.getPath(), e);
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException("adding job " + job + " failed", e);
     }
@@ -328,17 +327,17 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   /**
    * Create a deployment group.
-   * <p>
-   * If successful, the following ZK nodes will be created:
+   *
+   * <p>If successful, the following ZK nodes will be created:
    * <ul>
    *   <li>/config/deployment-groups/[group-name]</li>
    *   <li>/status/deployment-groups/[group-name]</li>
    *   <li>/status/deployment-groups/[group-name]/hosts</li>
    * </ul>
    * These nodes are guaranteed to exist until the DG is removed.
-   * <p>
-   * If the operation fails no ZK nodes will be created. If any of the nodes above already exist the
-   * operation will fail.
+   *
+   * <p>If the operation fails no ZK nodes will be created. If any of the nodes above already exist
+   * the operation will fail.
    *
    * @throws DeploymentGroupExistsException If a DG with the same name already exists.
    */
@@ -390,9 +389,9 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   /**
    * Remove a deployment group.
-   * <p>
-   * If successful, all ZK nodes associated with the DG will be deleted. Specifically these nodes
-   * are guaranteed to be non-existent after a successful remove (not all of them might exist
+   *
+   * <p>If successful, all ZK nodes associated with the DG will be deleted. Specifically these
+   * nodes are guaranteed to be non-existent after a successful remove (not all of them might exist
    * before, though):
    * <ul>
    *   <li>/config/deployment-groups/[group-name]</li>
@@ -456,16 +455,16 @@ public class ZooKeeperMasterModel implements MasterModel {
   /**
    * Determines whether we should allow deployment group hosts to be updated.
    *
-   * We don't want deployment groups that are ROLLING_OUT to change hosts in order to avoid the
+   * <p>We don't want deployment groups that are ROLLING_OUT to change hosts in order to avoid the
    * following race:
    *
-   * - Manual rolling update A of a bad, broken job is triggered.
+   * <p>- Manual rolling update A of a bad, broken job is triggered.
    * - The hosts change before rolling update A completes, triggering rolling update B.
    * - Rolling update B fails, because it inherited the bad, broken job from update A.
    * - The hosts change again, and we trigger unwanted rolling update C because the the previous
    *   rolling update (B) had reason=HOSTS_CHANGED.
    *
-   * It's safe to simply abort the hosts changed operation as updateOnHostsChange will be called
+   * <p>It's safe to simply abort the hosts changed operation as updateOnHostsChange will be called
    * again by a reactor.
    *
    * @param status The status of the deployment group attempting to change hosts.
@@ -482,8 +481,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   /**
    * Determines whether we should trigger a rolling update when deployment group hosts change.
    *
-   * We want to avoid triggering an automatic rolling update if the most recent rolling update was
-   * triggered manually, and failed.
+   * <p>We want to avoid triggering an automatic rolling update if the most recent rolling update
+   * was triggered manually, and failed.
    *
    * @param group The deployment group that is changing hosts.
    * @param status The status of the aforementioned deployment group.
@@ -910,8 +909,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
       if (deployment == null) {
         return opFactory.error(
-            "deployment for this job not found in zookeeper. " +
-            "Perhaps it was manually undeployed?", host,
+            "deployment for this job not found in zookeeper. "
+            + "Perhaps it was manually undeployed?", host,
             RollingUpdateError.JOB_UNEXPECTEDLY_UNDEPLOYED);
       } else if (!Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
         return opFactory.error(
@@ -1020,8 +1019,8 @@ public class ZooKeeperMasterModel implements MasterModel {
           set(Paths.statusDeploymentGroupRemovedHosts(deploymentGroup.getName()),
               Json.asBytes(hostsToUndeploy))));
     } catch (KeeperException | IOException e) {
-        return opFactory.error("unable to mark host undeployed after removal from deployment group",
-                               host, RollingUpdateError.UNABLE_TO_MARK_HOST_UNDEPLOYED);
+      return opFactory.error("unable to mark host undeployed after removal from deployment group",
+          host, RollingUpdateError.UNABLE_TO_MARK_HOST_UNDEPLOYED);
     }
   }
 
@@ -1034,19 +1033,6 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                 final DeploymentGroup deploymentGroup,
                                                 final String host) {
     return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, true);
-  }
-
-
-  /**
-   * forceRollingUpdateUndeploy is used to undeploy jobs from hosts that have been removed from the
-   * deployment group. It disables the 'skipRedundantUndeploys' flag, which disables the
-   * redundantDeployment() check.
-   */
-  private RollingUpdateOp forceRollingUpdateUndeploy(final ZooKeeperClient client,
-                                                     final RollingUpdateOpFactory opFactory,
-                                                     final DeploymentGroup deploymentGroup,
-                                                     final String host) {
-    return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, false);
   }
 
   private RollingUpdateOp rollingUpdateUndeploy(final ZooKeeperClient client,
@@ -1084,6 +1070,19 @@ public class ZooKeeperMasterModel implements MasterModel {
     return opFactory.nextTask(operations);
   }
 
+
+  /**
+   * forceRollingUpdateUndeploy is used to undeploy jobs from hosts that have been removed from the
+   * deployment group. It disables the 'skipRedundantUndeploys' flag, which disables the
+   * redundantDeployment() check.
+   */
+  private RollingUpdateOp forceRollingUpdateUndeploy(final ZooKeeperClient client,
+                                                     final RollingUpdateOpFactory opFactory,
+                                                     final DeploymentGroup deploymentGroup,
+                                                     final String host) {
+    return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, false);
+  }
+
   private boolean ownedByDeploymentGroup(final Deployment deployment,
                                          final DeploymentGroup deploymentGroup) {
     return Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName());
@@ -1098,19 +1097,19 @@ public class ZooKeeperMasterModel implements MasterModel {
    * redundantDeployment determines whether or not rollingUpdateUndeploy should actually emit
    * RollingUpdateOps to undeploy a job.
    *
-   * Jobs are undeployed in two cases:
+   * <p>Jobs are undeployed in two cases:
    *
-   * 1. During a rolling update
+   * <p>1. During a rolling update
    * 2. When a host leaves a deployment group
    *
-   * In case 1. this redundancy check makes sense. The undeployment of a job during a rolling
+   * <p>In case 1. this redundancy check makes sense. The undeployment of a job during a rolling
    * update is always coupled with the deployment of a job. If the 'new' job is the same job
    * that is currently deployed, the undeployment would be redundant so we do not generate
    * deployment operations.
    *
-   * In case 2. undeployment can never be redundant. We always want to undeploy the job from hosts
-   * that have left the deployment group. Unfortunately in case case undeployments appear to be
-   * redundant to the following checks, so they must be skipped.
+   * <p>In case 2. undeployment can never be redundant. We always want to undeploy the job from
+   * hosts that have left the deployment group. Unfortunately in case case undeployments appear to
+   * be redundant to the following checks, so they must be skipped.
    */
   private boolean redundantUndeployment(final Deployment deployment,
                                         final DeploymentGroup deploymentGroup) {
@@ -1182,13 +1181,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       // does not exist which can happen due to the race condition described above. In the latter
       // case make sure we don't return a "doesn't exist" error as that would be a lie.
       // Yes, the way you figure out which operation in a transaction failed is retarded.
-      if (((OpResult.ErrorResult) e.getResults().get(0)).getErr() ==
-          KeeperException.Code.NONODE.intValue()) {
+      if (((OpResult.ErrorResult) e.getResults().get(0)).getErr()
+          == KeeperException.Code.NONODE.intValue()) {
         throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
       } else {
         throw new HeliosRuntimeException(
-            "stop deployment-group " + deploymentGroupName +
-            " failed due to a race condition, please retry", e);
+            "stop deployment-group " + deploymentGroupName
+            + " failed due to a race condition, please retry", e);
       }
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException(
@@ -1489,8 +1488,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
              JobPortAllocationConflictException, TokenVerificationException {
     if (count == 3) {
-      throw new HeliosRuntimeException("3 failures (possibly concurrent modifications) while " +
-                                       "deploying. Giving up.");
+      throw new HeliosRuntimeException("3 failures (possibly concurrent modifications) while "
+                                       + "deploying. Giving up.");
     }
     log.info("deploying {}: {} (retry={})", deployment, host, count);
 
@@ -1645,13 +1644,13 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {
-      throw new HeliosRuntimeException("updating deployment " + deployment +
-                                       " on host " + host + " failed", e);
+      throw new HeliosRuntimeException("updating deployment " + deployment
+                                       + " on host " + host + " failed", e);
     }
   }
 
   private void assertHostExists(final ZooKeeperClient client, final String host)
-  throws HostNotFoundException {
+      throws HostNotFoundException {
     try {
       client.getData(Paths.configHost(host));
     } catch (NoNodeException e) {
@@ -1662,7 +1661,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private void assertTaskExists(final ZooKeeperClient client, final String host, final JobId jobId)
-  throws JobNotDeployedException {
+      throws JobNotDeployedException {
     try {
       client.getData(Paths.configHostJob(host, jobId));
     } catch (NoNodeException e) {
@@ -1745,6 +1744,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     return getAgentInfo(provider.get("getAgentInfo"), host);
   }
 
+  private AgentInfo getAgentInfo(final ZooKeeperClient client, final String host) {
+    return tryGetEntity(client, Paths.statusHostAgentInfo(host), AGENT_INFO_TYPE, "agent info");
+  }
+
   private <T> T tryGetEntity(final ZooKeeperClient client, String path, TypeReference<T> type,
                              String name) {
     try {
@@ -1763,10 +1766,6 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private Map<String, String> getLabels(final ZooKeeperClient client, final String host) {
     return tryGetEntity(client, Paths.statusHostLabels(host), STRING_MAP_TYPE, "labels");
-  }
-
-  private AgentInfo getAgentInfo(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostAgentInfo(host), AGENT_INFO_TYPE, "agent info");
   }
 
   private HostInfo getHostInfo(final ZooKeeperClient client, final String host) {
@@ -1832,8 +1831,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (NoNodeException ignored) {
       return null;
     } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("Getting task " + jobId + " status " +
-                                       "for host " + host + " failed", e);
+      throw new HeliosRuntimeException("Getting task " + jobId + " status "
+                                       + "for host " + host + " failed", e);
     }
   }
 
@@ -1905,7 +1904,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       final List<Integer> staticPorts = staticPorts(job);
       for (final int port : staticPorts) {
-          nodes.add(Paths.configHostPort(host, port));
+        nodes.add(Paths.configHostPort(host, port));
       }
 
       client.transaction(delete(nodes));
@@ -2023,9 +2022,11 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private static void
-  checkForPortConflicts(final ZooKeeperClient client, final String host, final int port,
-                        final JobId jobId) throws JobPortAllocationConflictException {
+  private static void checkForPortConflicts(final ZooKeeperClient client,
+                                            final String host,
+                                            final int port,
+                                            final JobId jobId)
+      throws JobPortAllocationConflictException {
     try {
       final String path = Paths.configHostPort(host, port);
       if (client.stat(path) == null) {

@@ -20,15 +20,12 @@
 
 package com.spotify.helios.testing.descriptors;
 
-import com.google.common.collect.ImmutableMap;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-
-import org.jetbrains.annotations.Nullable;
-
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents an event that will be collected for logging purposes.
@@ -95,14 +92,14 @@ public class TemporaryJobEvent {
 
   @Override
   public String toString() {
-    return "TemporaryJobEvent{" +
-           "timestamp=" + timestamp +
-           ", duration=" + duration +
-           ", testClassName='" + testClassName + '\'' +
-           ", testName='" + testName + '\'' +
-           ", step='" + step + '\'' +
-           ", success=" + success +
-           ", tags=" + tags +
-           '}';
+    return "TemporaryJobEvent{"
+           + "timestamp=" + timestamp
+           + ", duration=" + duration
+           + ", testClassName='" + testClassName + '\''
+           + ", testName='" + testName + '\''
+           + ", step='" + step + '\''
+           + ", success=" + success
+           + ", tags=" + tags
+           + '}';
   }
 }

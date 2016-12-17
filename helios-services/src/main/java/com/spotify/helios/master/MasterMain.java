@@ -24,9 +24,7 @@ import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.servicescommon.ServiceMain;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
-
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

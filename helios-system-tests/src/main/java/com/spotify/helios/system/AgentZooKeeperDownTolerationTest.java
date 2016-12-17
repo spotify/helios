@@ -41,12 +41,10 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-
-import org.junit.Test;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 

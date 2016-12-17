@@ -20,14 +20,13 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.spotify.helios.common.Json;
-
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
+import com.spotify.helios.common.Json;
+import org.junit.Test;
 
 public class HostSelectorTest {
 
@@ -131,18 +130,18 @@ public class HostSelectorTest {
   @Test
   public void testInOperatorEquality() {
     assertEquals(
-      HostSelector.parse("a in (foo,bar)"),
-      HostSelector.parse("a in (foo, bar)")
+        HostSelector.parse("a in (foo,bar)"),
+        HostSelector.parse("a in (foo, bar)")
     );
 
     assertEquals(
-      HostSelector.parse("a in (foo,bar)"),
-      HostSelector.parse("a in (bar,foo)")
+        HostSelector.parse("a in (foo,bar)"),
+        HostSelector.parse("a in (bar,foo)")
     );
 
     assertEquals(
-      HostSelector.parse("a in (foo)"),
-      HostSelector.parse("a in (foo,foo)")
+        HostSelector.parse("a in (foo)"),
+        HostSelector.parse("a in (foo,foo)")
     );
   }
 
@@ -186,18 +185,18 @@ public class HostSelectorTest {
   @Test
   public void testNotInOperatorEquality() {
     assertEquals(
-      HostSelector.parse("a notin (foo,bar)"),
-      HostSelector.parse("a notin (foo, bar)")
+        HostSelector.parse("a notin (foo,bar)"),
+        HostSelector.parse("a notin (foo, bar)")
     );
 
     assertEquals(
-      HostSelector.parse("a notin (foo,bar)"),
-      HostSelector.parse("a notin (bar,foo)")
+        HostSelector.parse("a notin (foo,bar)"),
+        HostSelector.parse("a notin (bar,foo)")
     );
 
     assertEquals(
-      HostSelector.parse("a notin (foo)"),
-      HostSelector.parse("a notin (foo,foo)")
+        HostSelector.parse("a notin (foo)"),
+        HostSelector.parse("a notin (foo,foo)")
     );
   }
 

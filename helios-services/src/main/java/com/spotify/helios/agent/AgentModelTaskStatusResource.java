@@ -20,12 +20,10 @@
 
 package com.spotify.helios.agent;
 
+import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.codahale.metrics.annotation.Timed;
-
 import java.util.Map;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;

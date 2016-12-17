@@ -20,32 +20,31 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import com.google.common.base.Function;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 
 /**
  * Uniquely Identifies Jobs
  *
- * Has a string representation in JSON of:
+ * <p>Has a string representation in JSON of:
  * <pre>
  * "name:version:hashvalue"
  * </pre>
  *
- * The hash value is so that if you are talking to multiple clusters, and the job definitions
+ * <p>The hash value is so that if you are talking to multiple clusters, and the job definitions
  * are slightly different, even though they have the same name and version, they will still
  * be uniquely identifiable.  This is most important when executing commands against multiple
  * clusters.
  *
- * Many endpoints taking JobId can take an abbreviated JobId.  That is, one without a the final
+ * <p>Many endpoints taking JobId can take an abbreviated JobId.  That is, one without a the final
  * colon and hash value.
  */
 @JsonSerialize
@@ -104,9 +103,8 @@ public class JobId extends Descriptor implements Comparable<JobId> {
    * Private constructor for use by {@link #parse(String)}
    *
    * @param name The name of the job.
-   * @param b
    */
-  private JobId(final String name, boolean b) {
+  private JobId(final String name, boolean ignored) {
     checkArgument(!checkNotNull(name, "name is null").isEmpty(), "name is empty");
     this.name = name;
     this.version = null;
@@ -116,7 +114,7 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   /**
    * Parse a job id string.
    *
-   * This parsing method can be used when input is trusted, i.e. failing to parse it indicates
+   * <p>This parsing method can be used when input is trusted, i.e. failing to parse it indicates
    * programming error and not bad input.
    * @see #parse(String)
    *
@@ -131,18 +129,12 @@ public class JobId extends Descriptor implements Comparable<JobId> {
     }
   }
 
-  public static final Function<String, JobId> FROM_STRING = new Function<String, JobId>() {
-    @Override
-    public JobId apply(final String s) {
-      return fromString(s);
-    }
-  };
-
   /**
    * Parse a job id string.
    *
-   * This parsing method can be used when input is not know to be correct. I.e. when parsing a job
-   * id supplied by the user in the cli or when parsing a request in the master rest interface.
+   * <p>This parsing method can be used when input is not know to be correct. I.e. when parsing a
+   * job id supplied by the user in the cli or when parsing a request in the master rest
+   * interface.
    * @see #fromString(String)
    *
    * @param id A string representation of the job ID.
@@ -194,15 +186,15 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final JobId jobId = (JobId) o;
+    final JobId jobId = (JobId) obj;
 
     if (hash != null ? !hash.equals(jobId.hash) : jobId.hash != null) {
       return false;
@@ -226,11 +218,11 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   }
 
   @Override
-  public int compareTo(final JobId o) {
+  public int compareTo(final JobId jobId) {
     return ComparisonChain.start()
-        .compare(name, o.name)
-        .compare(version, o.version)
-        .compare(hash, o.hash, Ordering.natural().nullsFirst())
+        .compare(name, jobId.name)
+        .compare(version, jobId.version)
+        .compare(hash, jobId.hash, Ordering.natural().nullsFirst())
         .result();
   }
 

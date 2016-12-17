@@ -22,7 +22,6 @@ package com.spotify.helios.servicescommon;
 
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
 import org.apache.zookeeper.KeeperException;
 
 public interface ZooKeeperRegistrar {

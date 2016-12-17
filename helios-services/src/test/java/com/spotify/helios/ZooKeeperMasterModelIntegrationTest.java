@@ -36,6 +36,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
@@ -57,8 +58,8 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
-
-import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Map;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -67,9 +68,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.List;
-import java.util.Map;
 
 public class ZooKeeperMasterModelIntegrationTest {
 
@@ -94,7 +92,7 @@ public class ZooKeeperMasterModelIntegrationTest {
 
   private ZooKeeperMasterModel model;
 
-  private final EventSender eventSender = mock(EventSender.class);;
+  private final EventSender eventSender = mock(EventSender.class);
   private final String deploymentGroupEventTopic = "deploymentGroupEventTopic";
 
   private final ZooKeeperTestManager zk = new ZooKeeperTestingServerManager();

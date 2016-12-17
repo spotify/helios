@@ -20,9 +20,6 @@
 
 package com.spotify.helios.client;
 
-import com.spotify.helios.common.Clock;
-import com.spotify.helios.common.SystemClock;
-
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
@@ -34,16 +31,17 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.SystemClock;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link RequestDispatcher} that retries.
@@ -116,18 +114,18 @@ class RetryingRequestDispatcher implements RequestDispatcher {
       }
 
       @Override
-      public void onFailure(@NotNull Throwable t) {
+      public void onFailure(@NotNull Throwable th) {
         log.warn("Failed to connect to {}, retrying in {} seconds. Exception chain was: {} ",
                  uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis),
-                 getChainAsString(t));
-        log.debug("Specific reason for connection failure follows", t);
-        handleFailure(future, code, deadline, delayMillis, t, uri);
+                 getChainAsString(th));
+        log.debug("Specific reason for connection failure follows", th);
+        handleFailure(future, code, deadline, delayMillis, th, uri);
       }
     });
   }
 
-  private static String getChainAsString(final Throwable t) {
-    final List<Throwable> causalChain = Throwables.getCausalChain(t);
+  private static String getChainAsString(final Throwable th) {
+    final List<Throwable> causalChain = Throwables.getCausalChain(th);
     final List<String> messages = Lists.transform(causalChain, new Function<Throwable, String>() {
       @Override
       public String apply(final Throwable input) {
@@ -141,7 +139,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
                              final Supplier<ListenableFuture<Response>> code,
                              final long deadline,
                              final long delayMillis,
-                             final Throwable t,
+                             final Throwable th,
                              final URI uri) {
     if (clock.now().getMillis() < deadline) {
       if (delayMillis > 0) {
@@ -155,7 +153,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
         startRetry(future, code, deadline - 1, delayMillis, uri);
       }
     } else {
-      future.setException(t);
+      future.setException(th);
     }
   }
 

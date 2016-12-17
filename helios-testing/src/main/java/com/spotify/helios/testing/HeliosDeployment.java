@@ -21,7 +21,6 @@
 package com.spotify.helios.testing;
 
 import com.google.common.net.HostAndPort;
-
 import com.spotify.helios.client.HeliosClient;
 
 /**

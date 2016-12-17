@@ -20,18 +20,16 @@
 
 package com.spotify.helios.agent;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.Job;
-
 import java.util.List;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * Bind mounts user-specified volumes into all containers.

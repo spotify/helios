@@ -20,24 +20,6 @@
 
 package com.spotify.helios.common;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.helios.common.descriptors.HealthCheck;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.ServiceEndpoint;
-import com.spotify.helios.common.descriptors.ServicePortParameters;
-import com.spotify.helios.common.descriptors.ServicePorts;
-
-import org.junit.Test;
-
-import java.util.Map;
-import java.util.Set;
-
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.DEFAULT_NETWORK_MODE;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
@@ -66,6 +48,21 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.spotify.helios.common.descriptors.HealthCheck;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePortParameters;
+import com.spotify.helios.common.descriptors.ServicePorts;
+import java.util.Map;
+import java.util.Set;
+import org.junit.Test;
+
 public class JobValidatorTest {
   private static final HealthCheck HEALTH_CHECK =
       HealthCheck.newHttpHealthCheck().setPath("/").setPort("1").build();
@@ -80,7 +77,7 @@ public class JobValidatorTest {
       .setHealthCheck(HEALTH_CHECK)
       .build();
 
-  final JobValidator validator = new JobValidator(true, true);
+  private final JobValidator validator = new JobValidator(true, true);
 
   @Test
   public void testValidJobPasses() {
@@ -271,8 +268,8 @@ public class JobValidatorTest {
     assertEquals(newHashSet("Invalid repository name ( repo), only [a-z0-9-_.] are allowed"),
                  validator.validate(b.setImage("reg.istry:4711/ repo").build()));
 
-    assertEquals(newHashSet("Invalid namespace name (namespace ), only [a-z0-9_] are " +
-                            "allowed, size between 4 and 30"),
+    assertEquals(newHashSet("Invalid namespace name (namespace ), only [a-z0-9_] are "
+                            + "allowed, size between 4 and 30"),
                  validator.validate(b.setImage("reg.istry:4711/namespace /repo").build()));
 
     assertEquals(newHashSet("Invalid repository name ( repo), only [a-z0-9-_.] are allowed"),
@@ -299,51 +296,51 @@ public class JobValidatorTest {
     assertEquals(newHashSet("Invalid repository name (bar/baz/quux), only [a-z0-9-_.] are allowed"),
                  validator.validate(b.setImage("foos/bar/baz/quux").build()));
 
-    assertEquals(newHashSet("Invalid namespace name (foo), only [a-z0-9_] are allowed, " +
-                            "size between 4 and 30"),
+    assertEquals(newHashSet("Invalid namespace name (foo), only [a-z0-9_] are allowed, "
+                            + "size between 4 and 30"),
                  validator.validate(b.setImage("foo/bar").build()));
 
     final String foos = Strings.repeat("foo", 100);
-    assertEquals(newHashSet("Invalid namespace name (" + foos + "), only [a-z0-9_] are allowed, " +
-                            "size between 4 and 30"),
+    assertEquals(newHashSet("Invalid namespace name (" + foos + "), only [a-z0-9_] are allowed, "
+                            + "size between 4 and 30"),
                  validator.validate(b.setImage(foos + "/bar").build()));
   }
 
-   @Test
-   public void testInValidHostnamesFail() {
-     final Job.Builder b = Job.newBuilder().setName("foo").setVersion("1").setImage("bar");
+  @Test
+  public void testInValidHostnamesFail() {
+    final Job.Builder b = Job.newBuilder().setName("foo").setVersion("1").setImage("bar");
 
-     // 64 chars
-     final String toolonghostname = Strings.repeat("hostname", 8);
-     assertEquals(newHashSet("Invalid hostname (" + toolonghostname + "), " +
-                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
-         validator.validate(b.setHostname(toolonghostname).build()));
+    // 64 chars
+    final String toolonghostname = Strings.repeat("hostname", 8);
+    assertEquals(newHashSet("Invalid hostname (" + toolonghostname + "), "
+                            + "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+        validator.validate(b.setHostname(toolonghostname).build()));
 
-     assertEquals(newHashSet("Invalid hostname (%/ RJU&%(=N/U), " +
-                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
-         validator.validate(b.setHostname("%/ RJU&%(=N/U").build()));
+    assertEquals(newHashSet("Invalid hostname (%/ RJU&%(=N/U), "
+                            + "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+        validator.validate(b.setHostname("%/ RJU&%(=N/U").build()));
 
-     assertEquals(newHashSet("Invalid hostname (-), " +
-                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
-         validator.validate(b.setHostname("-").build()));
+    assertEquals(newHashSet("Invalid hostname (-), "
+                            + "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+        validator.validate(b.setHostname("-").build()));
 
-     assertEquals(newHashSet("Invalid hostname (foo17.bar-baz_quux), " +
-                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
-         validator.validate(b.setHostname("foo17.bar-baz_quux").build()));
+    assertEquals(newHashSet("Invalid hostname (foo17.bar-baz_quux), "
+                            + "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+        validator.validate(b.setHostname("foo17.bar-baz_quux").build()));
 
-     assertEquals(newHashSet("Invalid hostname (D34DB33F), " +
-                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
-         validator.validate(b.setHostname("D34DB33F").build()));
-   }
+    assertEquals(newHashSet("Invalid hostname (D34DB33F), "
+                            + "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+        validator.validate(b.setHostname("D34DB33F").build()));
+  }
 
   @Test
   public void testInvalidVolumesFail() {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
     assertEquals(newHashSet("Invalid volume path: /"),
-                 validator.validate(j.toBuilder().addVolume("/").build()));
+        validator.validate(j.toBuilder().addVolume("/").build()));
 
     assertEquals(newHashSet("Invalid volume path: /foo:"),
-                 validator.validate(j.toBuilder().addVolume("/foo:", "/bar").build()));
+        validator.validate(j.toBuilder().addVolume("/foo:", "/bar").build()));
 
     assertEquals(newHashSet("Volume path is not absolute: foo"),
                  validator.validate(j.toBuilder().addVolume("foo").build()));

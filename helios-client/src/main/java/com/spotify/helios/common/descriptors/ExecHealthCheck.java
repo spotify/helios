@@ -21,7 +21,6 @@
 package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Arrays;
 import java.util.List;
 
@@ -52,15 +51,15 @@ public class ExecHealthCheck extends HealthCheck {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final ExecHealthCheck that = (ExecHealthCheck) o;
+    final ExecHealthCheck that = (ExecHealthCheck) obj;
 
     if (command != null ? !command.equals(that.command) : that.command != null) {
       return false;
@@ -76,9 +75,9 @@ public class ExecHealthCheck extends HealthCheck {
 
   @Override
   public String toString() {
-    return "ExecHealthCheck{" +
-           "command=" + command +
-           "} " + super.toString();
+    return "ExecHealthCheck{"
+           + "command=" + command
+           + "} " + super.toString();
   }
 
   static Builder newBuilder() {

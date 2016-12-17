@@ -28,10 +28,9 @@ import static org.junit.Assert.assertThat;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.state.ConnectionState;
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
 
 public class ZooKeeperMetricsImplTest {
 

@@ -29,6 +29,8 @@ import static org.hamcrest.text.IsEmptyString.isEmptyOrNullString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeThat;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.Info;
@@ -40,10 +42,6 @@ import com.spotify.helios.common.descriptors.Resources;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
-
 import org.junit.Before;
 import org.junit.Test;
 

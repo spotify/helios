@@ -20,13 +20,13 @@
 
 package com.spotify.helios.common;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ComparisonChain;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import static com.google.common.collect.Iterables.get;
 import static com.google.common.collect.Iterables.size;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ComparisonChain;
+import org.jetbrains.annotations.NotNull;
 
 public class PomVersion implements Comparable<PomVersion> {
   private final boolean isSnapshot;
@@ -64,12 +64,12 @@ public class PomVersion implements Comparable<PomVersion> {
     return String.format("%d.%d.%d%s", major, minor, patch, isSnapshot ? "-SNAPSHOT" : "");
   }
 
-  public static PomVersion parse(final String s) {
+  public static PomVersion parse(final String str) {
     boolean isSnapshot = false;
-    String version = s;
-    if (s.endsWith("-SNAPSHOT")) {
+    String version = str;
+    if (str.endsWith("-SNAPSHOT")) {
       isSnapshot = true;
-      version = version.substring(0, s.length() - 9);
+      version = version.substring(0, str.length() - 9);
     }
 
     final Iterable<String> bits = Splitter.on(".").split(version);
@@ -82,7 +82,7 @@ public class PomVersion implements Comparable<PomVersion> {
       final Integer newPatch = Integer.valueOf(get(bits, 2));
       return new PomVersion(isSnapshot, newMajor, newMinor, newPatch);
     } catch (NumberFormatException e) {
-      throw new RuntimeException("Version portions are not numbers! " + s, e);
+      throw new RuntimeException("Version portions are not numbers! " + str, e);
     }
   }
 
@@ -122,12 +122,12 @@ public class PomVersion implements Comparable<PomVersion> {
   }
 
   @Override
-  public int compareTo(PomVersion o) {
+  public int compareTo(@NotNull PomVersion pv) {
     return ComparisonChain.start()
-        .compare(this.major, o.major)
-        .compare(this.minor, o.minor)
-        .compare(this.patch, o.patch)
-        .compareTrueFirst(this.isSnapshot, o.isSnapshot)
+        .compare(this.major, pv.major)
+        .compare(this.minor, pv.minor)
+        .compare(this.patch, pv.patch)
+        .compareTrueFirst(this.isSnapshot, pv.isSnapshot)
         .result();
   }
 }

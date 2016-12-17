@@ -21,6 +21,10 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.fasterxml.jackson.databind.JavaType;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
@@ -31,11 +35,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * This class instruments ZooKeeper calls by timing them and reporting exceptions.
@@ -93,6 +92,14 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   public void delete(String path) throws KeeperException {
     reporter.time(tag, "delete", () -> {
       client.delete(path);
+      return null;
+    });
+  }
+
+  @Override
+  public void delete(String path, int version) throws KeeperException {
+    reporter.time(tag, "delete", () -> {
+      client.delete(path, version);
       return null;
     });
   }
@@ -164,14 +171,6 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   public Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations)
       throws KeeperException {
     return reporter.time(tag, "transaction", () -> client.transaction(operations));
-  }
-
-  @Override
-  public void delete(String path, int version) throws KeeperException {
-    reporter.time(tag, "delete", () -> {
-      client.delete(path, version);
-      return null;
-    });
   }
 
   @Override

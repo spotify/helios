@@ -69,22 +69,22 @@ public class RolloutTask extends Descriptor {
 
   @Override
   public String toString() {
-    return "RolloutTask{" +
-           "action=" + action +
-           ", target='" + target + '\'' +
-           '}';
+    return "RolloutTask{"
+           + "action=" + action
+           + ", target='" + target + '\''
+           + '}';
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final RolloutTask that = (RolloutTask) o;
+    final RolloutTask that = (RolloutTask) obj;
 
     if (action != that.action) {
       return false;

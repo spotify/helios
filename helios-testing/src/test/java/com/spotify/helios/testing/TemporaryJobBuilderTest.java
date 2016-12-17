@@ -20,24 +20,21 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.PortMapping;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.PortMapping;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -45,13 +42,13 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TemporaryJobBuilderTest {
 
@@ -105,12 +102,12 @@ public class TemporaryJobBuilderTest {
     deleteFile(new File(url.toURI()));
   }
 
-  private void deleteFile(final File f) {
-    if (f.exists()) {
-      if (f.delete()) {
-        log.info("deleted {}", f.getAbsolutePath());
+  private void deleteFile(final File file) {
+    if (file.exists()) {
+      if (file.delete()) {
+        log.info("deleted {}", file.getAbsolutePath());
       } else {
-        throw new IllegalStateException("Unable to delete file at " + f.getAbsolutePath());
+        throw new IllegalStateException("Unable to delete file at " + file.getAbsolutePath());
       }
     }
   }

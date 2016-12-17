@@ -33,11 +33,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Uninterruptibles;
-
-import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -51,6 +46,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TemporaryPorts extends ExternalResource {
 
@@ -133,13 +131,13 @@ public class TemporaryPorts extends ExternalResource {
     throw new AllocationFailedException();
   }
 
-  public synchronized Range<Integer> localPortRange(final String name, final int n) {
+  public synchronized Range<Integer> localPortRange(final String name, final int idx) {
     Preconditions.checkState(!closed, "closed");
     for (int i = 0; i < retries; i++) {
       final int base = randomPort();
       final List<AllocatedPort> rangePorts = Lists.newArrayList();
       boolean successful = true;
-      for (int j = 0; j < n; j++) {
+      for (int j = 0; j < idx; j++) {
         final int port = base + j;
         final AllocatedPort allocatedPort = lock(port, name);
         if (allocatedPort == null) {
@@ -154,7 +152,7 @@ public class TemporaryPorts extends ExternalResource {
       }
       if (successful) {
         ports.addAll(rangePorts);
-        return Range.closedOpen(base, base + n);
+        return Range.closedOpen(base, base + idx);
       } else {
         rangePorts.forEach(AllocatedPort::release);
       }

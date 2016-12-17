@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Structure representing the version and system details of the Docker daemon running on the
  * Agent.
  *
- * A typical JSON representation of this might be:
+ * <p>A typical JSON representation of this might be:
  * <pre>
  * {
  *   "apiVersion" : "1.12",
@@ -115,15 +115,15 @@ public class DockerVersion {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final DockerVersion that = (DockerVersion) o;
+    final DockerVersion that = (DockerVersion) obj;
 
     if (apiVersion != null ? !apiVersion.equals(that.apiVersion) : that.apiVersion != null) {
       return false;
@@ -165,15 +165,15 @@ public class DockerVersion {
 
   @Override
   public String toString() {
-    return "DockerVersion{" +
-           "apiVersion='" + apiVersion + '\'' +
-           ", arch='" + arch + '\'' +
-           ", gitCommit='" + gitCommit + '\'' +
-           ", goVersion='" + goVersion + '\'' +
-           ", kernelVersion='" + kernelVersion + '\'' +
-           ", os='" + os + '\'' +
-           ", version='" + version + '\'' +
-           '}';
+    return "DockerVersion{"
+           + "apiVersion='" + apiVersion + '\''
+           + ", arch='" + arch + '\''
+           + ", gitCommit='" + gitCommit + '\''
+           + ", goVersion='" + goVersion + '\''
+           + ", kernelVersion='" + kernelVersion + '\''
+           + ", os='" + os + '\''
+           + ", version='" + version + '\''
+           + '}';
   }
 
   public static Builder builder() {

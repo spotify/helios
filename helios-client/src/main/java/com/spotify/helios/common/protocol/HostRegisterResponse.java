@@ -20,13 +20,14 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.spotify.helios.common.Json;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 public class HostRegisterResponse {
 
-  public enum Status {OK, INVALID_ID}
+  public enum Status {
+    OK, INVALID_ID
+  }
 
   private final Status status;
   private final String host;
@@ -47,10 +48,10 @@ public class HostRegisterResponse {
 
   @Override
   public String toString() {
-    return "HostRegisterResponse{" +
-           "status=" + status +
-           ", host='" + host + '\'' +
-           '}';
+    return "HostRegisterResponse{"
+           + "status=" + status
+           + ", host='" + host + '\''
+           + '}';
   }
 
   public String toJsonString() {

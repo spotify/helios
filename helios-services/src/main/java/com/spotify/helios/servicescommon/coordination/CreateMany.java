@@ -20,9 +20,8 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-
 import java.util.Map;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
 public class CreateMany implements ZooKeeperOperation {
 
@@ -41,21 +40,21 @@ public class CreateMany implements ZooKeeperOperation {
 
   @Override
   public String toString() {
-    return "CreateMany{" +
-           "nodes=" + nodes.keySet() +
-           '}';
+    return "CreateMany{"
+           + "nodes=" + nodes.keySet()
+           + '}';
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final CreateMany that = (CreateMany) o;
+    final CreateMany that = (CreateMany) obj;
 
     return nodes != null ? nodes.equals(that.nodes) : that.nodes == null;
 

@@ -20,12 +20,11 @@
 
 package com.spotify.helios.master;
 
+import static java.lang.String.format;
+
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.JobId;
-
 import java.util.List;
-
-import static java.lang.String.format;
 
 public class HostStillInUseException extends HeliosException {
 

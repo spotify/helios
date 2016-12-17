@@ -20,12 +20,10 @@
 
 package com.spotify.helios.cli;
 
-import com.spotify.helios.common.Resolver;
-
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-
+import com.spotify.helios.common.Resolver;
 import java.net.URI;
 import java.util.List;
 
@@ -75,15 +73,15 @@ public abstract class Target {
     }
 
     @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
+    public boolean equals(final Object obj) {
+      if (this == obj) {
         return true;
       }
-      if (o == null || getClass() != o.getClass()) {
+      if (obj == null || getClass() != obj.getClass()) {
         return false;
       }
 
-      final SrvTarget srvTarget = (SrvTarget) o;
+      final SrvTarget srvTarget = (SrvTarget) obj;
 
       if (!srv.equals(srvTarget.getSrv())) {
         return false;
@@ -127,15 +125,15 @@ public abstract class Target {
     }
 
     @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
+    public boolean equals(final Object obj) {
+      if (this == obj) {
         return true;
       }
-      if (o == null || getClass() != o.getClass()) {
+      if (obj == null || getClass() != obj.getClass()) {
         return false;
       }
 
-      final ExplicitTarget explicitTarget = (ExplicitTarget) o;
+      final ExplicitTarget explicitTarget = (ExplicitTarget) obj;
 
       return endpoint.equals(explicitTarget.getEndpoint());
 

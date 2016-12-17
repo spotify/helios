@@ -20,19 +20,16 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-
-import com.spotify.docker.client.messages.HostConfig;
-
-import org.junit.Test;
-
-import java.util.List;
-
 import static com.spotify.helios.agent.AddExtraHostContainerDecorator.isValidArg;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.spotify.docker.client.messages.HostConfig;
+import java.util.List;
+import org.junit.Test;
 
 public class AddExtraHostContainerDecoratorTest {
 

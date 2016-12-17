@@ -20,7 +20,7 @@
 
 package com.spotify.helios.serviceregistration;
 
-import org.slf4j.Logger;
+import static java.util.Arrays.asList;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -30,8 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
-
-import static java.util.Arrays.asList;
+import org.slf4j.Logger;
 
 /**
  * Helpers for loading {@link ServiceRegistrarFactory} instances.

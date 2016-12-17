@@ -20,14 +20,13 @@
 
 package com.spotify.helios.servicescommon;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.io.InterruptedIOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.concurrent.Semaphore;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A reactor loop that collapses event updates and calls a provided callback.
@@ -104,9 +103,9 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
       } catch (InterruptedException e) {
         log.debug("reactor interrupted: {}", name);
       } catch (Exception e) {
-        if (e.getCause() instanceof ClosedByInterruptException ||
-            e.getCause() instanceof InterruptedIOException ||
-            e.getCause() instanceof InterruptedException) {
+        if (e.getCause() instanceof ClosedByInterruptException
+            || e.getCause() instanceof InterruptedIOException
+            || e.getCause() instanceof InterruptedException) {
           log.debug("reactor interrupted: {}", name);
         } else {
           log.error("reactor runner threw exception: {}", name, e);

@@ -20,19 +20,16 @@
 
 package com.spotify.helios.client;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
-
 import com.spotify.helios.client.tls.CertificateAndPrivateKey;
 import com.spotify.helios.client.tls.X509CertificateFactory;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
-
-import org.apache.http.ssl.SSLContexts;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
@@ -43,12 +40,11 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
+import org.apache.http.ssl.SSLContexts;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides various implementations of {@link HttpsHandler}.
@@ -202,12 +198,12 @@ class HttpsHandlers {
             .build();
         conn.setSSLSocketFactory(sslContext.getSocketFactory());
       } catch (
-          CertificateException |
-              IOException |
-              NoSuchAlgorithmException |
-              KeyStoreException |
-              UnrecoverableKeyException |
-              KeyManagementException e) {
+          CertificateException
+              | IOException
+              | NoSuchAlgorithmException
+              | KeyStoreException
+              | UnrecoverableKeyException
+              | KeyManagementException e) {
         // so many dumb ways to die. see https://www.youtube.com/watch?v=IJNR2EpS0jw for more.
         throw Throwables.propagate(e);
       }

@@ -23,6 +23,7 @@ package com.spotify.helios.system;
 import static com.google.common.base.CharMatcher.WHITESPACE;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableMap;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -30,14 +31,10 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
-
-import com.google.common.collect.ImmutableMap;
-
-import org.junit.Test;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import org.junit.Test;
 
 public class ConfigFileJobCreationTest extends SystemTestBase {
 

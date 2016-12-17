@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import javax.annotation.Nullable;
 
 /**
@@ -40,15 +39,15 @@ public class Result<V> implements FutureCallback<V> {
   }
 
   @Override
-  public void onSuccess(@Nullable final V r) {
+  public void onSuccess(@Nullable final V result) {
     done = true;
-    result = r;
+    this.result = result;
   }
 
   @Override
-  public void onFailure(final Throwable t) {
+  public void onFailure(final Throwable th) {
     done = true;
-    exception = t;
+    exception = th;
   }
 
   public boolean isDone() {

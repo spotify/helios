@@ -20,15 +20,18 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.Lists;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.Lists;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.master.MasterZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
+import java.util.List;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.ZooDefs;
@@ -36,12 +39,6 @@ import org.apache.zookeeper.data.ACL;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.List;
-
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class ZooKeeperAclInitializerTest {
 

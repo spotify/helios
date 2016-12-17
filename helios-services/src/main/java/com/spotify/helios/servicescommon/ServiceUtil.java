@@ -21,11 +21,9 @@
 package com.spotify.helios.servicescommon;
 
 import com.google.common.collect.ImmutableList;
-
 import io.dropwizard.jetty.ConnectorFactory;
 import io.dropwizard.jetty.HttpConnectorFactory;
 import io.dropwizard.server.DefaultServerFactory;
-
 import java.net.InetSocketAddress;
 import java.util.Collections;
 

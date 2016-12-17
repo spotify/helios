@@ -20,22 +20,19 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.Lists;
+import static java.util.Collections.emptyList;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.jetbrains.annotations.Nullable;
-
+import com.google.common.collect.Lists;
 import java.util.List;
-
-import static java.util.Collections.emptyList;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents a Helios deployment group.
  *
- * An sample expression of it in JSON might be:
+ * <p>An sample expression of it in JSON might be:
  * <pre>
  * {
  *   "name":"foo-group",
@@ -84,7 +81,7 @@ public class DeploymentGroup extends Descriptor {
   /**
    * Create a Job.
    *
-   * Note that despite annotating jobId as @JsonProperty("job") in practice it's serialised as
+   * <p>Note that despite annotating jobId as @JsonProperty("job") in practice it's serialised as
    * "jobId" because we neglected to annotate the getter to match. The annotation has been left here
    * to ensure backwards compatibility.
    *
@@ -132,15 +129,15 @@ public class DeploymentGroup extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final DeploymentGroup that = (DeploymentGroup) o;
+    final DeploymentGroup that = (DeploymentGroup) obj;
 
     if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
       return false;
@@ -176,13 +173,13 @@ public class DeploymentGroup extends Descriptor {
 
   @Override
   public String toString() {
-    return "DeploymentGroup{" +
-           "name='" + name + '\'' +
-           ", hostSelectors=" + hostSelectors +
-           ", job=" + jobId +
-           ", rolloutOptions=" + rolloutOptions +
-           ", reason=" + reason +
-           '}';
+    return "DeploymentGroup{"
+           + "name='" + name + '\''
+           + ", hostSelectors=" + hostSelectors
+           + ", job=" + jobId
+           + ", rolloutOptions=" + rolloutOptions
+           + ", reason=" + reason
+           + '}';
   }
 
   public Builder toBuilder() {
@@ -197,10 +194,10 @@ public class DeploymentGroup extends Descriptor {
 
   public static class Builder implements Cloneable {
 
-    private final Parameters p;
+    private final Parameters pm;
 
     private Builder() {
-      this.p = new Parameters();
+      this.pm = new Parameters();
     }
 
     private static class Parameters implements Cloneable {
@@ -221,52 +218,52 @@ public class DeploymentGroup extends Descriptor {
     }
 
     public String getName() {
-      return p.name;
+      return pm.name;
     }
 
     public Builder setName(final String name) {
-      p.name = name;
+      pm.name = name;
       return this;
     }
 
     public JobId getJobId() {
-      return p.jobId;
+      return pm.jobId;
     }
 
     public Builder setJobId(final JobId jobId) {
-      p.jobId = jobId;
+      pm.jobId = jobId;
       return this;
     }
 
     public List<HostSelector> getHostSelectors() {
-      return p.hostSelectors;
+      return pm.hostSelectors;
     }
 
     public Builder setHostSelectors(final List<HostSelector> hostSelectors) {
-      p.hostSelectors = Lists.newArrayList(hostSelectors);
+      pm.hostSelectors = Lists.newArrayList(hostSelectors);
       return this;
     }
 
     public RolloutOptions getRolloutOptions() {
-      return p.rolloutOptions;
+      return pm.rolloutOptions;
     }
 
     public Builder setRolloutOptions(final RolloutOptions rolloutOptions) {
-      p.rolloutOptions = rolloutOptions;
+      pm.rolloutOptions = rolloutOptions;
       return this;
     }
 
     public RollingUpdateReason getRollingUpdateReason() {
-      return p.reason;
+      return pm.reason;
     }
 
     public Builder setRollingUpdateReason(final RollingUpdateReason reason) {
-      p.reason = reason;
+      pm.reason = reason;
       return this;
     }
 
     public DeploymentGroup build() {
-      return new DeploymentGroup(p.name, p.hostSelectors, p.jobId, p.rolloutOptions, p.reason);
+      return new DeploymentGroup(pm.name, pm.hostSelectors, pm.jobId, pm.rolloutOptions, pm.reason);
     }
   }
 

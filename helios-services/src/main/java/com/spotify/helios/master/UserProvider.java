@@ -21,22 +21,19 @@
 package com.spotify.helios.master;
 
 import com.spotify.helios.master.resources.RequestUser;
-
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.core.spi.component.ComponentContext;
 import com.sun.jersey.core.spi.component.ComponentScope;
 import com.sun.jersey.server.impl.inject.AbstractHttpContextInjectable;
 import com.sun.jersey.spi.inject.Injectable;
 import com.sun.jersey.spi.inject.InjectableProvider;
-
 import java.lang.reflect.Type;
 import java.util.List;
-
 import javax.ws.rs.ext.Provider;
 
 @Provider
 public class UserProvider extends AbstractHttpContextInjectable<String>
-   implements InjectableProvider<RequestUser, Type> {
+    implements InjectableProvider<RequestUser, Type> {
 
   @Override
   public String getValue(HttpContext arg0) {

@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Represents the Agent system information.
  *
- * A typical JSON representation might look like:
+ * <p>A typical JSON representation might look like:
  * <pre>
  * {
  *   "architecture" : "amd64",
@@ -289,34 +289,34 @@ public class HostInfo extends Descriptor {
 
   @Override
   public String toString() {
-    return "HostInfo{" +
-           "hostname='" + hostname + '\'' +
-           ", uname='" + uname + '\'' +
-           ", architecture='" + architecture + '\'' +
-           ", osName='" + osName + '\'' +
-           ", osVersion='" + osVersion + '\'' +
-           ", cpus=" + cpus +
-           ", loadAvg=" + loadAvg +
-           ", memoryTotalBytes=" + memoryTotalBytes +
-           ", memoryFreeBytes=" + memoryFreeBytes +
-           ", swapTotalBytes=" + swapTotalBytes +
-           ", swapFreeBytes=" + swapFreeBytes +
-           ", dockerVersion=" + dockerVersion +
-           ", dockerHost='" + dockerHost + '\'' +
-           ", dockerCertPath='" + dockerCertPath + '\'' +
-           '}';
+    return "HostInfo{"
+           + "hostname='" + hostname + '\''
+           + ", uname='" + uname + '\''
+           + ", architecture='" + architecture + '\''
+           + ", osName='" + osName + '\''
+           + ", osVersion='" + osVersion + '\''
+           + ", cpus=" + cpus
+           + ", loadAvg=" + loadAvg
+           + ", memoryTotalBytes=" + memoryTotalBytes
+           + ", memoryFreeBytes=" + memoryFreeBytes
+           + ", swapTotalBytes=" + swapTotalBytes
+           + ", swapFreeBytes=" + swapFreeBytes
+           + ", dockerVersion=" + dockerVersion
+           + ", dockerHost='" + dockerHost + '\''
+           + ", dockerCertPath='" + dockerCertPath + '\''
+           + '}';
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final HostInfo hostInfo = (HostInfo) o;
+    final HostInfo hostInfo = (HostInfo) obj;
 
     if (cpus != hostInfo.cpus) {
       return false;
@@ -368,14 +368,13 @@ public class HostInfo extends Descriptor {
   @Override
   public int hashCode() {
     int result;
-    long temp;
     result = hostname != null ? hostname.hashCode() : 0;
     result = 31 * result + (uname != null ? uname.hashCode() : 0);
     result = 31 * result + (architecture != null ? architecture.hashCode() : 0);
     result = 31 * result + (osName != null ? osName.hashCode() : 0);
     result = 31 * result + (osVersion != null ? osVersion.hashCode() : 0);
     result = 31 * result + cpus;
-    temp = Double.doubleToLongBits(loadAvg);
+    final long temp = Double.doubleToLongBits(loadAvg);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     result = 31 * result + (int) (memoryTotalBytes ^ (memoryTotalBytes >>> 32));
     result = 31 * result + (int) (memoryFreeBytes ^ (memoryFreeBytes >>> 32));

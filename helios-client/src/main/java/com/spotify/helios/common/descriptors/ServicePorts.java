@@ -20,20 +20,18 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.ImmutableMap;
+import static java.util.Arrays.asList;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-
-import static java.util.Arrays.asList;
 
 /**
  * A set of port names, that is map keys, together with ServicePortParameters containing optional
  * metadata for a port.
  *
- * A typical JSON representation might be:
+ * <p>A typical JSON representation might be:
  * <pre>
  * {
  *   "http" : { }
@@ -54,15 +52,15 @@ public class ServicePorts extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final ServicePorts that = (ServicePorts) o;
+    final ServicePorts that = (ServicePorts) obj;
 
     if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
       return false;
@@ -78,9 +76,9 @@ public class ServicePorts extends Descriptor {
 
   @Override
   public String toString() {
-    return "ServicePorts{" +
-           "ports=" + ports +
-           '}';
+    return "ServicePorts{"
+           + "ports=" + ports
+           + '}';
   }
 
   public static ServicePorts of(final String... ports) {

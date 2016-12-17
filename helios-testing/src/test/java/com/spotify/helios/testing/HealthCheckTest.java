@@ -20,24 +20,21 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
-import com.spotify.helios.common.descriptors.HealthCheck;
-import com.spotify.helios.common.descriptors.HttpHealthCheck;
-import com.spotify.helios.common.descriptors.TcpHealthCheck;
-
-import org.junit.Rule;
-import org.junit.Test;
-
-import java.net.HttpURLConnection;
-import java.net.Socket;
-import java.net.URL;
-
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+
+import com.google.common.base.Optional;
+import com.spotify.helios.common.descriptors.HealthCheck;
+import com.spotify.helios.common.descriptors.HttpHealthCheck;
+import com.spotify.helios.common.descriptors.TcpHealthCheck;
+import java.net.HttpURLConnection;
+import java.net.Socket;
+import java.net.URL;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class HealthCheckTest extends TemporaryJobsTestBase {
 
@@ -77,7 +74,8 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
       // verify we can actually connect to the port
       // noinspection EmptyTryBlock
       try (final Socket ignored = new Socket(DOCKER_HOST.address(),
-                                             job.address(QUERY_PORT).getPort())) {
+          job.address(QUERY_PORT).getPort())) {
+        // ignored
       }
     }
 
@@ -122,7 +120,8 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
       // verify we can actually connect to the port
       // noinspection EmptyTryBlock
       try (final Socket ignored = new Socket(DOCKER_HOST.address(),
-                                             job.address(QUERY_PORT).getPort())) {
+          job.address(QUERY_PORT).getPort())) {
+        // ignored
       }
     }
   }

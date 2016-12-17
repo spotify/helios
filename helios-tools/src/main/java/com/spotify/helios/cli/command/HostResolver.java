@@ -23,17 +23,14 @@ package com.spotify.helios.cli.command;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import com.spotify.helios.client.HeliosClient;
-
-import org.xbill.DNS.Name;
-import org.xbill.DNS.ResolverConfig;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import org.xbill.DNS.Name;
+import org.xbill.DNS.ResolverConfig;
 
 class HostResolver {
   private static final Name[] EMPTY_PATH = new Name[]{};

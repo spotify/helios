@@ -20,18 +20,15 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.TaskStatus.State;
-
-import org.junit.Test;
-
-import java.util.Map;
-
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static org.junit.Assert.assertEquals;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.TaskStatus.State;
+import java.util.Map;
+import org.junit.Test;
 
 public class TaskStatusTest {
   private static final Job JOB = Job.newBuilder()

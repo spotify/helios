@@ -20,19 +20,17 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.system.SystemTestBase;
-
-import org.junit.Before;
-
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Map;
-
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.system.SystemTestBase;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
+import org.junit.Before;
 
 public abstract class TemporaryJobsTestBase extends SystemTestBase {
 

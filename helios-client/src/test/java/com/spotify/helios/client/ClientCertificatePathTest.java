@@ -20,12 +20,11 @@
 
 package com.spotify.helios.client;
 
-import org.junit.Before;
-import org.junit.Test;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ClientCertificatePathTest {
 

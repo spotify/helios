@@ -20,25 +20,22 @@
 
 package com.spotify.helios.common;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.when;
+
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-
 import com.spotify.dns.DnsSrvResolver;
 import com.spotify.dns.LookupResult;
-
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ResolverTest {

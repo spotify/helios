@@ -20,11 +20,11 @@
 
 package com.spotify.helios.servicescommon;
 
+import static com.codahale.metrics.MetricRegistry.name;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-
-import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Tracks API requests to the master to be tracked by the yammer metrics stuff.

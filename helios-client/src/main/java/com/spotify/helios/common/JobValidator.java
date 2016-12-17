@@ -20,10 +20,14 @@
 
 package com.spotify.helios.common;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.lang.String.format;
+import static java.util.Collections.emptySet;
+import static java.util.regex.Pattern.compile;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
@@ -33,7 +37,6 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -41,11 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.lang.String.format;
-import static java.util.Collections.emptySet;
-import static java.util.regex.Pattern.compile;
 
 public class JobValidator {
 
@@ -55,8 +53,8 @@ public class JobValidator {
       Pattern.compile("^([a-z0-9][a-z0-9-]{0,62}$)");
 
   public static final Pattern DOMAIN_PATTERN =
-      Pattern.compile("^(?:(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))" +
-                      "(\\.(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])))*)\\.?$");
+      Pattern.compile("^(?:(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))"
+                      + "(\\.(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])))*)\\.?$");
 
   public static final Pattern IPV4_PATTERN =
       Pattern.compile("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$");
@@ -158,9 +156,9 @@ public class JobValidator {
         continue;
       }
       final String[] parts = path.split(":", 3);
-      if (path.isEmpty() || path.equals("/") ||
-          parts.length > 2 ||
-          (parts.length > 1 && parts[1].isEmpty())) {
+      if (path.isEmpty()
+          || path.equals("/") | parts.length > 2
+          || (parts.length > 1 && parts[1].isEmpty())) {
         errors.add(format("Invalid volume path: %s", path));
       }
     }
@@ -240,7 +238,7 @@ public class JobValidator {
     // Check that the job name contains only allowed characters
     if (!NAME_VERSION_PATTERN.matcher(jobIdName).matches()) {
       errors.add(format("Job name may only contain [0-9a-zA-Z-_.] in job name [%s].",
-        recomputedId.getName()));
+          recomputedId.getName()));
     }
 
     // Check that the job id is correct
@@ -256,7 +254,7 @@ public class JobValidator {
 
     // we're fine if no hostname is set
     if (isNullOrEmpty(hostname)) {
-        return errors;
+      return errors;
     }
 
     // Check that the job name contains only allowed characters
@@ -343,9 +341,9 @@ public class JobValidator {
     }
 
     final String[] nameParts = repo.split("/", 2);
-    if (!nameParts[0].contains(".") &&
-        !nameParts[0].contains(":") &&
-        !nameParts[0].equals("localhost")) {
+    if (!nameParts[0].contains(".")
+        && !nameParts[0].contains(":")
+        && !nameParts[0].equals("localhost")) {
       // This is a Docker Index repos (ex: samalba/hipache or ubuntu)
       return validateRepositoryName(repo, errors);
     }

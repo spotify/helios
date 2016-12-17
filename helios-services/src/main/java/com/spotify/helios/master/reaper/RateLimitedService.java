@@ -20,10 +20,8 @@
 
 package com.spotify.helios.master.reaper;
 
-import com.spotify.helios.agent.InterruptingScheduledService;
-
 import com.google.common.util.concurrent.RateLimiter;
-
+import com.spotify.helios.agent.InterruptingScheduledService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * units of work within {@link #runOneIteration()}. Use this class if you need to retrieve a
  * complete set of items to process and then pause between operating on each item.
  *
- * A use case is when you need to get a list of nodes from ZooKeeper and for each node run three
+ * <p>A use case is when you need to get a list of nodes from ZooKeeper and for each node run three
  * more ZooKeeper operations. You need to get all the nodes in a single {@link #runOneIteration()},
  * but you want to pause between processing each node because the fan-out of ZooKeeper operations
  * will hammer it.

@@ -20,13 +20,14 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.spotify.helios.common.Json;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 public class HostDeregisterResponse {
 
-  public enum Status {OK, NOT_FOUND, JOBS_STILL_DEPLOYED}
+  public enum Status {
+    OK, NOT_FOUND, JOBS_STILL_DEPLOYED
+  }
 
   private final Status status;
   private final String host;
@@ -47,10 +48,10 @@ public class HostDeregisterResponse {
 
   @Override
   public String toString() {
-    return "HostDeregisterResponse{" +
-           "status=" + status +
-           ", host='" + host + '\'' +
-           '}';
+    return "HostDeregisterResponse{"
+           + "status=" + status
+           + ", host='" + host + '\''
+           + '}';
   }
 
   public String toJsonString() {

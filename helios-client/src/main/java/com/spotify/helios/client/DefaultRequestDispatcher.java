@@ -20,16 +20,11 @@
 
 package com.spotify.helios.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.Json;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.zip.GZIPInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Connects to Helios masters via Sun HttpUrlConnection and handles special setup for HTTPS, as well
@@ -85,10 +82,10 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         final InputStream stream = gzip ? new GZIPInputStream(rawStream) : rawStream;
         final ByteArrayOutputStream payload = new ByteArrayOutputStream();
         if (stream != null) {
-          int n;
+          int numBytes;
           final byte[] buffer = new byte[4096];
-          while ((n = stream.read(buffer, 0, buffer.length)) != -1) {
-            payload.write(buffer, 0, n);
+          while ((numBytes = stream.read(buffer, 0, buffer.length)) != -1) {
+            payload.write(buffer, 0, numBytes);
           }
         }
 

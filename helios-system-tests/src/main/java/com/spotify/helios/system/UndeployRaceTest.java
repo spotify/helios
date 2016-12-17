@@ -34,11 +34,9 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-
-import org.junit.Test;
-
 import java.util.List;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class UndeployRaceTest extends SystemTestBase {
 

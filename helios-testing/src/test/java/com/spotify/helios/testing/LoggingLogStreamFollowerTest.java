@@ -43,6 +43,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("AvoidEscapedUnicodeCharacters")
 public class LoggingLogStreamFollowerTest {
 
   private final LoggerContext context = new LoggerContext();
@@ -223,7 +224,7 @@ public class LoggingLogStreamFollowerTest {
   }
 
   @Test
-  public void testDropPartialUTF8Sequence() throws Exception {
+  public void testDropPartialUtf8Sequence() throws Exception {
     final byte[] annoyingData = "௵".getBytes(Charsets.UTF_8);
     assertThat(annoyingData.length, is(3));
 
@@ -261,6 +262,14 @@ public class LoggingLogStreamFollowerTest {
     return message(LogMessage.Stream.STDOUT, chunk);
   }
 
+  private static LogMessage stdout(byte[] chunk) {
+    return message(LogMessage.Stream.STDOUT, chunk);
+  }
+
+  private static LogMessage stderr(byte[] chunk) {
+    return message(LogMessage.Stream.STDERR, chunk);
+  }
+
   private static LogMessage stderr(String chunk) {
     return message(LogMessage.Stream.STDERR, chunk);
   }
@@ -268,14 +277,6 @@ public class LoggingLogStreamFollowerTest {
   private static LogMessage message(
       final LogMessage.Stream stream, final String chunk) {
     return message(stream, chunk.getBytes(Charsets.UTF_8));
-  }
-
-  private static LogMessage stdout(byte[] chunk) {
-    return message(LogMessage.Stream.STDOUT, chunk);
-  }
-
-  private static LogMessage stderr(byte[] chunk) {
-    return message(LogMessage.Stream.STDERR, chunk);
   }
 
   private static LogMessage message(

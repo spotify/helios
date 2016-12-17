@@ -20,22 +20,6 @@
 
 package com.spotify.helios.agent;
 
-import com.spotify.helios.common.Clock;
-import com.spotify.helios.servicescommon.coordination.Paths;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperations;
-
-import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
-import org.apache.zookeeper.data.Stat;
-import org.joda.time.Duration;
-import org.joda.time.Instant;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.util.List;
-
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -45,20 +29,34 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperOperations;
+import java.util.List;
+import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
+import org.apache.zookeeper.data.Stat;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
 public class AgentZooKeeperRegistrarTest {
 
   private final ZooKeeperClient client = mock(ZooKeeperClient.class);
 
   private final String agentName = "agent";
   private final String hostId = "1234";
-  private final int registrationTTL = 2;
+  private final int registrationTtl = 2;
 
   // a clock that always returns the same time
   private final Instant now = Instant.now();
   private final Clock clock = () -> now;
 
   private final AgentZooKeeperRegistrar registrar =
-      new AgentZooKeeperRegistrar(agentName, hostId, registrationTTL, clock);
+      new AgentZooKeeperRegistrar(agentName, hostId, registrationTtl, clock);
 
   private final String hostPath = Paths.statusHostInfo(agentName);
   private final String upPath = Paths.statusHostUp(agentName);
@@ -125,7 +123,7 @@ public class AgentZooKeeperRegistrarTest {
 
     // ... but the hostInfo was last updated more than TTL minutes ago
     final Stat hostInfo = new Stat();
-    hostInfo.setMtime(clock.now().minus(Duration.standardMinutes(registrationTTL * 2)).getMillis());
+    hostInfo.setMtime(clock.now().minus(Duration.standardMinutes(registrationTtl * 2)).getMillis());
     when(client.stat(hostPath)).thenReturn(hostInfo);
 
     // expect the old host to be deregistered and this registration to succeed

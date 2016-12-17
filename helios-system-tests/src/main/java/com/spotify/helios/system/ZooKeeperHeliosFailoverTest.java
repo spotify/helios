@@ -38,11 +38,9 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-
+import java.util.concurrent.Callable;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.concurrent.Callable;
 
 public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
@@ -94,6 +92,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     try {
       zkc.curatorWithSuperAuth().create().forPath("/barrier");
     } catch (NodeExistsException ignore) {
+      // ignored
     }
 
     // Wipe one zk peer

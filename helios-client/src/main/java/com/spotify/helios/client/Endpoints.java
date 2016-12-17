@@ -25,16 +25,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
-
-import org.apache.http.conn.DnsResolver;
-import org.apache.http.impl.conn.SystemDefaultDnsResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
+import org.apache.http.conn.DnsResolver;
+import org.apache.http.impl.conn.SystemDefaultDnsResolver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A class that provides static factory methods for {@link Endpoint}.
@@ -137,15 +135,15 @@ public class Endpoints {
     }
 
     @Override
-    public boolean equals(Object o) {
-      if (this == o) {
+    public boolean equals(Object obj) {
+      if (this == obj) {
         return true;
       }
-      if (o == null || getClass() != o.getClass()) {
+      if (obj == null || getClass() != obj.getClass()) {
         return false;
       }
 
-      final DefaultEndpoint that = (DefaultEndpoint) o;
+      final DefaultEndpoint that = (DefaultEndpoint) obj;
 
       //noinspection SimplifiableIfStatement
       if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
@@ -164,10 +162,10 @@ public class Endpoints {
 
     @Override
     public String toString() {
-      return "DefaultEndpoint{" +
-             "ip=" + ip +
-             ", uri=" + uri +
-             '}';
+      return "DefaultEndpoint{"
+             + "ip=" + ip
+             + ", uri=" + uri
+             + '}';
     }
   }
 }

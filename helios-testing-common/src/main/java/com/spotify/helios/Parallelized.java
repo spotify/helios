@@ -20,12 +20,11 @@
 
 package com.spotify.helios;
 
-import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.RunnerScheduler;
-
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.RunnerScheduler;
 
 public class Parallelized extends BlockJUnit4ClassRunner {
 

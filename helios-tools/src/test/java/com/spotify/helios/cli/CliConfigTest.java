@@ -27,18 +27,16 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.ConfigException;
-
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
 public class CliConfigTest {
 
@@ -76,9 +74,9 @@ public class CliConfigTest {
     final File file = temporaryFolder.newFile();
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
       final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3 +
-          "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
-          "\"], \"srvName\":\"foo\"}");
+          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3
+          + "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3
+          + "\"], \"srvName\":\"foo\"}");
       outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
       final CliConfig config = CliConfig.fromFile(file, environment);
 
@@ -99,9 +97,9 @@ public class CliConfigTest {
 
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
       outFile.write(Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3 +
-          "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
-          "\"], \"srvName\":\"foo\"").array());
+          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3
+          + "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3
+          + "\"], \"srvName\":\"foo\"").array());
       CliConfig.fromFile(file, environment);
     }
   }

@@ -21,14 +21,12 @@
 package com.spotify.helios.agent;
 
 import com.google.common.collect.ImmutableList;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class AgentParserTest {
 

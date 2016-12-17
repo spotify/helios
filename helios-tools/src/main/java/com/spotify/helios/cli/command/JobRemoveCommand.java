@@ -24,19 +24,16 @@ import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
-
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
+import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JobRemoveCommand extends WildcardJobCommand {
 
@@ -75,8 +72,8 @@ public class JobRemoveCommand extends WildcardJobCommand {
     final boolean force = options.getBoolean(forceArg.getDest());
 
     if (force) {
-      log.warn("If you are using '--force' to skip the interactive prompt, " +
-               "note that we have deprecated it. Please use '--yes'.");
+      log.warn("If you are using '--force' to skip the interactive prompt, "
+               + "note that we have deprecated it. Please use '--yes'.");
     }
 
     if (!yes && !force) {

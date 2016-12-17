@@ -22,7 +22,6 @@ package com.spotify.helios.testing;
 
 import com.spotify.docker.client.LogMessage;
 import com.spotify.helios.common.descriptors.JobId;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;

@@ -20,22 +20,6 @@
 
 package com.spotify.helios.client.tls;
 
-import com.spotify.sshagentproxy.AgentProxy;
-import com.spotify.sshagentproxy.Identity;
-
-import org.bouncycastle.util.encoders.Base64;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
-import java.security.KeyFactory;
-import java.security.PublicKey;
-import java.security.cert.X509Certificate;
-import java.security.spec.X509EncodedKeySpec;
-
 import static com.spotify.helios.common.Hash.sha1digest;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -49,6 +33,20 @@ import static org.mockito.Matchers.refEq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.spotify.sshagentproxy.AgentProxy;
+import com.spotify.sshagentproxy.Identity;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
+import java.security.spec.X509EncodedKeySpec;
+import org.bouncycastle.util.encoders.Base64;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 public class X509CertificateFactoryTest {
 

@@ -28,17 +28,15 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class CliParserTest {
 
@@ -125,14 +123,14 @@ public class CliParserTest {
 
     // Create a "~/.helios/config" file, which is the path CliConfig reads by default
     final File configDir = temporaryFolder.newFolder(CliConfig.getConfigDirName());
-    final File configFile = new File(configDir.getAbsolutePath() + File.separator +
-                                     CliConfig.getConfigFileName());
+    final File configFile = new File(configDir.getAbsolutePath() + File.separator
+                                     + CliConfig.getConfigFileName());
 
     // Write configuration to that file
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {
       final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\", \"" + ENDPOINTS[1] + "\", \"" +
-          ENDPOINTS[2] + "\"], \"domains\":[\"" + DOMAINS[0] + "\"]}");
+          "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\", \"" + ENDPOINTS[1] + "\", \""
+          + ENDPOINTS[2] + "\"], \"domains\":[\"" + DOMAINS[0] + "\"]}");
       outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
 
       // Set user's home directory to this temporary folder
@@ -158,8 +156,8 @@ public class CliParserTest {
 
     // Create a "~/.helios/config" file, which is the path CliConfig reads by default
     final File configDir = temporaryFolder.newFolder(CliConfig.getConfigDirName());
-    final File configFile = new File(configDir.getAbsolutePath() + File.separator +
-                                     CliConfig.getConfigFileName());
+    final File configFile = new File(configDir.getAbsolutePath() + File.separator
+                                     + CliConfig.getConfigFileName());
 
     // Write configuration to that file
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {

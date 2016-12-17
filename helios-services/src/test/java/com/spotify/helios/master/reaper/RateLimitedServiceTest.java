@@ -25,11 +25,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 import com.google.common.collect.ImmutableList;
-import org.junit.Test;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.junit.Test;
 
 public class RateLimitedServiceTest {
 

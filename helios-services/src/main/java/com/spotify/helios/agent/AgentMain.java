@@ -22,13 +22,11 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.servicescommon.ServiceMain;
-
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Instantiates and runs helios agent.

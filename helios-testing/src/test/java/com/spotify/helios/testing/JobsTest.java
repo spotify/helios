@@ -20,14 +20,13 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.helios.common.descriptors.Job;
-
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
+
+import com.spotify.helios.common.descriptors.Job;
+import org.junit.Test;
 
 public class JobsTest {
 

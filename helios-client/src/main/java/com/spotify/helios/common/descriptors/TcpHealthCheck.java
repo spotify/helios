@@ -20,10 +20,10 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TcpHealthCheck extends HealthCheck {
@@ -49,15 +49,15 @@ public class TcpHealthCheck extends HealthCheck {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final TcpHealthCheck that = (TcpHealthCheck) o;
+    final TcpHealthCheck that = (TcpHealthCheck) obj;
 
     if (port != null ? !port.equals(that.port) : that.port != null) {
       return false;
@@ -73,9 +73,9 @@ public class TcpHealthCheck extends HealthCheck {
 
   @Override
   public String toString() {
-    return "TcpHealthCheck{" +
-           "port='" + port + '\'' +
-           "} " + super.toString();
+    return "TcpHealthCheck{"
+           + "port='" + port + '\''
+           + "} " + super.toString();
   }
 
   static Builder newBuilder() {
@@ -97,8 +97,8 @@ public class TcpHealthCheck extends HealthCheck {
 
     public TcpHealthCheck build() {
       if (isNullOrEmpty(port)) {
-        throw new IllegalArgumentException("You must specify the name of a port you opened " +
-                                           "to the container for a TCP health check.");
+        throw new IllegalArgumentException("You must specify the name of a port you opened "
+                                           + "to the container for a TCP health check.");
       }
 
       return new TcpHealthCheck(this);

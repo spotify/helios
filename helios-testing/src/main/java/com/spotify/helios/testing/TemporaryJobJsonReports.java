@@ -20,23 +20,21 @@
 
 package com.spotify.helios.testing;
 
+import static java.lang.String.format;
+
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
-
-import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Map;
-
-import static java.lang.String.format;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Reports a stream of TemporaryJobEvent events to a JSON file.

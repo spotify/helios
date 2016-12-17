@@ -20,8 +20,10 @@
 
 package com.spotify.helios.master.reaper;
 
-import com.google.common.collect.ImmutableList;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.agent.InterruptingScheduledService;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
@@ -34,19 +36,14 @@ import com.spotify.helios.master.JobNotDeployedException;
 import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.TokenVerificationException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The ExpiredJobReaper periodically checks if any jobs in the cluster have expired.

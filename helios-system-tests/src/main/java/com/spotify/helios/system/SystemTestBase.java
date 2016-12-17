@@ -47,6 +47,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Charsets;
+import com.google.common.base.Function;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
+import com.google.common.io.Files;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Service;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
@@ -89,40 +103,7 @@ import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Charsets;
-import com.google.common.base.Function;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Range;
-import com.google.common.io.Files;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.Service;
 import com.sun.jersey.api.client.ClientResponse;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -142,6 +123,23 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.TestRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 public abstract class SystemTestBase {
 
@@ -201,7 +199,7 @@ public abstract class SystemTestBase {
   private ZooKeeperTestManager zk;
   protected final String zkClusterId = String.valueOf(ThreadLocalRandom.current().nextInt(10000));
 
-  /** An HttpClient that can be used for sending arbitrary HTTP requests */
+  // An HttpClient that can be used for sending arbitrary HTTP requests.
   protected CloseableHttpClient httpClient;
 
   @BeforeClass
@@ -326,10 +324,10 @@ public abstract class SystemTestBase {
           }
         });
       } catch (TimeoutException e) {
-        fail("Please ensure that DOCKER_HOST is set to an address that where containers can " +
-             "be reached. If docker is running in a local VM, DOCKER_HOST must be set to the " +
-             "address of that VM. If docker can only be reached on a limited port range, " +
-             "set the environment variable DOCKER_PORT_RANGE=start:end");
+        fail("Please ensure that DOCKER_HOST is set to an address that where containers can "
+             + "be reached. If docker is running in a local VM, DOCKER_HOST must be set to the "
+             + "address of that VM. If docker can only be reached on a limited port range, "
+             + "set the environment variable DOCKER_PORT_RANGE=start:end");
       }
 
       docker.killContainer(containerId);
@@ -560,8 +558,8 @@ public abstract class SystemTestBase {
     });
   }
 
-  protected void startDefaultMasterDontWaitForZK(final CuratorClientFactory curatorClientFactory,
-                                                 String... args) throws Exception {
+  protected void startDefaultMasterDontWaitForZk(final CuratorClientFactory curatorClientFactory,
+                                                 final String... args) throws Exception {
     final List<String> argsList = setupDefaultMaster(args);
 
     if (argsList == null) {
@@ -590,9 +588,9 @@ public abstract class SystemTestBase {
         "--zk-acl-agent-password", AGENT_PASSWORD,
         "--state-dir", stateDir,
         "--domain", "",
-        "--port-range=" +
-        dockerPortRange.lowerEndpoint() + ":" +
-        dockerPortRange.upperEndpoint()
+        "--port-range="
+        + dockerPortRange.lowerEndpoint() + ":"
+        + dockerPortRange.upperEndpoint()
     );
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));
@@ -827,6 +825,35 @@ public abstract class SystemTestBase {
     });
   }
 
+  protected void awaitHostRegistered(final HeliosClient client,
+                                     final String host,
+                                     final int timeout,
+                                     final TimeUnit timeUnit) throws Exception {
+    Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
+      @Override
+      public HostStatus call() throws Exception {
+        return getOrNull(client.hostStatus(host));
+      }
+    });
+  }
+
+  protected HostStatus awaitHostStatus(final HeliosClient client,
+                                       final String host,
+                                       final HostStatus.Status status,
+                                       final int timeout,
+                                       final TimeUnit timeUnit) throws Exception {
+    return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
+      @Override
+      public HostStatus call() throws Exception {
+        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
+        if (hostStatus == null) {
+          return null;
+        }
+        return (hostStatus.getStatus() == status) ? hostStatus : null;
+      }
+    });
+  }
+
   protected HostStatus awaitHostStatus(final String name, final HostStatus.Status status,
                                        final int timeout, final TimeUnit timeUnit)
       throws Exception {
@@ -880,33 +907,6 @@ public abstract class SystemTestBase {
         }
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         return (taskStatus != null && taskStatus.getThrottled() == throttled) ? taskStatus : null;
-      }
-    });
-  }
-
-  protected void awaitHostRegistered(final HeliosClient client, final String host,
-                                     final int timeout,
-                                     final TimeUnit timeUnit) throws Exception {
-    Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
-      @Override
-      public HostStatus call() throws Exception {
-        return getOrNull(client.hostStatus(host));
-      }
-    });
-  }
-
-  protected HostStatus awaitHostStatus(final HeliosClient client, final String host,
-                                       final HostStatus.Status status,
-                                       final int timeout,
-                                       final TimeUnit timeUnit) throws Exception {
-    return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
-      @Override
-      public HostStatus call() throws Exception {
-        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
-        if (hostStatus == null) {
-          return null;
-        }
-        return (hostStatus.getStatus() == status) ? hostStatus : null;
       }
     });
   }
@@ -1026,21 +1026,10 @@ public abstract class SystemTestBase {
       throws ExecutionException, InterruptedException {
     return Futures.catching(future, Exception.class, new Function<Exception, T>() {
       @Override
-      public T apply(@NotNull final Exception e) {
+      public T apply(final Exception ex) {
         return null;
       }
     }).get();
-  }
-
-  protected String readLogFully(final ClientResponse logs) throws IOException {
-    final LogReader logReader = new LogReader(logs.getEntityInputStream());
-    final StringBuilder stringBuilder = new StringBuilder();
-    LogMessage logMessage;
-    while ((logMessage = logReader.nextMessage()) != null) {
-      stringBuilder.append(UTF_8.decode(logMessage.content()));
-    }
-    logReader.close();
-    return stringBuilder.toString();
   }
 
   protected static void removeContainer(final DockerClient dockerClient, final String containerId)
@@ -1066,8 +1055,8 @@ public abstract class SystemTestBase {
           // We're done here
           return true;
         } catch (DockerException e) {
-          if ((e instanceof DockerRequestException) &&
-              ((DockerRequestException) e).message().contains(
+          if ((e instanceof DockerRequestException)
+              && ((DockerRequestException) e).message().contains(
                   "Driver btrfs failed to remove root filesystem")) {
             // Workaround btrfs issue where removing containers throws an exception,
             // but succeeds anyway.

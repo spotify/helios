@@ -22,14 +22,13 @@ package com.spotify.helios.system;
 
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.FileAppender;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
-
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
@@ -37,12 +36,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.FileAppender;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Custom logback configuration for system tests.
@@ -77,10 +74,10 @@ final class LoggingTestWatcher extends TestWatcher {
   }
 
   @Override
-  protected void failed(final Throwable e, final Description description) {
+  protected void failed(final Throwable th, final Description description) {
     logLine();
     log.info("FAILED  : {} {}", description.getClassName(), description.getMethodName());
-    log.info("Exception", e);
+    log.info("Exception", th);
     logLine();
   }
 

@@ -20,13 +20,11 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.ImmutableList;
-
-import org.junit.Test;
-
-import java.util.Collections;
-
 import static org.junit.Assert.assertEquals;
+
+import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import org.junit.Test;
 
 public class HealthCheckTest {
 

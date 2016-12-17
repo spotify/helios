@@ -21,7 +21,6 @@
 package com.spotify.helios.servicescommon;
 
 import io.dropwizard.Configuration;
-
 import java.util.List;
 
 public class CommonConfiguration<C extends CommonConfiguration<C>> extends Configuration {

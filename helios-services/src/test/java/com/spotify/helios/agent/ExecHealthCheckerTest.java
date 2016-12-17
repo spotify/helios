@@ -20,6 +20,14 @@
 
 package com.spotify.helios.agent;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyVararg;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerClient.ExecStartParameter;
 import com.spotify.docker.client.LogStream;
@@ -28,19 +36,10 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.Version;
 import com.spotify.helios.agent.HealthCheckerFactory.ExecHealthChecker;
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyVararg;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ExecHealthCheckerTest {
 

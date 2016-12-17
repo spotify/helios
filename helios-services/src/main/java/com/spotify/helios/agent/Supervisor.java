@@ -26,6 +26,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -36,15 +37,11 @@ import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.statistics.MetricsContext;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
-
-import com.google.common.annotations.VisibleForTesting;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.InterruptedIOException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Supervises docker containers for a single job.
@@ -96,6 +93,7 @@ public class Supervisor {
     this.sleeper = builder.sleeper;
   }
 
+  @SuppressWarnings("MissingSwitchDefault")
   public void setGoal(final Goal goal) {
     if (this.goal == goal) {
       return;
@@ -460,11 +458,11 @@ public class Supervisor {
 
   @Override
   public String toString() {
-    return "Supervisor{" +
-           "job=" + job +
-           ", currentCommand=" + currentCommand +
-           ", performedCommand=" + performedCommand +
-           '}';
+    return "Supervisor{"
+           + "job=" + job
+           + ", currentCommand=" + currentCommand
+           + ", performedCommand=" + performedCommand
+           + '}';
   }
 
   private class TaskListener extends TaskRunner.NopListener {
@@ -472,7 +470,7 @@ public class Supervisor {
     private MetricsContext pullContext;
 
     @Override
-    public void failed(final Throwable t, final String containerError) {
+    public void failed(final Throwable th, final String containerError) {
       metrics.containersThrewException();
     }
 

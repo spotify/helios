@@ -20,6 +20,7 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import java.util.List;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
@@ -28,8 +29,6 @@ import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
 import org.apache.curator.framework.api.ACLProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class CuratorClientFactoryImpl implements CuratorClientFactory {
   private static final Logger log = LoggerFactory.getLogger(CuratorClientFactoryImpl.class);

@@ -20,9 +20,8 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.spotify.helios.common.Json;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 public class CreateDeploymentGroupResponse {
 
@@ -44,9 +43,9 @@ public class CreateDeploymentGroupResponse {
 
   @Override
   public String toString() {
-    return "CreateDeploymentGroupResponse{" +
-           "status=" + status +
-           '}';
+    return "CreateDeploymentGroupResponse{"
+           + "status=" + status
+           + '}';
   }
 
   public String toJsonString() {
@@ -54,15 +53,15 @@ public class CreateDeploymentGroupResponse {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final CreateDeploymentGroupResponse that = (CreateDeploymentGroupResponse) o;
+    final CreateDeploymentGroupResponse that = (CreateDeploymentGroupResponse) obj;
 
     if (status != that.status) {
       return false;

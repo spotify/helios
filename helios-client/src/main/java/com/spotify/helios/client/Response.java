@@ -45,13 +45,13 @@ class Response {
 
   @Override
   public String toString() {
-    return "Response{" +
-           "method='" + method + '\'' +
-           ", uri=" + uri +
-           ", status=" + status +
-           ", payload='" + decode(payload) + '\'' +
-           ", headers=" + headers +
-           '}';
+    return "Response{"
+           + "method='" + method + '\''
+           + ", uri=" + uri
+           + ", status=" + status
+           + ", payload='" + decode(payload) + '\''
+           + ", headers=" + headers
+           + '}';
   }
 
   private static String decode(final byte[] payload) {
