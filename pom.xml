@@ -87,6 +87,16 @@
       <name>Matt Brown</name>
       <email>mattbrown@spotify.com</email>
     </developer>
+    <developer>
+      <id>gimaker</id>
+      <name>Staffan Gimåker</name>
+      <email>staffan@spotify.com</email>
+    </developer>
+    <developer>
+      <id>negz</id>
+      <name>Nic Cope</name>
+      <email>negz@spotify.com</email>
+    </developer>
   </developers>
 
   <repositories>
