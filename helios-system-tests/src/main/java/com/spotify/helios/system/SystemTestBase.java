@@ -919,7 +919,7 @@ public abstract class SystemTestBase {
 
       if (candidate == null || candidate.getStatus() != status
           // labels are stored in ZK after the host has come up
-          || candidate.getLabels().size() == 0) {
+          || candidate.getLabels().size() == labels.size()) {
 
         return null;
       }

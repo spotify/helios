@@ -181,7 +181,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     awaitTaskState(jobId, testHost() + "2", TaskStatus.State.RUNNING);
   }
 
-  private void awaitUpWithLabel(final String host, final String... labelPairs)
+  private void awaitUpWithLabels(final String host, final String... labelPairs)
       throws Exception {
 
     Preconditions.checkArgument(labelPairs.length % 2 == 0,
@@ -215,13 +215,13 @@ public class DeploymentGroupTest extends SystemTestBase {
     final String anotherNewHost = testHost() + "5";
 
     AgentMain oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar");
-    awaitUpWithLabel(oldHost, "foo", "bar");
+    awaitUpWithLabels(oldHost, "foo", "bar");
 
     final AgentMain deregisterAgent = startDefaultAgent(deregisterHost, "--labels", "foo=bar");
-    awaitUpWithLabel(deregisterHost, "foo", "bar");
+    awaitUpWithLabels(deregisterHost, "foo", "bar");
 
     startDefaultAgent(unchangedHost, "--labels", "foo=bar");
-    awaitUpWithLabel(unchangedHost, "foo", "bar");
+    awaitUpWithLabels(unchangedHost, "foo", "bar");
 
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar");
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
@@ -236,7 +236,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     // Rollout should be complete and on its second iteration at this point.
     // Start another agent and wait for it to have the job deployed to it.
     startDefaultAgent(newHost, "--labels", "foo=bar");
-    awaitUpWithLabel(newHost, "foo", "bar");
+    awaitUpWithLabels(newHost, "foo", "bar");
     awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.ROLLING_OUT);
     awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.DONE);
     awaitTaskState(jobId, newHost, TaskStatus.State.RUNNING);
@@ -245,13 +245,13 @@ public class DeploymentGroupTest extends SystemTestBase {
     // The job should not be undeployed.
     stopAgent(oldAgent);
     oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar", "another=label");
-    awaitUpWithLabel(oldHost, "foo", "bar", "another", "label");
+    awaitUpWithLabels(oldHost, "foo", "bar", "another", "label");
     awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
 
     // Restart the old agent with labels that do not match the deployment group.
     stopAgent(oldAgent);
     oldAgent = startDefaultAgent(oldHost, "--labels", "foo=notbar");
-    awaitUpWithLabel(oldHost, "foo", "notbar");
+    awaitUpWithLabels(oldHost, "foo", "notbar");
 
     // ...which should trigger a rolling update
     awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.ROLLING_OUT);
