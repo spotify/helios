@@ -348,7 +348,7 @@ container path to mount a file or directory from the host.
 The container path can be suffixed with "rw" or "ro" to create a read-write or
 read-only volume, respectively.
 
-Format: `[container-path]:[rw|ro]":[host-path]`.
+Format: `[container-path]:[rw|ro]:[host-path]`.
 
 
 ### Health Checks
