@@ -17,8 +17,6 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.servicescommon.ServiceMain;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
@@ -28,8 +26,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Map;
 
 /**
  * Instantiates and runs the helios master. We do our own bootstrapping instead of using
@@ -41,56 +37,39 @@ public class MasterMain extends ServiceMain {
 
   private final MasterConfig masterConfig;
   private final CuratorClientFactory curatorClientFactory;
-  private final Map<String, String> environmentVariables;
   private MasterService service;
 
   public MasterMain(final String[] args) throws ArgumentParserException {
-    this(new CuratorClientFactoryImpl(), new MasterParser(args), System.getenv());
-  }
-
-  /**
-   * Allows mock environment variables to be passed in for testing purposes.
-   * @param environmentVariables Env vars
-   * @param args args
-   * @throws ArgumentParserException If we cannot parse an argument.
-   */
-  @VisibleForTesting
-  public MasterMain(Map<String, String> environmentVariables, final String[] args)
-      throws ArgumentParserException {
-
-    this(new CuratorClientFactoryImpl(), new MasterParser(args), environmentVariables);
+    this(new CuratorClientFactoryImpl(), new MasterParser(args));
   }
 
   public MasterMain(final CuratorClientFactory curatorClientFactory,
                     final String[] args) throws ArgumentParserException {
-    this(curatorClientFactory, new MasterParser(args), System.getenv());
+    this(curatorClientFactory, new MasterParser(args));
   }
 
   public MasterMain(final CuratorClientFactory curatorClientFactory,
-                    final MasterParser parser,
-                    final Map<String, String> environmentVariables) {
+                    final MasterParser parser) {
     this(curatorClientFactory,
         parser.getMasterConfig(),
-        parser.getLoggingConfig(),
-        environmentVariables);
+        parser.getLoggingConfig()
+    );
   }
 
   public MasterMain(final CuratorClientFactory curatorClientFactory,
                     final MasterConfig masterConfig,
-                    final LoggingConfig loggingConfig,
-                    final Map<String, String> environmentVariables) {
+                    final LoggingConfig loggingConfig) {
     super(loggingConfig, masterConfig.getSentryDsn());
     this.masterConfig = masterConfig;
     this.curatorClientFactory = curatorClientFactory;
-    this.environmentVariables = environmentVariables;
   }
 
   @Override
   protected void startUp() throws Exception {
     service = new MasterService(masterConfig,
         createEnvironment("helios-master"),
-        curatorClientFactory,
-        environmentVariables);
+        curatorClientFactory
+    );
     service.startAsync().awaitRunning();
   }
 
