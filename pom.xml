@@ -263,6 +263,29 @@
         <artifactId>jsr305</artifactId>
         <version>2.0.3</version>
       </dependency>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-pubsub</artifactId>
+        <version>0.5.1</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <!-- This version is used because google-cloud-pubsub uses a version with a memory leak. -->
+        <!-- See https://groups.google.com/forum/#!topic/grpc-io/4wHa_fxaT-Q -->
+        <!-- and https://github.com/GoogleCloudPlatform/google-cloud-java/issues/1433 -->
+        <version>4.1.5.Final</version>
+      </dependency>
 
       <!--test deps-->
       <dependency>
