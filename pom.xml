@@ -263,6 +263,18 @@
         <artifactId>jsr305</artifactId>
         <version>2.0.3</version>
       </dependency>
+      <!--
+      We don't actually use netty directly in this project, but we've added a dependency here
+      to try to ensure that 4.1.5 is the version used by grpc and pubsub.
+      This attempts to address a memory leak in netty 4.1.3 which grpc 1.0.0/1.0.1 is using.
+      See https://github.com/GoogleCloudPlatform/google-cloud-java/issues/1433
+      and https://groups.google.com/forum/#!topic/grpc-io/4wHa_fxaT-Q
+      -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-all</artifactId>
+        <version>4.1.5.Final</version>
+      </dependency>
       <dependency>
         <groupId>com.google.cloud</groupId>
         <artifactId>google-cloud-pubsub</artifactId>
@@ -272,19 +284,22 @@
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>
           </exclusion>
+          <!--
+          google-cloud-pubsub:0.5.1 depends on grpc-netty:1.0.1 which depends on
+          io.netty:netty-codec-http2:4.1.3.Final which pulls in a number of other netty subprojects.
+          Exclude io.netty:netty-codec-http2 at the root to avoid having dependencies on the various
+          netty subprojects, as their code is provided in netty-all.
+
+          We want to be doubly-sure that we do not pull in 4.1.3 code or classes.
+
+          When upgrading to more recent versions of google-cloud-pubsub this and the use of
+          netty-all above should be reevaluated.
+          -->
           <exclusion>
             <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
+            <artifactId>netty-codec-http2</artifactId>
           </exclusion>
         </exclusions>
-      </dependency>
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-all</artifactId>
-        <!-- This version is used because google-cloud-pubsub uses a version with a memory leak. -->
-        <!-- See https://groups.google.com/forum/#!topic/grpc-io/4wHa_fxaT-Q -->
-        <!-- and https://github.com/GoogleCloudPlatform/google-cloud-java/issues/1433 -->
-        <version>4.1.5.Final</version>
       </dependency>
 
       <!--test deps-->
