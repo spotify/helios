@@ -26,8 +26,6 @@ import com.codahale.metrics.Clock;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.spotify.helios.servicescommon.NoOpRiemannClient;
-import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.NoopZooKeeperMetrics;
 import com.spotify.helios.servicescommon.statistics.ZooKeeperMetrics;
 import java.util.List;
@@ -39,7 +37,6 @@ import org.apache.zookeeper.KeeperException.OperationTimeoutException;
 import org.apache.zookeeper.KeeperException.RuntimeInconsistencyException;
 
 public class ZooKeeperModelReporter {
-  private final RiemannFacade riemannFacade;
   private final ZooKeeperMetrics metrics;
   private final ImmutableMap<Class<?>, String> exceptionMap =
       ImmutableMap.of(
@@ -48,10 +45,8 @@ public class ZooKeeperModelReporter {
           RuntimeInconsistencyException.class, "inconsistency");
   private final Clock clock = Clock.defaultClock();
 
-  public ZooKeeperModelReporter(final RiemannFacade riemannFacade,
-                                final ZooKeeperMetrics metrics) {
+  public ZooKeeperModelReporter(final ZooKeeperMetrics metrics) {
     this.metrics = checkNotNull(metrics);
-    this.riemannFacade = checkNotNull(riemannFacade).stack("zookeeper");
   }
 
   public void checkException(Exception ex, String... tags) {
@@ -69,9 +64,7 @@ public class ZooKeeperModelReporter {
     }
     final List<String> tagList = Lists.newArrayList("zookeeper", "error", message);
     tagList.addAll(Lists.newArrayList(tags));
-    riemannFacade.event()
-        .tags(tagList)
-        .send();
+
     metrics.zookeeperTransientError();
   }
 
@@ -95,7 +88,7 @@ public class ZooKeeperModelReporter {
   }
 
   public static ZooKeeperModelReporter noop() {
-    return new ZooKeeperModelReporter(new NoOpRiemannClient().facade(), new NoopZooKeeperMetrics());
+    return new ZooKeeperModelReporter(new NoopZooKeeperMetrics());
   }
 
   @FunctionalInterface

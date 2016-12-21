@@ -78,7 +78,6 @@ public class MasterParser extends ServiceParser {
         .setDomain(getDomain())
         .setName(getName())
         .setStatsdHostPort(getStatsdHostPort())
-        .setRiemannHostPort(getRiemannHostPort())
         .setInhibitMetrics(getInhibitMetrics())
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())

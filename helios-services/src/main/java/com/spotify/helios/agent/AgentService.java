@@ -57,9 +57,6 @@ import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
-import com.spotify.helios.servicescommon.RiemannFacade;
-import com.spotify.helios.servicescommon.RiemannHeartBeat;
-import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ServiceUtil;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarService;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
@@ -183,11 +180,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     metricsRegistry.registerAll(new GarbageCollectorMetricSet());
     metricsRegistry.registerAll(new MemoryUsageGaugeSet());
 
-    final RiemannSupport riemannSupport = new RiemannSupport(
-        metricsRegistry, config.getRiemannHostPort(), config.getName(), "helios-agent");
-    final RiemannFacade riemannFacade = riemannSupport.getFacade();
-
-    final DockerClient dockerClient = createDockerClient(config, riemannFacade);
+    final DockerClient dockerClient = createDockerClient(config);
 
     if (config.isInhibitMetrics()) {
       log.info("Not starting metrics");
@@ -195,7 +188,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     } else {
       log.info("Starting metrics");
       metrics = new MetricsImpl(metricsRegistry, MetricsImpl.Type.AGENT);
-      environment.lifecycle().manage(riemannSupport);
+
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
         environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
                                                                  metricsRegistry));
@@ -229,13 +222,12 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     this.zooKeeperClient = setupZookeeperClient(config, id, zkRegistrationSignal);
     final DockerHealthChecker dockerHealthChecker = new DockerHealthChecker(
-        metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30, riemannFacade);
+        metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30);
     environment.lifecycle().manage(dockerHealthChecker);
-    environment.lifecycle().manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
 
     // Set up model
     final ZooKeeperModelReporter modelReporter =
-        new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics());
+        new ZooKeeperModelReporter(metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
 
@@ -328,8 +320,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator,
                            reaper);
 
-    final ZooKeeperHealthChecker zkHealthChecker =
-        new ZooKeeperHealthChecker(zooKeeperClient, riemannFacade, TimeUnit.MINUTES, 2);
+    final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient);
     environment.lifecycle().manage(zkHealthChecker);
 
     if (!config.getNoHttp()) {
@@ -356,8 +347,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     environment.lifecycle().manage(this);
   }
 
-  private DockerClient createDockerClient(final AgentConfig config,
-                                          final RiemannFacade riemannFacade) {
+  private DockerClient createDockerClient(final AgentConfig config) {
     final DockerClient dockerClient;
     if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
       dockerClient = new PollingDockerClient(config.getDockerHost().uri());
@@ -373,7 +363,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       dockerClient = new PollingDockerClient(config.getDockerHost().uri(), dockerCertificates);
     }
 
-    return MonitoredDockerClient.wrap(riemannFacade, dockerClient);
+    return dockerClient;
   }
 
   /**

@@ -90,9 +90,6 @@ Specify these options in the `HELIOS_MASTER_OPTS` variable in `/etc/default/heli
 * `--statsd-host-port STATSD_HOST_PORT`
   Optional. The host:port of where to send statsd metrics (to be useful, --no-metrics must *NOT* be specified)
 
-* --riemann-host-port RIEMANN_HOST_PORT
-  Optional. The host:port of where to send riemann events and metrics (to be useful, --no-metrics must *NOT* be specified)
-
 * `-v, --verbose`
   (default: 0)
 
@@ -145,9 +142,6 @@ Specify these options in the `HELIOS_AGENT_OPTS` variable in `/etc/default/helio
 
 * `--statsd-host-port STATSD_HOST_PORT`
   Optional. The host:port of where to send statsd metrics (to be useful, --no-metrics must *NOT* be specified)
-
-* `--riemann-host-port RIEMANN_HOST_PORT`
-  Optional. The host:port of where to send  riemann  events and metrics (to be useful, --no-metrics must *NOT* be specified)
 
 * `-v, --verbose`
   (default: 0)
@@ -204,7 +198,6 @@ ENABLED=true
 
 HELIOS_MASTER_OPTS="--syslog \
     --zk zookeeper1.example.com:2181,zookeeper2.example.com:2181,zookeeper3.example.com:2181
-    --riemann-host-port udp:localhost:5555 \
     --sentry-dsn SENRTY_DSN \
     --statsd-host-port localhost:8125 \
 "
@@ -219,7 +212,6 @@ ENABLED=true
 
 HELIOS_AGENT_OPTS="--syslog \
     --zk zookeeper1.example.com:2181,zookeeper2.example.com:2181,zookeeper3.example.com:2181
-    --riemann-host-port udp:localhost:5555 \
     --sentry-dsn SENRTY_DSN \
     --statsd-host-port localhost:8125 \
     --state-dir /var/lib/helios-agent \

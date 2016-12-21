@@ -71,7 +71,6 @@ public class ServiceParser {
   private final Argument zooKeeperAclAgentUser;
   private final Argument noMetricsArg;
   private final Argument statsdHostPortArg;
-  private final Argument riemannHostPortArg;
   private final Argument verboseArg;
   private final Argument syslogArg;
   private final Argument logconfigArg;
@@ -155,11 +154,6 @@ public class ServiceParser {
     statsdHostPortArg = parser.addArgument("--statsd-host-port")
         .setDefault((String) null)
         .help("host:port of where to send statsd metrics "
-              + "(to be useful, --no-metrics must *NOT* be specified)");
-
-    riemannHostPortArg = parser.addArgument("--riemann-host-port")
-        .setDefault((String) null)
-        .help("host:port of where to send riemann events and metrics "
               + "(to be useful, --no-metrics must *NOT* be specified)");
 
     verboseArg = parser.addArgument("-v", "--verbose")
@@ -266,10 +260,6 @@ public class ServiceParser {
 
   public String getName() {
     return options.getString(nameArg.getDest());
-  }
-
-  public String getRiemannHostPort() {
-    return options.getString(riemannHostPortArg.getDest());
   }
 
   public String getStatsdHostPort() {

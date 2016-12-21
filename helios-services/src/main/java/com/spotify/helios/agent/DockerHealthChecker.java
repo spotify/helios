@@ -24,7 +24,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.codahale.metrics.health.HealthCheck;
 import com.google.common.annotations.VisibleForTesting;
-import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.MeterRates;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 import io.dropwizard.lifecycle.Managed;
@@ -50,15 +49,12 @@ public class DockerHealthChecker extends HealthCheck implements Managed {
   private final TimeUnit timeUnit;
   private final int interval;
   private final HealthCheckRunnable runnable;
-  private final RiemannFacade facade;
 
   public DockerHealthChecker(final SupervisorMetrics metrics,
-                             final TimeUnit timeUnit, int interval,
-                             final RiemannFacade facade) {
+                             final TimeUnit timeUnit, int interval) {
     super();
     this.metrics = checkNotNull(metrics);
     this.timeUnit = checkNotNull(timeUnit);
-    this.facade = checkNotNull(facade).stack("docker-health");
 
     this.scheduler = Executors.newScheduledThreadPool(1);
     this.interval = interval;
@@ -78,8 +74,6 @@ public class DockerHealthChecker extends HealthCheck implements Managed {
         log.info("timeout ratio is {}, exception ratio is {}", timeoutRatio, exceptionRatio);
       }
 
-      final String origReason = reason;
-
       // Yay hysteresis!
       if (timeoutRatio > FAILURE_HIGH_WATERMARK) {
         reason = "docker timeouts are too high for too long";
@@ -91,23 +85,9 @@ public class DockerHealthChecker extends HealthCheck implements Managed {
       if (timeoutRatio < FAILURE_LOW_WATERMARK && exceptionRatio < FAILURE_LOW_WATERMARK) {
         reason = null;
       }
-
-      // If reason changed, emit an event
-      if (origReason != null && reason == null) {
-        facade.event()
-            .state("ok")
-            .tags("docker", "health")
-            .metric(1)
-            .send();
-      } else if (reason != null && origReason == null) {
-        facade.event()
-            .state("critical")
-            .tags("docker", "health")
-            .metric(0)
-            .send();
-      }
     }
   }
+
 
   private double fiveMinuteRatio(MeterRates numerator, MeterRates denominator) {
     if (denominator.getFiveMinuteRate() < .1) {

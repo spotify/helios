@@ -21,13 +21,11 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.codahale.metrics.health.HealthCheck;
-import com.spotify.helios.servicescommon.RiemannFacade;
 import io.dropwizard.lifecycle.Managed;
 import java.sql.Connection;
 import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -38,24 +36,12 @@ public class ZooKeeperHealthChecker extends HealthCheck implements Managed {
 
   private final ZooKeeperClient zooKeeperClient;
   private final ConnectionStateListener connectionStateListener;
-  private final RiemannFacade facade;
-
-  private final ScheduledExecutorService scheduler;
-  private final TimeUnit timeUnit;
-  private final long interval;
 
   private AtomicReference<ConnectionState> connectionState = new AtomicReference<>();
   private AtomicReference<Instant> changedAt = new AtomicReference<>();
 
-  public ZooKeeperHealthChecker(final ZooKeeperClient zooKeeperClient, final RiemannFacade facade,
-                                final TimeUnit timeUnit, final long interval) {
-
-    this.scheduler = Executors.newScheduledThreadPool(2);
-    this.facade = facade.stack("zookeeper-connection");
+  public ZooKeeperHealthChecker(final ZooKeeperClient zooKeeperClient) {
     this.zooKeeperClient = zooKeeperClient;
-    this.timeUnit = timeUnit;
-    this.interval = interval;
-
     this.connectionStateListener = (client, newState) -> {
       final ConnectionState oldState = connectionState.getAndSet(newState);
       if (oldState != newState) {
@@ -67,7 +53,6 @@ public class ZooKeeperHealthChecker extends HealthCheck implements Managed {
   @Override
   public void start() throws Exception {
     zooKeeperClient.getConnectionStateListenable().addListener(connectionStateListener);
-    scheduler.scheduleAtFixedRate(this::reportState, 0, interval, timeUnit);
 
     // call the listener in case Curator is already connected (as it won't fire a change then)
     fireInitialEvent();
@@ -87,7 +72,6 @@ public class ZooKeeperHealthChecker extends HealthCheck implements Managed {
   public void stop() throws Exception {
     // probably irrelevant but remove the listener to be safe
     zooKeeperClient.getConnectionStateListenable().removeListener(connectionStateListener);
-    scheduler.shutdown();
   }
 
   @Override
@@ -107,20 +91,5 @@ public class ZooKeeperHealthChecker extends HealthCheck implements Managed {
     } else {
       return "connection state is " + connectionState + ", state changed at " + this.changedAt;
     }
-  }
-
-  private void reportState() {
-    final ConnectionState connectionState = this.connectionState.get();
-    if (connectionState == null) {
-      return; // don't report anything until we get a known status
-    }
-
-    facade.event()
-        .state(connectionState.isConnected() ? "ok" : "critical")
-        .metric(connectionState.isConnected() ? 1.0 : 0.0)
-        .ttl(timeUnit.toSeconds(interval * 3))
-        .tags("zookeeper", "connection")
-        .description(description())
-        .send();
   }
 }

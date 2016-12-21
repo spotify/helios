@@ -43,6 +43,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+
 /**
  * Parses and processes command-line arguments to produce the {@link AgentConfig}.
  */
@@ -133,7 +134,6 @@ public class AgentParser extends ServiceParser {
         .setRedirectToSyslog(options.getString(syslogRedirectToArg.getDest()))
         .setStateDirectory(getStateDirectory())
         .setStatsdHostPort(getStatsdHostPort())
-        .setRiemannHostPort(getRiemannHostPort())
         .setPortRange(start, end)
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())
