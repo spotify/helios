@@ -28,7 +28,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.client.HeliosClient;
@@ -63,32 +62,20 @@ public class JobListTest extends SystemTestBase {
 
     // Test didn't find
     final String result2 = cli("jobs", "FramAZaMaWonTF1nD", "--json");
-    try {
-      final Map<String, Object> resultObj2 = OBJECT_MAPPER.readValue(result2, MAP_TYPE);
-      // It might conceivably get here at some point, but better be empty if it does
-      assertTrue(resultObj2.isEmpty());
-    } catch (JsonParseException ignored) {
-      // ignored
-    }
+    final Map<String, Object> resultObj2 = OBJECT_MAPPER.readValue(result2, MAP_TYPE);
+    // It might conceivably get here at some point, but better be empty if it does
+    assertTrue(resultObj2.isEmpty());
 
     final String result3 = cli("jobs", "-y", "--json");
-    try {
-      final Map<String, Object> resultObj3 = OBJECT_MAPPER.readValue(result3, MAP_TYPE);
-      assertTrue(result3, resultObj3.isEmpty());
-    } catch (JsonParseException ignored) {
-      // ignored
-    }
+    final Map<String, Object> resultObj3 = OBJECT_MAPPER.readValue(result3, MAP_TYPE);
+    assertTrue("Expected empty map but got: " + result3, resultObj3.isEmpty());
 
     final HeliosClient client = defaultClient();
     client.deploy(Deployment.of(jobId, Goal.START), testHost());
     awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
 
     final String result4 = cli("jobs", "-y", "--json");
-    try {
-      final Map<String, Object> resultObj4 = OBJECT_MAPPER.readValue(result4, MAP_TYPE);
-      assertFalse(resultObj4.isEmpty());
-    } catch (JsonParseException ignored) {
-      // ignored
-    }
+    final Map<String, Object> resultObj4 = OBJECT_MAPPER.readValue(result4, MAP_TYPE);
+    assertFalse(resultObj4.isEmpty());
   }
 }
