@@ -250,9 +250,13 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       final CuratorTransactionFinal t = client.inTransaction().check().forPath(path).and();
       for (final String node : reverse(nodes))  {
         t.delete().forPath(node).and();
+        System.out.println("Added delete " + node + " to transaction");
       }
+      System.out.println("Attempting to commit transaction " + t);
       t.commit();
+      System.out.println("Committed transaction " + t);
     } catch (Exception e) {
+      System.out.println("Caught exception while trying to deleteRecursive()\n" + e);
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
     }
