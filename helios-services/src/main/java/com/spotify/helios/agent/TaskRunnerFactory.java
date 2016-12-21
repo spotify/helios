@@ -39,6 +39,7 @@ public class TaskRunnerFactory {
   private final Optional<HealthChecker> healthChecker;
   private final ServiceRegistrar registrar;
   private final List<TaskRunner.Listener> listeners;
+  private final Optional<SecretVolumeManager> secretVolumeManager;
 
   public TaskRunnerFactory(final Builder builder) {
     this.taskConfig = checkNotNull(builder.config, "config");
@@ -46,6 +47,7 @@ public class TaskRunnerFactory {
     this.docker = checkNotNull(builder.docker, "docker");
     this.listeners = checkNotNull(builder.listeners, "listeners");
     this.healthChecker = Optional.fromNullable(builder.healthChecker);
+    this.secretVolumeManager = Optional.fromNullable(builder.secretVolumeManager);
   }
 
   public TaskRunner create(final long delay,
@@ -61,6 +63,7 @@ public class TaskRunnerFactory {
         .listener(new BroadcastingListener(concat(this.listeners, singletonList(listener))))
         .registrar(registrar)
         .secondsToWaitBeforeKill(secondsToWaitBeforeKill)
+        .secretVolumeManager(secretVolumeManager.orNull())
         .build();
   }
 
@@ -78,6 +81,7 @@ public class TaskRunnerFactory {
     private HealthChecker healthChecker;
     private ServiceRegistrar registrar;
     private List<TaskRunner.Listener> listeners = Lists.newArrayList();
+    private SecretVolumeManager secretVolumeManager;
 
     public Builder config(final TaskConfig config) {
       this.config = config;
@@ -101,6 +105,11 @@ public class TaskRunnerFactory {
 
     public Builder listener(final TaskRunner.Listener listener) {
       this.listeners.add(listener);
+      return this;
+    }
+
+    public Builder secretVolumeManager(final SecretVolumeManager manager) {
+      this.secretVolumeManager = manager;
       return this;
     }
 

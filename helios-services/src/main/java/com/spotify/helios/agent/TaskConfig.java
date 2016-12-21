@@ -35,6 +35,7 @@ import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.Resources;
+import com.spotify.helios.common.descriptors.Secrets;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
@@ -302,6 +303,15 @@ public class TaskConfig {
     }
 
     return builder.build();
+  }
+
+  /**
+   * Get the secrets configuration for this task.
+   *
+   * @return The secrets configuration for the task, inherited from the job.
+   */
+  public Secrets secretsConfig() {
+    return job.getSecrets();
   }
 
   /**

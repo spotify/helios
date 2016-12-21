@@ -34,6 +34,7 @@ import com.spotify.docker.client.messages.ContainerState;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.SecretVolumeException;
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
@@ -41,6 +42,7 @@ import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -66,6 +68,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private Optional<String> containerId;
   private final String containerName;
   private int secondsToWaitBeforeKill;
+  private final Optional<SecretVolumeManager> secretVolumeManager;
 
   private TaskRunner(final Builder builder) {
     super("TaskRunner(" + builder.taskConfig.name() + ")");
@@ -80,6 +83,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.healthChecker = Optional.fromNullable(builder.healthChecker);
     this.serviceRegistrationHandle = Optional.absent();
     this.containerId = Optional.absent();
+    this.secretVolumeManager = Optional.fromNullable(builder.secretVolumeManager);
   }
 
   public Result<Integer> result() {
@@ -113,6 +117,14 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     // Interrupt the thread blocking on waitContainer
     stopAsync().awaitTerminated();
+
+    if (secretVolumeManager.isPresent() && config.secretsConfig() != null) {
+      try {
+        secretVolumeManager.get().destroy(config.containerName());
+      } catch (SecretVolumeException e) {
+        log.warn("Destroying secrets for container {} failed", container, e);
+      }
+    }
 
     try {
       docker.stopContainer(container, secondsToWaitBeforeKill);
@@ -152,7 +164,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
-  private int run0() throws InterruptedException, DockerException {
+  private int run0() throws InterruptedException, DockerException, SecretVolumeException {
     // Delay
     Thread.sleep(delayMillis);
 
@@ -223,7 +235,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   }
 
   private String createAndStartContainer()
-      throws DockerException, InterruptedException {
+      throws DockerException, InterruptedException, SecretVolumeException {
 
     // Ensure we have the image
     boolean serializePulls = false;
@@ -249,7 +261,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   }
 
   private String startContainer(final String image, final Optional<String> dockerVersion)
-      throws InterruptedException, DockerException {
+      throws InterruptedException, DockerException, SecretVolumeException {
 
     // Get container image info
     final ImageInfo imageInfo = docker.inspectImage(image);
@@ -257,12 +269,32 @@ class TaskRunner extends InterruptingExecutionThreadService {
       throw new HeliosRuntimeException("docker inspect image returned null on image " + image);
     }
 
+    final HostConfig.Builder hostConfigBuilder = config.hostConfig(dockerVersion).toBuilder();
+
+    final ImmutableList.Builder<String> binds = ImmutableList.builder();
+    if (hostConfigBuilder.binds() != null) {
+      binds.addAll(hostConfigBuilder.binds());
+    }
+
+    if (secretVolumeManager.isPresent() && config.secretsConfig() != null) {
+      log.info("Secret volume manager enabled for {}", config.containerName());
+      final String source = secretVolumeManager.get()
+          .create(config.containerName(), config.secretsConfig());
+      final String bind = config.secretsConfig().getPath() + ":" + source + ":ro";
+      log.debug("Adding secret volume: {}", bind);
+      binds.add(bind);
+    }
+
+    final HostConfig hostConfig = hostConfigBuilder
+        .binds(binds.build())
+        .build();
+
     // Create container
-    final HostConfig hostConfig = config.hostConfig(dockerVersion);
     final ContainerConfig containerConfig = config.containerConfig(imageInfo, dockerVersion)
         .toBuilder()
         .hostConfig(hostConfig)
         .build();
+
     listener.creating();
     final ContainerCreation container = docker.createContainer(containerConfig, containerName);
     log.info("created container: {}: {}, {}", config, container, containerConfig);
@@ -385,6 +417,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     private Listener listener;
     private HealthChecker healthChecker;
     private int secondsToWaitBeforeKill;
+    private SecretVolumeManager secretVolumeManager;
     public ServiceRegistrar registrar = new NopServiceRegistrar();
 
     public Builder delayMillis(final long delayMillis) {
@@ -424,6 +457,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     public Builder secondsToWaitBeforeKill(int seconds) {
       this.secondsToWaitBeforeKill = seconds;
+      return this;
+    }
+
+    public Builder secretVolumeManager(final SecretVolumeManager manager) {
+      this.secretVolumeManager = manager;
       return this;
     }
 

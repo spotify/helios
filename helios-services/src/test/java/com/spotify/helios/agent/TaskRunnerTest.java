@@ -33,9 +33,11 @@ import com.spotify.docker.client.messages.Version;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.Secrets;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -56,6 +58,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -79,6 +82,7 @@ public class TaskRunnerTest {
   @Mock private StatusUpdater statusUpdater;
   @Mock private Clock clock;
   @Mock private ContainerDecorator containerDecorator;
+  @Mock private SecretVolumeManager mockSecretVolumeManager;
 
   @Test
   public void test() throws Throwable {
@@ -103,6 +107,52 @@ public class TaskRunnerTest {
       assertTrue(t instanceof ExecutionException);
       assertEquals(HeliosRuntimeException.class, t.getCause().getClass());
     }
+  }
+
+  @Test
+  public void testRunWithSecretVolume() throws Throwable {
+    final String containerPath = "/containersecrets";
+    final Secrets secrets = Secrets.create(Secrets.Source.TALOS, containerPath, "/key", "/cert");
+
+    final Job jobWithSecret = Job.newBuilder()
+        .setName("foobar")
+        .setCommand(asList("foo", "bar"))
+        .setImage(IMAGE)
+        .setVersion("4711")
+        .setSecrets(secrets)
+        .build();
+    final TaskRunner tr = TaskRunner.builder()
+        .delayMillis(0)
+        .config(TaskConfig.builder()
+                    .namespace("test")
+                    .host(HOST)
+                    .job(jobWithSecret)
+                    .containerDecorators(ImmutableList.of(containerDecorator))
+                    .build())
+        .docker(mockDocker)
+        .secretVolumeManager(mockSecretVolumeManager)
+        .listener(new TaskRunner.NopListener())
+        .build();
+
+    final Version mockDockerVersion = mock(Version.class);
+    final ImageInfo mockDockerImageInfo = mock(ImageInfo.class);
+
+    doReturn("1.12.1").when(mockDockerVersion).version();
+    doReturn(mockDockerVersion).when(mockDocker).version();
+    doReturn(mockDockerImageInfo).when(mockDocker).inspectImage(anyString());
+
+    final String hostPath = "/hostsecrets/container";
+    doReturn(hostPath).when(mockSecretVolumeManager).create(anyString(), eq(secrets));
+
+    tr.run();
+
+    verify(mockSecretVolumeManager).create(anyString(), eq(secrets));
+
+    final ArgumentCaptor<ContainerConfig> containerConfig =
+        ArgumentCaptor.forClass(ContainerConfig.class);
+    verify(mockDocker).createContainer(containerConfig.capture(), anyString());
+    final String secretBind = containerConfig.getValue().hostConfig().binds().get(0);
+    assertEquals(secretBind, containerPath + ":" + hostPath + ":ro");
   }
 
   @Test
