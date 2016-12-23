@@ -1,21 +1,27 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Tools
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.cli.command;
+
+import static com.google.common.base.CharMatcher.WHITESPACE;
+import static com.spotify.helios.cli.Utils.printMap;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -23,7 +29,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
@@ -34,10 +39,6 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
-
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.text.DateFormat;
@@ -47,9 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
-
-import static com.google.common.base.CharMatcher.WHITESPACE;
-import static com.spotify.helios.cli.Utils.printMap;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
 
 public class JobInspectCommand extends WildcardJobCommand {
 
@@ -67,14 +67,14 @@ public class JobInspectCommand extends WildcardJobCommand {
       new Function<PortMapping, String>() {
         @Override
         public String apply(final PortMapping input) {
-          String s = String.valueOf(input.getInternalPort());
+          String str = String.valueOf(input.getInternalPort());
           if (input.getExternalPort() != null) {
-            s += ":" + input.getExternalPort();
+            str += ":" + input.getExternalPort();
           }
           if (input.getProtocol() != null) {
-            s += "/" + input.getProtocol();
+            str += "/" + input.getProtocol();
           }
-          return s;
+          return str;
         }
       };
 
@@ -90,19 +90,19 @@ public class JobInspectCommand extends WildcardJobCommand {
     if (healthCheck == null) {
       return "";
     }
-    String s = String.format("type: %s", String.valueOf(healthCheck.getType()));
+    String str = String.format("type: %s", String.valueOf(healthCheck.getType()));
     if (healthCheck instanceof HttpHealthCheck) {
       final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) healthCheck;
-      s += String.format(", port: %s, path: %s", httpHealthCheck.getPort(),
+      str += String.format(", port: %s, path: %s", httpHealthCheck.getPort(),
                          httpHealthCheck.getPath());
     } else if (healthCheck instanceof TcpHealthCheck) {
       final TcpHealthCheck tcpHealthCheck = (TcpHealthCheck) healthCheck;
-      s += String.format(", port: %s", tcpHealthCheck.getPort());
+      str += String.format(", port: %s", tcpHealthCheck.getPort());
     } else if (healthCheck instanceof ExecHealthCheck) {
       final ExecHealthCheck execHealthCheck = (ExecHealthCheck) healthCheck;
-      s += String.format(", command: %s", Joiner.on(" ").join(execHealthCheck.getCommand()));
+      str += String.format(", command: %s", Joiner.on(" ").join(execHealthCheck.getCommand()));
     }
-    return s;
+    return str;
   }
 
   public JobInspectCommand(final Subparser parser) {
@@ -183,13 +183,13 @@ public class JobInspectCommand extends WildcardJobCommand {
     }
   }
 
-  private static String quote(final String s) {
-    if (s == null) {
+  private static String quote(final String str) {
+    if (str == null) {
       return "";
     }
-    return WHITESPACE.matchesAnyOf(s)
-           ? '"' + s + '"'
-           : s;
+    return WHITESPACE.matchesAnyOf(str)
+           ? '"' + str + '"'
+           : str;
   }
 
   private static List<String> quote(final List<String> ss) {

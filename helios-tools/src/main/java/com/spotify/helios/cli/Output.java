@@ -1,31 +1,33 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Tools
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.cli;
 
 import static java.lang.String.format;
 
+import java.io.PrintStream;
 import org.joda.time.Duration;
 import org.joda.time.Period;
 import org.xbill.DNS.Name;
 import org.xbill.DNS.ResolverConfig;
 import org.xbill.DNS.TextParseException;
-
-import java.io.PrintStream;
 
 public class Output {
 
@@ -33,19 +35,19 @@ public class Output {
     return humanDuration(Duration.millis(millis));
   }
 
-  public static String humanDuration(final Duration d) {
-    final Period p = d.toPeriod().normalizedStandard();
+  public static String humanDuration(final Duration dur) {
+    final Period p = dur.toPeriod().normalizedStandard();
 
-    if (d.getStandardSeconds() == 0) {
+    if (dur.getStandardSeconds() == 0) {
       return "0 seconds";
-    } else if (d.getStandardSeconds() < 60) {
+    } else if (dur.getStandardSeconds() < 60) {
       return format("%d second%s", p.getSeconds(), p.getSeconds() > 1 ? "s" : "");
-    } else if (d.getStandardMinutes() < 60) {
+    } else if (dur.getStandardMinutes() < 60) {
       return format("%d minute%s", p.getMinutes(), p.getMinutes() > 1 ? "s" : "");
-    } else if (d.getStandardHours() < 24) {
+    } else if (dur.getStandardHours() < 24) {
       return format("%d hour%s", p.getHours(), p.getHours() > 1 ? "s" : "");
     } else {
-      return format("%d day%s", d.getStandardDays(), d.getStandardDays() > 1 ? "s" : "");
+      return format("%d day%s", dur.getStandardDays(), dur.getStandardDays() > 1 ? "s" : "");
     }
   }
 

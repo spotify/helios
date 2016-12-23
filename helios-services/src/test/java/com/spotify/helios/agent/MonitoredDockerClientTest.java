@@ -1,21 +1,32 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.aphyr.riemann.Proto;
 import com.aphyr.riemann.client.AbstractRiemannClient;
@@ -25,7 +36,6 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.helios.servicescommon.RiemannFacade;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,14 +45,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MonitoredDockerClientTest {
@@ -61,7 +63,7 @@ public class MonitoredDockerClientTest {
   @Before
   public void setUp() throws Exception {
     when(riemannClient.aSendEventsWithAck(eventCaptor.capture()))
-        .thenReturn(new Promise<Boolean>());
+        .thenReturn(new Promise<>());
     when(riemannClient.event()).thenReturn(new EventDSL(riemannClient));
     final RiemannFacade riemannFacade = new RiemannFacade(riemannClient, HOST, SERVICE);
     sut = MonitoredDockerClient.wrap(riemannFacade, client);
@@ -74,6 +76,7 @@ public class MonitoredDockerClientTest {
       sut.inspectContainer("foo");
       fail();
     } catch (DockerTimeoutException ignore) {
+      // ignored
     }
     final Proto.Event event = eventCaptor.getValue();
     assertThat(event.getTagsList(), contains("docker", "timeout", "inspectContainer"));
@@ -87,6 +90,7 @@ public class MonitoredDockerClientTest {
       sut.inspectImage("bar");
       fail();
     } catch (DockerException ignore) {
+      // ignored
     }
     final Proto.Event event = eventCaptor.getValue();
     assertThat(event.getTagsList(), contains("docker", "error", "inspectImage"));

@@ -1,36 +1,37 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
-
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-
-import com.spotify.docker.client.DockerClient;
-import com.spotify.helios.serviceregistration.ServiceRegistrar;
-
-import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static java.util.Collections.singletonList;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import java.util.List;
+
 /**
- * As you might guess, creates {@link TaskRunner}s
+ * As you might guess, creates {@link TaskRunner}s.
  */
 public class TaskRunnerFactory {
 
@@ -118,9 +119,9 @@ public class TaskRunnerFactory {
     }
 
     @Override
-    public void failed(final Throwable t, final String containerError) {
+    public void failed(final Throwable th, final String containerError) {
       for (final TaskRunner.Listener l : listeners) {
-        l.failed(t, containerError);
+        l.failed(th, containerError);
       }
     }
 

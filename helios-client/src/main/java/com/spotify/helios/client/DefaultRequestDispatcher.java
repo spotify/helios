@@ -1,32 +1,30 @@
-/*
- * Copyright (c) 2015 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
-
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.Json;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.zip.GZIPInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Connects to Helios masters via Sun HttpUrlConnection and handles special setup for HTTPS, as well
@@ -82,10 +82,10 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         final InputStream stream = gzip ? new GZIPInputStream(rawStream) : rawStream;
         final ByteArrayOutputStream payload = new ByteArrayOutputStream();
         if (stream != null) {
-          int n;
+          int numBytes;
           final byte[] buffer = new byte[4096];
-          while ((n = stream.read(buffer, 0, buffer.length)) != -1) {
-            payload.write(buffer, 0, n);
+          while ((numBytes = stream.read(buffer, 0, buffer.length)) != -1) {
+            payload.write(buffer, 0, numBytes);
           }
         }
 

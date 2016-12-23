@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios System Tests
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.system;
@@ -26,6 +29,8 @@ import static org.hamcrest.text.IsEmptyString.isEmptyOrNullString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeThat;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.Info;
@@ -37,10 +42,6 @@ import com.spotify.helios.common.descriptors.Resources;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
-
 import org.junit.Before;
 import org.junit.Test;
 

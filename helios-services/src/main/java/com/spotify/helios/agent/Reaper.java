@@ -1,34 +1,34 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
-
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.Container;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Find containers running in our namespace for which we don't have a record that we started, and
@@ -54,6 +54,11 @@ public class Reaper {
     }
   }
 
+  private void reap(final String containerId) throws InterruptedException, DockerException {
+    log.info("reaping {}", containerId);
+    docker.killContainer(containerId);
+  }
+
   private void reap0(final Supplier<Set<String>> activeSupplier)
       throws DockerException, InterruptedException {
     final List<String> candidates = Lists.newArrayList();
@@ -75,10 +80,5 @@ public class Reaper {
         reap(candidate);
       }
     }
-  }
-
-  private void reap(final String containerId) throws InterruptedException, DockerException {
-    log.info("reaping {}", containerId);
-    docker.killContainer(containerId);
   }
 }

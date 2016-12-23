@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
@@ -20,6 +23,9 @@ package com.spotify.helios.agent;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
@@ -31,24 +37,19 @@ import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCach
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory;
-
-import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.AbstractIdleService;
-import org.apache.curator.framework.state.ConnectionState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.curator.framework.state.ConnectionState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The Helios Agent's view into ZooKeeper.
  *
- * This caches ZK state to local disk so the agent can continue to function in the face of a ZK
+ * <p>This caches ZK state to local disk so the agent can continue to function in the face of a ZK
  * outage.
  */
 public class ZooKeeperAgentModel extends AbstractIdleService implements AgentModel {

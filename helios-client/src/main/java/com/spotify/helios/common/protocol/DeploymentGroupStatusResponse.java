@@ -1,33 +1,33 @@
-/*
- * Copyright (c) 2015 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.common.protocol;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
+import org.jetbrains.annotations.Nullable;
 
 public class DeploymentGroupStatusResponse {
 
@@ -65,15 +65,15 @@ public class DeploymentGroupStatusResponse {
     }
 
     @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
+    public boolean equals(final Object obj) {
+      if (this == obj) {
         return true;
       }
-      if (o == null || getClass() != o.getClass()) {
+      if (obj == null || getClass() != obj.getClass()) {
         return false;
       }
 
-      final HostStatus that = (HostStatus) o;
+      final HostStatus that = (HostStatus) obj;
 
       if (host != null ? !host.equals(that.host) : that.host != null) {
         return false;
@@ -138,13 +138,13 @@ public class DeploymentGroupStatusResponse {
 
   @Override
   public String toString() {
-    return "DeploymentGroupStatusResponse{" +
-           "deploymentGroup=" + deploymentGroup +
-           ", status=" + status +
-           ", error='" + error + '\'' +
-           ", hostStatuses=" + hostStatuses +
-           ", deploymentGroupStatus=" + deploymentGroupStatus +
-           '}';
+    return "DeploymentGroupStatusResponse{"
+           + "deploymentGroup=" + deploymentGroup
+           + ", status=" + status
+           + ", error='" + error + '\''
+           + ", hostStatuses=" + hostStatuses
+           + ", deploymentGroupStatus=" + deploymentGroupStatus
+           + '}';
   }
 
   public String toJsonString() {
@@ -152,15 +152,15 @@ public class DeploymentGroupStatusResponse {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final DeploymentGroupStatusResponse response = (DeploymentGroupStatusResponse) o;
+    final DeploymentGroupStatusResponse response = (DeploymentGroupStatusResponse) obj;
 
     if (deploymentGroup != null ? !deploymentGroup.equals(response.deploymentGroup)
                                 : response.deploymentGroup != null) {

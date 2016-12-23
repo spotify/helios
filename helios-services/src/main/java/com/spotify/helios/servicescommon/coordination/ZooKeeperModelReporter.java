@@ -1,47 +1,48 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon.coordination;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.spotify.helios.servicescommon.NoOpRiemannClient;
-import com.spotify.helios.servicescommon.RiemannFacade;
-import com.spotify.helios.servicescommon.statistics.NoopZooKeeperMetrics;
-import com.spotify.helios.servicescommon.statistics.ZooKeeperMetrics;
-
 import com.codahale.metrics.Clock;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.spotify.helios.servicescommon.NoOpRiemannClient;
+import com.spotify.helios.servicescommon.RiemannFacade;
+import com.spotify.helios.servicescommon.statistics.NoopZooKeeperMetrics;
+import com.spotify.helios.servicescommon.statistics.ZooKeeperMetrics;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.OperationTimeoutException;
 import org.apache.zookeeper.KeeperException.RuntimeInconsistencyException;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 public class ZooKeeperModelReporter {
   private final RiemannFacade riemannFacade;
   private final ZooKeeperMetrics metrics;
   private final ImmutableMap<Class<?>, String> exceptionMap =
-      ImmutableMap.<Class<?>, String>of(
+      ImmutableMap.of(
           OperationTimeoutException.class, "timeout",
           ConnectionLossException.class, "connection_loss",
           RuntimeInconsistencyException.class, "inconsistency");
@@ -53,15 +54,15 @@ public class ZooKeeperModelReporter {
     this.riemannFacade = checkNotNull(riemannFacade).stack("zookeeper");
   }
 
-  public void checkException(Exception e, String... tags) {
-    Throwable t = e;
-    while (t != null && !(t instanceof KeeperException)) {
-      t = t.getCause();
+  public void checkException(Exception ex, String... tags) {
+    Throwable th = ex;
+    while (th != null && !(th instanceof KeeperException)) {
+      th = th.getCause();
     }
-    if (t == null) {
+    if (th == null) {
       return;
     }
-    final KeeperException k = (KeeperException) t;
+    final KeeperException k = (KeeperException) th;
     final String message = exceptionMap.get(k.getClass());
     if (message == null) {
       return;

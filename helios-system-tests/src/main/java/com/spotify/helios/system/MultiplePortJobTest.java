@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios System Tests
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.system;
@@ -30,6 +33,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Range;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.Polling;
@@ -39,15 +44,10 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Range;
-
-import org.junit.Test;
-
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class MultiplePortJobTest extends SystemTestBase {
 
@@ -64,9 +64,9 @@ public class MultiplePortJobTest extends SystemTestBase {
     final Range<Integer> portRange = temporaryPorts.localPortRange("agent1", 2);
 
     // Start an agent using the aforementioned 2 port wide range.
-    final AgentMain agent1 = startDefaultAgent(testHost(), "--port-range=" +
-                                                          portRange.lowerEndpoint() + ":" +
-                                                          portRange.upperEndpoint());
+    final AgentMain agent1 = startDefaultAgent(testHost(), "--port-range="
+                                                           + portRange.lowerEndpoint() + ":"
+                                                           + portRange.upperEndpoint());
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final HeliosClient client = defaultClient();
@@ -115,15 +115,16 @@ public class MultiplePortJobTest extends SystemTestBase {
       dockerClient.killContainer(firstTaskStatus1.getContainerId());
       final TaskStatus restartedTaskStatus1 = Polling.await(
           LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
-        @Override
-        public TaskStatus call() throws Exception {
-          final HostStatus hostStatus = client.hostStatus(testHost()).get();
-          final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId1);
-          return (taskStatus != null && taskStatus.getState() == RUNNING &&
-                  !Objects.equals(taskStatus.getContainerId(), firstTaskStatus1.getContainerId()))
-                 ? taskStatus : null;
-        }
-      });
+            @Override
+            public TaskStatus call() throws Exception {
+              final HostStatus hostStatus = client.hostStatus(testHost()).get();
+              final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId1);
+              return (taskStatus != null && taskStatus.getState() == RUNNING
+                      && !Objects.equals(taskStatus.getContainerId(),
+                  firstTaskStatus1.getContainerId()))
+                     ? taskStatus : null;
+            }
+          });
       assertEquals(firstTaskStatus1.getPorts(), restartedTaskStatus1.getPorts());
 
       // Verify that port allocation is kept across agent restarts
@@ -132,15 +133,16 @@ public class MultiplePortJobTest extends SystemTestBase {
       startDefaultAgent(testHost());
       final TaskStatus restartedTaskStatus2 = Polling.await(
           LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
-        @Override
-        public TaskStatus call() throws Exception {
-          final HostStatus hostStatus = client.hostStatus(testHost()).get();
-          final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId2);
-          return (taskStatus != null && taskStatus.getState() == RUNNING &&
-                  !Objects.equals(taskStatus.getContainerId(), firstTaskStatus2.getContainerId()))
-                 ? taskStatus : null;
-        }
-      });
+            @Override
+            public TaskStatus call() throws Exception {
+              final HostStatus hostStatus = client.hostStatus(testHost()).get();
+              final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId2);
+              return (taskStatus != null && taskStatus.getState() == RUNNING
+                      && !Objects.equals(taskStatus.getContainerId(),
+                  firstTaskStatus2.getContainerId()))
+                     ? taskStatus : null;
+            }
+          });
       assertEquals(firstTaskStatus2.getPorts(), restartedTaskStatus2.getPorts());
     }
   }
@@ -156,7 +158,7 @@ public class MultiplePortJobTest extends SystemTestBase {
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final JobId jobId = createJob(testJobName + 1, testJobVersion, BUSYBOX,
-        asList("sh", "-c", "echo $HELIOS_PORT_bar"), EMPTY_ENV, ports);
+          asList("sh", "-c", "echo $HELIOS_PORT_bar"), EMPTY_ENV, ports);
 
       deployJob(jobId, testHost());
 

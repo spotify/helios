@@ -1,24 +1,30 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon.coordination;
 
 import com.fasterxml.jackson.databind.JavaType;
-
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
@@ -29,11 +35,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Exists because the Curator library makes things ununit-testable without this. Also it avoids
@@ -51,7 +52,6 @@ public interface ZooKeeperClient {
    *
    * @param path The path to ensure exists.
    * @param data The data to write at the base of the path, if it does not exist.
-   * @throws KeeperException
    */
   void ensurePathAndSetData(String path, byte[] data) throws KeeperException;
 
@@ -60,6 +60,8 @@ public interface ZooKeeperClient {
   List<String> getChildren(String path) throws KeeperException;
 
   void delete(String path) throws KeeperException;
+
+  void delete(String path, int version) throws KeeperException;
 
   void setData(String path, byte[] bytes) throws KeeperException;
 
@@ -84,8 +86,6 @@ public interface ZooKeeperClient {
 
   Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations)
       throws KeeperException;
-
-  void delete(String path, int version) throws KeeperException;
 
   Node getNode(String path) throws KeeperException;
 

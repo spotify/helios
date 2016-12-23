@@ -1,59 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Tools
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.cli.command;
-
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.protocol.CreateJobResponse;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.hamcrest.CustomTypeSafeMatcher;
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -67,6 +32,40 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.protocol.CreateJobResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JobCreateCommandTest {
 
@@ -158,7 +157,7 @@ public class JobCreateCommandTest {
   }
 
   @Test
-  public void testJobCreateCommandFailsWithInvalidJobID() throws Exception {
+  public void testJobCreateCommandFailsWithInvalidJobId() throws Exception {
     when(options.getString("id")).thenReturn(JOB_NAME);
     when(options.getString("image")).thenReturn("spotify/busybox:latest");
     final int ret = runCommand();
@@ -260,8 +259,8 @@ public class JobCreateCommandTest {
     return new CustomTypeSafeMatcher<Job>(description) {
       @Override
       protected boolean matchesSafely(final Job actual) {
-        return Objects.equals(added, actual.getAddCapabilities()) &&
-               Objects.equals(dropped, actual.getDropCapabilities());
+        return Objects.equals(added, actual.getAddCapabilities())
+               && Objects.equals(dropped, actual.getDropCapabilities());
       }
     };
   }

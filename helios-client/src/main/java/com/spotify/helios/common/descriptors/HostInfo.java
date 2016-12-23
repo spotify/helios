@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.common.descriptors;
@@ -23,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Represents the Agent system information.
  *
- * A typical JSON representation might look like:
+ * <p>A typical JSON representation might look like:
  * <pre>
  * {
  *   "architecture" : "amd64",
@@ -286,34 +289,34 @@ public class HostInfo extends Descriptor {
 
   @Override
   public String toString() {
-    return "HostInfo{" +
-           "hostname='" + hostname + '\'' +
-           ", uname='" + uname + '\'' +
-           ", architecture='" + architecture + '\'' +
-           ", osName='" + osName + '\'' +
-           ", osVersion='" + osVersion + '\'' +
-           ", cpus=" + cpus +
-           ", loadAvg=" + loadAvg +
-           ", memoryTotalBytes=" + memoryTotalBytes +
-           ", memoryFreeBytes=" + memoryFreeBytes +
-           ", swapTotalBytes=" + swapTotalBytes +
-           ", swapFreeBytes=" + swapFreeBytes +
-           ", dockerVersion=" + dockerVersion +
-           ", dockerHost='" + dockerHost + '\'' +
-           ", dockerCertPath='" + dockerCertPath + '\'' +
-           '}';
+    return "HostInfo{"
+           + "hostname='" + hostname + '\''
+           + ", uname='" + uname + '\''
+           + ", architecture='" + architecture + '\''
+           + ", osName='" + osName + '\''
+           + ", osVersion='" + osVersion + '\''
+           + ", cpus=" + cpus
+           + ", loadAvg=" + loadAvg
+           + ", memoryTotalBytes=" + memoryTotalBytes
+           + ", memoryFreeBytes=" + memoryFreeBytes
+           + ", swapTotalBytes=" + swapTotalBytes
+           + ", swapFreeBytes=" + swapFreeBytes
+           + ", dockerVersion=" + dockerVersion
+           + ", dockerHost='" + dockerHost + '\''
+           + ", dockerCertPath='" + dockerCertPath + '\''
+           + '}';
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final HostInfo hostInfo = (HostInfo) o;
+    final HostInfo hostInfo = (HostInfo) obj;
 
     if (cpus != hostInfo.cpus) {
       return false;
@@ -365,14 +368,13 @@ public class HostInfo extends Descriptor {
   @Override
   public int hashCode() {
     int result;
-    long temp;
     result = hostname != null ? hostname.hashCode() : 0;
     result = 31 * result + (uname != null ? uname.hashCode() : 0);
     result = 31 * result + (architecture != null ? architecture.hashCode() : 0);
     result = 31 * result + (osName != null ? osName.hashCode() : 0);
     result = 31 * result + (osVersion != null ? osVersion.hashCode() : 0);
     result = 31 * result + cpus;
-    temp = Double.doubleToLongBits(loadAvg);
+    final long temp = Double.doubleToLongBits(loadAvg);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     result = 31 * result + (int) (memoryTotalBytes ^ (memoryTotalBytes >>> 32));
     result = 31 * result + (int) (memoryFreeBytes ^ (memoryFreeBytes >>> 32));

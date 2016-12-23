@@ -1,42 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.master.reaper;
-
-import com.google.common.collect.ImmutableMap;
-
-import com.spotify.helios.common.Clock;
-import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
-import com.spotify.helios.master.MasterModel;
-
-import org.joda.time.Instant;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-
-import java.util.Date;
-import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
@@ -45,6 +27,24 @@ import static org.mockito.Mockito.ignoreStubs;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import com.google.common.collect.ImmutableMap;
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.master.MasterModel;
+import java.util.Date;
+import java.util.Map;
+import org.joda.time.Instant;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExpiredJobReaperTest {
@@ -95,21 +95,21 @@ public class ExpiredJobReaperTest {
     when(masterModel.getJobs()).thenReturn(JOBS);
 
     when(masterModel.getJobStatus(any(JobId.class)))
-      .then(new Answer<JobStatus>() {
-        @Override
-        public JobStatus answer(final InvocationOnMock invocation) throws Throwable {
-          final JobId jobId = (JobId) invocation.getArguments()[0];
+        .then(new Answer<JobStatus>() {
+          @Override
+          public JobStatus answer(final InvocationOnMock invocation) throws Throwable {
+            final JobId jobId = (JobId) invocation.getArguments()[0];
 
-          final Map<String, Deployment> deployments = ImmutableMap.of(
-              "hostA", Deployment.of(jobId, Goal.START),
-              "hostB", Deployment.of(jobId, Goal.START));
+            final Map<String, Deployment> deployments = ImmutableMap.of(
+                "hostA", Deployment.of(jobId, Goal.START),
+                "hostB", Deployment.of(jobId, Goal.START));
 
-          return JobStatus.newBuilder()
-              .setJob(JOBS.get(jobId))
-              .setDeployments(deployments)
-              .build();
-        }
-      });
+            return JobStatus.newBuilder()
+                .setJob(JOBS.get(jobId))
+                .setDeployments(deployments)
+                .build();
+          }
+        });
 
     ExpiredJobReaper.newBuilder()
         .setClock(mockClock)

@@ -1,39 +1,24 @@
-/*
- * Copyright (c) 2015 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.rollingupdate;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
-import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
-import com.spotify.helios.common.descriptors.RolloutTask;
-import com.spotify.helios.servicescommon.coordination.Paths;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
@@ -42,6 +27,21 @@ import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
+import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 public class RollingUpdateOpFactory {
 
@@ -186,14 +186,14 @@ public class RollingUpdateOpFactory {
     return error(msg, host, errorCode, Collections.<String, Object>emptyMap());
   }
 
-  public RollingUpdateOp error(final Exception e, final String host,
+  public RollingUpdateOp error(final Exception ex, final String host,
                                final RollingUpdateError errorCode) {
     final String message;
     if (errorCode == RollingUpdateError.PORT_CONFLICT) {
-      message = e.getMessage() +
-                " (the conflicting job was deployed manually or by a different deployment group)";
+      message = ex.getMessage()
+                + " (the conflicting job was deployed manually or by a different deployment group)";
     } else {
-      message = e.getMessage();
+      message = ex.getMessage();
     }
 
     return error(message, host, errorCode);

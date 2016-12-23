@@ -1,35 +1,35 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Strings;
-
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.serviceregistration.NopServiceRegistrarFactory;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrarFactory;
 import com.spotify.helios.serviceregistration.ServiceRegistrarLoader;
 import com.spotify.helios.serviceregistration.ServiceRegistrarLoadingException;
-
+import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
 
 /**
  * Loads in the service registrar factory plugin (if specified) and returns an
@@ -91,8 +91,8 @@ public class ServiceRegistrars {
       final String name = factory.getClass().getName();
       log.info("Loaded service registrar plugin: {} ({})", name, absolutePath);
     } catch (ServiceRegistrarLoadingException e) {
-      throw new RuntimeException("Unable to load service registrar plugin: " +
-                                 absolutePath, e);
+      throw new RuntimeException("Unable to load service registrar plugin: "
+                                 + absolutePath, e);
     }
     return factory;
   }

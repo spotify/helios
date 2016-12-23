@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2016 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.master.resources;
@@ -25,24 +28,20 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.master.MasterModel;
-
 import com.google.common.collect.ImmutableList;
+import com.spotify.helios.master.MasterModel;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 
 public class HostsResourceTest {
 
@@ -65,20 +64,11 @@ public class HostsResourceTest {
   public void setUp() {
     when(model.listHosts()).thenReturn(hosts);
 
-    final HostStatus.Builder statusBuilder = HostStatus.newBuilder()
-        .setStatus(HostStatus.Status.UP)
-        .setJobs(emptyMap())
-        .setStatuses(emptyMap());
-
-    int i = 1;
+    int idx = 1;
     for (final String host : hosts) {
       final Map<String, String> labels = new HashMap<>();
       labels.put("site", "foo");
-      labels.put("index", String.valueOf(i++));
-
-      final HostStatus hostStatus = statusBuilder
-          .setLabels(labels)
-          .build();
+      labels.put("index", String.valueOf(idx++));
 
       when(model.getHostLabels(host)).thenReturn(labels);
     }
@@ -126,7 +116,7 @@ public class HostsResourceTest {
                contains("host2.foo.example.com"));
   }
 
-  /** Test behavior when both a name pattern and selector list is specified */
+  // Test behavior when both a name pattern and selector list is specified.
   @Test
   public void listHostsNameAndSelectorFilter() {
     assertThat(resource.list("foo.example.com", ImmutableList.of("site=foo")), equalTo(hosts));

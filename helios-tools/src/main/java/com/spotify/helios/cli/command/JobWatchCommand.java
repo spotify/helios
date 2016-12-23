@@ -1,21 +1,29 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Tools
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.cli.command;
+
+import static com.spotify.helios.cli.Utils.allAsMap;
+import static com.spotify.helios.cli.command.JobStatusFetcher.getJobsStatuses;
+import static java.lang.String.format;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -23,22 +31,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
-
 import com.spotify.helios.cli.Target;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.joda.time.Instant;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -47,11 +45,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import static com.spotify.helios.cli.Utils.allAsMap;
-import static com.spotify.helios.cli.command.JobStatusFetcher.getJobsStatuses;
-import static java.lang.String.format;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import org.joda.time.Instant;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 public class JobWatchCommand extends MultiTargetControlCommand {
 
@@ -174,8 +173,8 @@ public class JobWatchCommand extends MultiTargetControlCommand {
           }
           final TaskStatus ts = taskStatuses.get(host);
           out.printf("%-20s %-30s %-8s %s%n",
-            chop(jobId.toShortString(), 20),
-            chop(host, 30), ts.getState(), ts.getThrottled());
+              chop(jobId.toShortString(), 20),
+              chop(host, 30), ts.getState(), ts.getThrottled());
         }
       }
     }
@@ -193,11 +192,11 @@ public class JobWatchCommand extends MultiTargetControlCommand {
     return false;
   }
 
-  private static String chop(String s, int len) {
-    if (s.length() <= len) {
-      return s;
+  private static String chop(final String str, final int len) {
+    if (str.length() <= len) {
+      return str;
     }
-    return s.substring(0, len);
+    return str.substring(0, len);
   }
 
   private static Map<JobId, JobStatus> getStatuses(final HeliosClient client,

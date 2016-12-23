@@ -1,49 +1,49 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon;
 
-import com.spotify.helios.common.Json;
+import static com.google.common.base.Charsets.UTF_8;
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import com.spotify.helios.common.Json;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A class that is similar to {@code AtomicReference} but is backed by a file, so can be
  * persisted across a server restart.  Assumes the underlying type can be serialized by Jackson.
  *
- * Strangely, this is not actually atomic in the {@code AtomicReference} way; i.e. not threadsafe,
- * nor does it do CAS.
+ * <p>Strangely, this is not actually atomic in the {@code AtomicReference} way; i.e. not
+ * threadsafe, nor does it do CAS.
  */
 public class PersistentAtomicReference<T> {
 
@@ -161,8 +161,8 @@ public class PersistentAtomicReference<T> {
 
   @Override
   public String toString() {
-    return "PersistentAtomicReference{" +
-           "filename=" + filename +
-           '}';
+    return "PersistentAtomicReference{"
+           + "filename=" + filename
+           + '}';
   }
 }

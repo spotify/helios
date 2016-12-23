@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios System Tests
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.system;
@@ -42,10 +45,8 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
-
-import org.junit.Test;
-
 import java.util.concurrent.Callable;
+import org.junit.Test;
 
 public class AgentRestartTest extends SystemTestBase {
 
@@ -129,9 +130,9 @@ public class AgentRestartTest extends SystemTestBase {
           public TaskStatus call() throws Exception {
             final HostStatus hostStatus = client.hostStatus(testHost()).get();
             final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-            return (taskStatus != null && taskStatus.getContainerId() != null &&
-                    taskStatus.getState() == RUNNING &&
-                    !taskStatus.getContainerId().equals(firstTaskStatus.getContainerId()))
+            return (taskStatus != null && taskStatus.getContainerId() != null
+                    && taskStatus.getState() == RUNNING
+                    && !taskStatus.getContainerId().equals(firstTaskStatus.getContainerId()))
                    ? taskStatus
                    : null;
           }
@@ -154,17 +155,17 @@ public class AgentRestartTest extends SystemTestBase {
     // Wait for the task to be restarted in a new container
     final TaskStatus thirdTaskStatus = Polling.await(
         LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
-      @Override
-      public TaskStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(testHost()).get();
-        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-        return (taskStatus != null && taskStatus.getContainerId() != null &&
-                taskStatus.getState() == RUNNING &&
-                !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId()))
-               ? taskStatus
-               : null;
-      }
-    });
+          @Override
+          public TaskStatus call() throws Exception {
+            final HostStatus hostStatus = client.hostStatus(testHost()).get();
+            final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
+            return (taskStatus != null && taskStatus.getContainerId() != null
+                    && taskStatus.getState() == RUNNING
+                    && !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId()))
+                   ? taskStatus
+                   : null;
+          }
+        });
     assertEquals(1, listContainers(dockerClient, testTag).size());
     assertTrue(dockerClient.inspectContainer(thirdTaskStatus.getContainerId()).state().running());
 

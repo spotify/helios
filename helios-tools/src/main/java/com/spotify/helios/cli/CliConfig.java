@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Tools
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.cli;
@@ -27,7 +30,6 @@ import com.google.common.collect.Lists;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -93,9 +95,9 @@ public class CliConfig {
    * Returns a CliConfig instance with values from a config file from under the users home
    * directory:
    *
-   * &lt;user.home&gt;/.helios/config
+   * <p>&lt;user.home&gt;/.helios/config
    *
-   * If the file is not found, a CliConfig with pre-defined values will be returned.
+   * <p>If the file is not found, a CliConfig with pre-defined values will be returned.
    *
    * @return                    The configuration
    * @throws IOException        If the file exists but could not be read
@@ -112,7 +114,7 @@ public class CliConfig {
   /**
    * Returns a CliConfig instance with values parsed from the specified file.
    *
-   * If the file is not found, a CliConfig with pre-defined values will be returned.
+   * <p>If the file is not found, a CliConfig with pre-defined values will be returned.
    *
    * @param defaultsFile        The file to parse from
    * @return                    The configuration
@@ -155,8 +157,8 @@ public class CliConfig {
 
     final String scheme = uri.getScheme();
     if (isNullOrEmpty(scheme)) {
-      throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master +
-                                 " is not a valid URI with a scheme.");
+      throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master
+                                 + " is not a valid URI with a scheme.");
     }
 
     switch (scheme) {
@@ -170,8 +172,8 @@ public class CliConfig {
             MASTER_ENDPOINTS_KEY, ConfigValueFactory.fromIterable(ImmutableList.of(master)));
         break;
       default:
-        throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master +
-                                   " does not have a valid scheme.");
+        throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master
+                                   + " does not have a valid scheme.");
     }
 
     return fromConfig(configFromEnvVar);

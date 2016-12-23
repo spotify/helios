@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.client;
@@ -36,6 +39,28 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.base.Throwables;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -63,34 +88,6 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
 import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.escape.Escaper;
-import com.google.common.net.UrlEscapers;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
-import org.apache.http.client.utils.URIBuilder;
-import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -105,6 +102,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.http.client.utils.URIBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HeliosClient implements Closeable {
 
@@ -202,8 +203,8 @@ public class HeliosClient implements Closeable {
     }
 
     final String serverVersion = response.header(HELIOS_SERVER_VERSION_HEADER);
-    if ((versionStatus == VersionCompatibility.Status.MAYBE) &&
-        (versionWarningLogged.compareAndSet(false, true))) {
+    if ((versionStatus == VersionCompatibility.Status.MAYBE)
+        && (versionWarningLogged.compareAndSet(false, true))) {
       log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
                + " probably work ok but there is the potential for weird things.  If in doubt,"
                + " contact the Helios team if you think the cluster you're connecting to is out"
@@ -267,12 +268,12 @@ public class HeliosClient implements Closeable {
 
   private ListenableFuture<Integer> status(final ListenableFuture<Response> req) {
     return transform(req,
-                     new Function<Response, Integer>() {
-                       @Override
-                       public Integer apply(final Response reply) {
-                         return reply.status();
-                       }
-                     });
+        new Function<Response, Integer>() {
+          @Override
+          public Integer apply(final Response reply) {
+            return reply.status();
+          }
+        });
   }
 
   public ListenableFuture<Deployment> deployment(final String host, final JobId job) {
@@ -283,8 +284,9 @@ public class HeliosClient implements Closeable {
     return hostStatus(host, Collections.<String, String>emptyMap());
   }
 
-  public ListenableFuture<HostStatus>
-  hostStatus(final String host, final Map<String, String> queryParams) {
+  public ListenableFuture<HostStatus> hostStatus(
+      final String host,
+      final Map<String, String> queryParams) {
     return get(uri(path("/hosts/%s/status", host), queryParams), HostStatus.class);
   }
 
@@ -292,8 +294,9 @@ public class HeliosClient implements Closeable {
     return hostStatuses(hosts, Collections.<String, String>emptyMap());
   }
 
-  public ListenableFuture<Map<String, HostStatus>>
-  hostStatuses(final List<String> hosts, final Map<String, String> queryParams) {
+  public ListenableFuture<Map<String, HostStatus>> hostStatuses(
+      final List<String> hosts,
+      final Map<String, String> queryParams) {
     final ConvertResponseToPojo<Map<String, HostStatus>> converter = ConvertResponseToPojo.create(
         TypeFactory.defaultInstance().constructMapType(Map.class, String.class, HostStatus.class),
         ImmutableSet.of(HTTP_OK));
@@ -404,7 +407,7 @@ public class HeliosClient implements Closeable {
         Exception.class,
         new Function<Exception, Response>() {
           @Override
-          public Response apply(@NotNull Exception e) {
+          public Response apply(final Exception ex) {
             return null;
           }
         }
@@ -474,8 +477,8 @@ public class HeliosClient implements Closeable {
                new TypeReference<DeploymentGroupStatusResponse>() {});
   }
 
-  public ListenableFuture<CreateDeploymentGroupResponse>
-  createDeploymentGroup(final DeploymentGroup descriptor) {
+  public ListenableFuture<CreateDeploymentGroupResponse> createDeploymentGroup(
+      final DeploymentGroup descriptor) {
     return transform(request(uri("/deployment-group/"), "POST", descriptor),
                      ConvertResponseToPojo.create(CreateDeploymentGroupResponse.class,
                                                   ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));

@@ -1,33 +1,24 @@
-/*
- * Copyright (c) 2016 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon;
-
-import com.google.common.collect.Lists;
-
-import com.spotify.helios.servicescommon.coordination.Paths;
-
-import org.apache.curator.framework.api.ACLProvider;
-import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Id;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.util.List;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
@@ -40,6 +31,15 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
+import com.google.common.collect.Lists;
+import com.spotify.helios.servicescommon.coordination.Paths;
+import java.util.List;
+import org.apache.curator.framework.api.ACLProvider;
+import org.apache.zookeeper.data.ACL;
+import org.apache.zookeeper.data.Id;
+import org.junit.Before;
+import org.junit.Test;
 
 public class ZooKeeperAclProvidersTest {
 

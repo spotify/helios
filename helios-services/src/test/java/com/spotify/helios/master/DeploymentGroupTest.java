@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2015 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.master;
@@ -36,6 +39,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
@@ -54,8 +58,8 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-
-import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -73,9 +77,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
-
-import java.util.Collections;
-import java.util.List;
 
 @RunWith(Theories.class)
 public class DeploymentGroupTest {
@@ -187,12 +188,12 @@ public class DeploymentGroupTest {
         .build();
 
     final ZooKeeperOperation setDeploymentGroupTasks = set(
-      Paths.statusDeploymentGroupTasks(dg.getName()),
-      DeploymentGroupTasks.newBuilder()
-          .setRolloutTasks(tasks)
-          .setTaskIndex(0)
-          .setDeploymentGroup(changed)
-          .build()
+        Paths.statusDeploymentGroupTasks(dg.getName()),
+        DeploymentGroupTasks.newBuilder()
+            .setRolloutTasks(tasks)
+            .setTaskIndex(0)
+            .setDeploymentGroup(changed)
+            .build()
     );
     assertThat(opCaptor.getValue(),
                hasItems(setDeploymentGroupHostChanged, setDeploymentGroupTasks));

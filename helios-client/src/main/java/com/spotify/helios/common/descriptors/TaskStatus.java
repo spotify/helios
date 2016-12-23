@@ -1,39 +1,39 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Collections.emptyMap;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import org.jetbrains.annotations.Nullable;
-
+import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 import java.util.Map;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Collections.emptyMap;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The state of the deployed job (aka a task).
  *
- * A typical JSON representation might be:
+ * <p>A typical JSON representation might be:
  * <pre>
  * {
  *   "containerId" : "e890d827e802934a29c97d7e9e3c96a55ca049e519ab0c28be8020621a0a3750",
@@ -177,28 +177,28 @@ public class TaskStatus extends Descriptor {
 
   @Override
   public String toString() {
-    return "TaskStatus{" +
-           "job=" + job +
-           ", goal=" + goal +
-           ", state=" + state +
-           ", containerId='" + containerId + '\'' +
-           ", throttled=" + throttled +
-           ", ports=" + ports +
-           ", env=" + env +
-           ", containerError='" + containerError + '\'' +
-           '}';
+    return "TaskStatus{"
+           + "job=" + job
+           + ", goal=" + goal
+           + ", state=" + state
+           + ", containerId='" + containerId + '\''
+           + ", throttled=" + throttled
+           + ", ports=" + ports
+           + ", env=" + env
+           + ", containerError='" + containerError + '\''
+           + '}';
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final TaskStatus that = (TaskStatus) o;
+    final TaskStatus that = (TaskStatus) obj;
 
     if (containerId != null ? !containerId.equals(that.containerId) : that.containerId != null) {
       return false;

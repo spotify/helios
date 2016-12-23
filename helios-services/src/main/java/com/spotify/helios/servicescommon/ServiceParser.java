@@ -1,33 +1,36 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon;
 
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Throwables.propagate;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.fileType;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 import com.google.common.io.CharStreams;
-
 import com.spotify.helios.common.LoggingConfig;
-
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,15 +42,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Throwables.propagate;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.fileType;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 
 /**
  * Handles parsing common commandline arguments for the agent and master.

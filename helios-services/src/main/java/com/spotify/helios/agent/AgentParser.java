@@ -1,34 +1,35 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
 
+import static com.google.common.io.BaseEncoding.base16;
+import static com.spotify.helios.cli.Utils.argToStringMap;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.net.InetAddresses;
-
 import com.spotify.docker.client.DockerHost;
 import com.spotify.helios.servicescommon.ServiceParser;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
-import net.sourceforge.argparse4j.inf.ArgumentParserException;
-import net.sourceforge.argparse4j.inf.Namespace;
-
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -37,11 +38,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
-import static com.google.common.io.BaseEncoding.base16;
-import static com.spotify.helios.cli.Utils.argToStringMap;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
 
 /**
  * Parses and processes command-line arguments to produce the {@link AgentConfig}.
@@ -83,8 +83,8 @@ public class AgentParser extends ServiceParser {
     try {
       labels = argToStringMap(options, labelsArg);
     } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException(e.getMessage() +
-                                         "\nLabels need to be in the format key=value.");
+      throw new IllegalArgumentException(e.getMessage()
+                                         + "\nLabels need to be in the format key=value.");
     }
 
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));

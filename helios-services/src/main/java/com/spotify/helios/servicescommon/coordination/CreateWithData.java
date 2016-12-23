@@ -1,25 +1,27 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-
 import java.util.Arrays;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
 class CreateWithData implements ZooKeeperOperation {
 
@@ -38,21 +40,21 @@ class CreateWithData implements ZooKeeperOperation {
 
   @Override
   public String toString() {
-    return "CreateWithData{" +
-           "path='" + path + '\'' +
-           '}';
+    return "CreateWithData{"
+           + "path='" + path + '\''
+           + '}';
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final CreateWithData that = (CreateWithData) o;
+    final CreateWithData that = (CreateWithData) obj;
 
     if (path != null ? !path.equals(that.path) : that.path != null) {
       return false;

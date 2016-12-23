@@ -1,21 +1,29 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
+
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Optional.fromNullable;
+import static java.lang.String.format;
+import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.master.HostNotFoundException;
@@ -23,20 +31,13 @@ import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
-import static java.lang.String.format;
-import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
  * Persistently tries to register with ZK in the face of a ZK outage.
@@ -108,8 +109,8 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
             return false;
           }
 
-          log.info("Another agent has already registered as '{}', but its ID node was last " +
-                   "updated more than {} milliseconds ago. I\'m deregistering the agent with the "
+          log.info("Another agent has already registered as '{}', but its ID node was last "
+                   + "updated more than {} milliseconds ago. I\'m deregistering the agent with the"
                    + "old ID of {} and replacing it with this new agent with ID '{}'.",
                    name, zooKeeperRegistrationTtlMillis, existingId.trim(), id.trim());
         } else {

@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Testing Common Library
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios;
@@ -25,18 +28,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.test.InstanceSpec;
-import org.apache.curator.test.TestingCluster;
-import org.apache.curator.test.TestingZooKeeperServer;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
-import org.junit.Rule;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -48,8 +39,17 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.annotation.Nullable;
+import org.apache.commons.io.FileUtils;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.test.InstanceSpec;
+import org.apache.curator.test.TestingCluster;
+import org.apache.curator.test.TestingZooKeeperServer;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
+import org.junit.Rule;
 
 /**
  * A ZooKeeperTestManager that uses the {@link org.apache.curator.test.TestingServer}
@@ -123,6 +123,14 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
   @Override
   public String connectString() {
     return connectString(zkAddresses);
+  }
+
+  private String connectString(final InetSocketAddress... addresses) {
+    return connectString(asList(addresses));
+  }
+
+  private String connectString(final Iterable<InetSocketAddress> addresses) {
+    return Joiner.on(',').join(endpoints(addresses));
   }
 
   @Override
@@ -270,22 +278,14 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
     return peerCurators.get(id);
   }
 
-  private String connectString(final InetSocketAddress... addresses) {
-    return connectString(asList(addresses));
-  }
-
-  private String connectString(final Iterable<InetSocketAddress> addresses) {
-    return Joiner.on(',').join(endpoints(addresses));
-  }
-
   private Path peerDir(final int id) {
     return tempDir.resolve(Long.toString(id));
   }
 
-  private List<InstanceSpec> createPeers(final int n) {
+  private List<InstanceSpec> createPeers(final int numPeers) {
     final ImmutableList.Builder<InstanceSpec> peers = ImmutableList.builder();
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < numPeers; i++) {
       final int port = temporaryPorts.localPort("zk-client" + i);
       final int electionPort = temporaryPorts.localPort("zk-elect" + i);
       final int quorumPort = temporaryPorts.localPort("zk-quorum" + i);

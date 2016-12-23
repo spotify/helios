@@ -1,36 +1,37 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.ImmutableMap;
+import static java.util.Arrays.asList;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-
-import static java.util.Arrays.asList;
 
 /**
  * A set of port names, that is map keys, together with ServicePortParameters containing optional
  * metadata for a port.
  *
- * A typical JSON representation might be:
+ * <p>A typical JSON representation might be:
  * <pre>
  * {
  *   "http" : { }
@@ -51,15 +52,15 @@ public class ServicePorts extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
+  public boolean equals(final Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final ServicePorts that = (ServicePorts) o;
+    final ServicePorts that = (ServicePorts) obj;
 
     if (ports != null ? !ports.equals(that.ports) : that.ports != null) {
       return false;
@@ -75,9 +76,9 @@ public class ServicePorts extends Descriptor {
 
   @Override
   public String toString() {
-    return "ServicePorts{" +
-           "ports=" + ports +
-           '}';
+    return "ServicePorts{"
+           + "ports=" + ports
+           + '}';
   }
 
   public static ServicePorts of(final String... ports) {

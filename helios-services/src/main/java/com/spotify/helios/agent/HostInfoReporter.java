@@ -1,24 +1,30 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
 
-import com.google.common.io.CharStreams;
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Throwables.propagate;
+import static java.util.Objects.requireNonNull;
 
+import com.google.common.io.CharStreams;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -28,7 +34,6 @@ import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 import com.sun.management.OperatingSystemMXBean;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.concurrent.CountDownLatch;
@@ -36,29 +41,25 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Throwables.propagate;
-import static java.util.Objects.requireNonNull;
-
 /**
  * Reports various bits of system information to ZK so it can be viewed via the the API.
  */
 public class HostInfoReporter extends SignalAwaitingService {
 
 
-  private final OperatingSystemMXBean operatingSystemMXBean;
+  private final OperatingSystemMXBean operatingSystemMxBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
   private final int interval;
   private final TimeUnit timeUnit;
   private final DockerClient dockerClient;
   private final DockerHost dockerHost;
 
-  HostInfoReporter(OperatingSystemMXBean operatingSystemMXBean,
+  HostInfoReporter(OperatingSystemMXBean operatingSystemMxBean,
                    NodeUpdaterFactory nodeUpdaterFactory, String host, DockerClient dockerClient,
                    DockerHost dockerHost, int interval, TimeUnit timeUnit, CountDownLatch latch) {
 
     super(latch);
-    this.operatingSystemMXBean = requireNonNull(operatingSystemMXBean, "operatingSystemMXBean");
+    this.operatingSystemMxBean = requireNonNull(operatingSystemMxBean, "operatingSystemMxBean");
     final String hostInfoPath = Paths.statusHostInfo(requireNonNull(host, "host"));
     this.nodeUpdater = nodeUpdaterFactory.create(hostInfoPath);
     this.dockerClient = requireNonNull(dockerClient, "dockerClient");
@@ -73,16 +74,16 @@ public class HostInfoReporter extends SignalAwaitingService {
     final String uname = exec("uname -a").trim();
 
     final HostInfo hostInfo = HostInfo.newBuilder()
-        .setArchitecture(operatingSystemMXBean.getArch())
+        .setArchitecture(operatingSystemMxBean.getArch())
         .setCpus(Runtime.getRuntime().availableProcessors())
         .setHostname(hostname)
-        .setLoadAvg(operatingSystemMXBean.getSystemLoadAverage())
-        .setOsName(operatingSystemMXBean.getName())
-        .setOsVersion(operatingSystemMXBean.getVersion())
-        .setMemoryFreeBytes(operatingSystemMXBean.getFreePhysicalMemorySize())
-        .setMemoryTotalBytes(operatingSystemMXBean.getTotalPhysicalMemorySize())
-        .setSwapFreeBytes(operatingSystemMXBean.getFreeSwapSpaceSize())
-        .setSwapTotalBytes(operatingSystemMXBean.getTotalSwapSpaceSize())
+        .setLoadAvg(operatingSystemMxBean.getSystemLoadAverage())
+        .setOsName(operatingSystemMxBean.getName())
+        .setOsVersion(operatingSystemMxBean.getVersion())
+        .setMemoryFreeBytes(operatingSystemMxBean.getFreePhysicalMemorySize())
+        .setMemoryTotalBytes(operatingSystemMxBean.getTotalPhysicalMemorySize())
+        .setSwapFreeBytes(operatingSystemMxBean.getFreeSwapSpaceSize())
+        .setSwapTotalBytes(operatingSystemMxBean.getTotalSwapSpaceSize())
         .setUname(uname)
         .setDockerVersion(dockerVersion())
         .setDockerHost(dockerHost())

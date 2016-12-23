@@ -1,42 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Tools
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.cli.command;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
-
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.HostSelector;
-import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
-
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.inf.Namespace;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.util.List;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,6 +28,23 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Futures;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
+import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.List;
+import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.inf.Namespace;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 public class DeploymentGroupCreateCommandTest {
 
@@ -95,10 +94,10 @@ public class DeploymentGroupCreateCommandTest {
     final String output = baos.toString();
     assertThat(output, containsString("\"name\":\"foo-group\""));
     assertThat(output, containsString(
-        "\"hostSelectors\":[" +
-        "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"}," +
-        "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}" +
-        "]"));
+        "\"hostSelectors\":["
+        + "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"},"
+        + "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}"
+        + "]"));
     assertThat(output, containsString("CREATED"));
   }
 
@@ -113,10 +112,10 @@ public class DeploymentGroupCreateCommandTest {
     final String output = baos.toString();
     assertThat(output, containsString("\"name\":\"foo-group\""));
     assertThat(output, containsString(
-        "\"hostSelectors\":[" +
-        "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"}," +
-        "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}" +
-        "]"));
+        "\"hostSelectors\":["
+        + "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"},"
+        + "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}"
+        + "]"));
     assertThat(output, containsString("NOT_MODIFIED"));
   }
 
@@ -131,10 +130,10 @@ public class DeploymentGroupCreateCommandTest {
     final String output = baos.toString();
     assertThat(output, containsString("\"name\":\"foo-group\""));
     assertThat(output, containsString(
-        "\"hostSelectors\":[" +
-        "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"}," +
-        "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}" +
-        "]"));
+        "\"hostSelectors\":["
+        + "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"},"
+        + "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}"
+        + "]"));
     assertThat(output, containsString("CONFLICT"));
   }
 }

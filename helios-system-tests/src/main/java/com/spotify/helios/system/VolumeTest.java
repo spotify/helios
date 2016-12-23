@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios System Tests
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.system;
@@ -35,14 +38,12 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.util.concurrent.Callable;
+import org.junit.Before;
+import org.junit.Test;
 
 public class VolumeTest extends SystemTestBase {
 
@@ -62,9 +63,9 @@ public class VolumeTest extends SystemTestBase {
         .setImage(BUSYBOX)
         .addVolume("/volume")
         .addVolume("/hostname", "/etc/hostname")
-        .setCommand(asList("sh", "-c", "echo foo > /volume/bar; " +
-                                       "nc -p 4711 -le dd if=/volume/bar;" +
-                                       "nc -p 4712 -lle dd if=/hostname"))
+        .setCommand(asList("sh", "-c", "echo foo > /volume/bar; "
+                                       + "nc -p 4711 -le dd if=/volume/bar;"
+                                       + "nc -p 4712 -lle dd if=/hostname"))
         .addPort("bar", PortMapping.of(4711))
         .addPort("hostname", PortMapping.of(4712))
         .setCreatingUser(TEST_USER)
@@ -115,18 +116,18 @@ public class VolumeTest extends SystemTestBase {
     assertEquals(hostname, mountedHostname);
   }
 
-  private String recvUtf8(final int port, final int n) throws Exception {
-    final byte[] bytes = recv(port, n);
+  private String recvUtf8(final int port, final int numBytes) throws Exception {
+    final byte[] bytes = recv(port, numBytes);
     return new String(bytes, UTF_8);
   }
 
-  private byte[] recv(final int port, final int n) throws Exception {
-    checkArgument(n > 0, "n must be > 0");
+  private byte[] recv(final int port, final int numBytes) throws Exception {
+    checkArgument(numBytes > 0, "numBytes must be > 0");
     return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<byte[]>() {
       @Override
       public byte[] call() {
         try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
-          final byte[] bytes = new byte[n];
+          final byte[] bytes = new byte[numBytes];
           final InputStream is = s.getInputStream();
           final int first = is.read();
           // Check if the uml kernel slirp driver did an accept->close on us,
@@ -135,7 +136,7 @@ public class VolumeTest extends SystemTestBase {
             return null;
           }
           bytes[0] = (byte) first;
-          for (int i = 1; i < n; i++) {
+          for (int i = 1; i < numBytes; i++) {
             bytes[i] = (byte) is.read();
           }
           return bytes;

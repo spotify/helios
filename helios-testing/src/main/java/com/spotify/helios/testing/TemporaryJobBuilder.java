@@ -1,22 +1,40 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Testing Library
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.testing;
 
+import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.io.Resources.asCharSource;
+import static java.lang.Integer.toHexString;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.fail;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
@@ -25,16 +43,6 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
-
-import org.joda.time.DateTime;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -47,15 +55,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
-
-import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.io.Resources.asCharSource;
-import static java.lang.Integer.toHexString;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.fail;
+import org.joda.time.DateTime;
 
 public class TemporaryJobBuilder {
 
@@ -369,7 +369,9 @@ public class TemporaryJobBuilder {
     }
   }
 
-  /** Load file from classpath, falling back to filesystem */
+  /**
+   * Load file from classpath, falling back to filesystem.
+   */
   private URL loadFile(final String name) {
     URL info;
     try {
@@ -406,8 +408,8 @@ public class TemporaryJobBuilder {
     try {
       json = Files.toString(file, UTF_8);
     } catch (IOException e) {
-      throw new AssertionError("Failed to read image info file: " +
-                               file + ": " + e.getMessage());
+      throw new AssertionError("Failed to read image info file: "
+                               + file + ": " + e.getMessage());
     }
     return imageFromInfoJson(json, file.toString());
   }
@@ -430,8 +432,8 @@ public class TemporaryJobBuilder {
     }
   }
 
-  private String jobName(final String s, final String jobNamePrefix) {
-    return jobNamePrefix + "_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
+  private String jobName(final String str, final String jobNamePrefix) {
+    return jobNamePrefix + "_" + JOB_NAME_FORBIDDEN_CHARS.matcher(str).replaceAll("_");
   }
 
   private String randomVersion() {

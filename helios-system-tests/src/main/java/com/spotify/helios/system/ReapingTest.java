@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios System Tests
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.system;
@@ -31,12 +34,10 @@ import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.helios.client.HeliosClient;
-
-import org.junit.Test;
-
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Test;
 
 public class ReapingTest extends SystemTestBase {
 
@@ -66,8 +67,8 @@ public class ReapingTest extends SystemTestBase {
 
     // With LXC, killing a container results in exit code 0.
     // In docker 1.5 killing a container results in exit code 137, in previous versions it's -1.
-    final List<Integer> expectedExitCodes = docker.info().executionDriver().startsWith("lxc-") ?
-                                            Collections.singletonList(0) : asList(-1, 137);
+    final List<Integer> expectedExitCodes = docker.info().executionDriver().startsWith("lxc-")
+                                            ? Collections.singletonList(0) : asList(-1, 137);
 
     // Wait for the agent to kill the container
     final ContainerExit exit1 = docker.waitContainer(intruder1);

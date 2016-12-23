@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.rollingupdate;
@@ -33,13 +36,13 @@ package com.spotify.helios.rollingupdate;
  * limitations under the License.
  */
 
+import static java.nio.CharBuffer.wrap;
+import static java.util.Objects.requireNonNull;
+
 import java.nio.CharBuffer;
 import java.text.Collator;
 import java.util.Comparator;
 import java.util.Locale;
-
-import static java.nio.CharBuffer.wrap;
-import static java.util.Objects.requireNonNull;
 
 public class AlphaNumericComparator implements Comparator<CharSequence> {
 
@@ -96,6 +99,14 @@ public class AlphaNumericComparator implements Comparator<CharSequence> {
     return s1.length() - s2.length();
   }
 
+  private int compare(final CharBuffer b1, final CharBuffer b2) {
+    if (isNumerical(b1) && isNumerical(b2)) {
+      return compareNumerically(b1, b2);
+    }
+
+    return compareAsStrings(b1, b2);
+  }
+
   private void moveWindow(final CharBuffer buffer) {
     int start = buffer.position();
     int end = buffer.position();
@@ -112,24 +123,16 @@ public class AlphaNumericComparator implements Comparator<CharSequence> {
         .limit(end);
   }
 
-  private int compare(final CharBuffer b1, final CharBuffer b2) {
-    if (isNumerical(b1) && isNumerical(b2)) {
-      return compareNumerically(b1, b2);
-    }
-
-    return compareAsStrings(b1, b2);
-  }
-
   private boolean isNumerical(final CharBuffer buffer) {
     return isDigit(buffer.charAt(0));
   }
 
-  private boolean isDigit(final char c) {
+  private boolean isDigit(final char ch) {
     if (collator == null) {
-      final int intValue = (int) c;
+      final int intValue = (int) ch;
       return intValue >= 48 && intValue <= 57;
     }
-    return Character.isDigit(c);
+    return Character.isDigit(ch);
   }
 
   private int compareNumerically(final CharBuffer b1, final CharBuffer b2) {
@@ -158,8 +161,8 @@ public class AlphaNumericComparator implements Comparator<CharSequence> {
     return b1.toString().compareTo(b2.toString());
   }
 
-  private boolean isZero(final char c) {
-    return c == '0';
+  private boolean isZero(final char ch) {
+    return ch == '0';
   }
 
 }

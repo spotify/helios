@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Tools
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.cli;
@@ -25,17 +28,15 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class CliParserTest {
 
@@ -122,14 +123,14 @@ public class CliParserTest {
 
     // Create a "~/.helios/config" file, which is the path CliConfig reads by default
     final File configDir = temporaryFolder.newFolder(CliConfig.getConfigDirName());
-    final File configFile = new File(configDir.getAbsolutePath() + File.separator +
-                                     CliConfig.getConfigFileName());
+    final File configFile = new File(configDir.getAbsolutePath() + File.separator
+                                     + CliConfig.getConfigFileName());
 
     // Write configuration to that file
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {
       final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\", \"" + ENDPOINTS[1] + "\", \"" +
-          ENDPOINTS[2] + "\"], \"domains\":[\"" + DOMAINS[0] + "\"]}");
+          "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\", \"" + ENDPOINTS[1] + "\", \""
+          + ENDPOINTS[2] + "\"], \"domains\":[\"" + DOMAINS[0] + "\"]}");
       outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
 
       // Set user's home directory to this temporary folder
@@ -155,8 +156,8 @@ public class CliParserTest {
 
     // Create a "~/.helios/config" file, which is the path CliConfig reads by default
     final File configDir = temporaryFolder.newFolder(CliConfig.getConfigDirName());
-    final File configFile = new File(configDir.getAbsolutePath() + File.separator +
-                                     CliConfig.getConfigFileName());
+    final File configFile = new File(configDir.getAbsolutePath() + File.separator
+                                     + CliConfig.getConfigFileName());
 
     // Write configuration to that file
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {

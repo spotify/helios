@@ -1,44 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon;
-
-import com.google.common.util.concurrent.SettableFuture;
-
-import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
-import com.spotify.helios.agent.RetryIntervalPolicy;
-import com.spotify.helios.agent.Sleeper;
-import com.spotify.helios.master.HostNotFoundException;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.listen.Listenable;
-import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.zookeeper.KeeperException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -55,6 +35,26 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.google.common.util.concurrent.SettableFuture;
+import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
+import com.spotify.helios.agent.RetryIntervalPolicy;
+import com.spotify.helios.agent.Sleeper;
+import com.spotify.helios.master.HostNotFoundException;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.zookeeper.KeeperException;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ZooKeeperRegistrarServiceTest {
@@ -124,7 +124,7 @@ public class ZooKeeperRegistrarServiceTest {
 
   // Would just use Consumer<ZooKeeperClient> but Consumer does not throw checked exceptions
   @FunctionalInterface
-  private interface ClientConsumer{
+  private interface ClientConsumer {
     void accept(ZooKeeperClient client) throws KeeperException, HostNotFoundException;
   }
 
@@ -137,7 +137,7 @@ public class ZooKeeperRegistrarServiceTest {
     final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(zkClient)
         .setZooKeeperRegistrar(zooKeeperRegistrar)
-        .setZKRegistrationSignal(latch)
+        .setZkRegistrationSignal(latch)
         .build();
 
     init.startUp();
@@ -175,15 +175,15 @@ public class ZooKeeperRegistrarServiceTest {
     final AtomicInteger counter = new AtomicInteger(0);
 
     final ZooKeeperRegistrar zooKeeperRegistrar = createStubRegistrar(true, client -> {
-        final int count = counter.incrementAndGet();
-        if (count == 1) {
-          throw new KeeperException.ConnectionLossException();
-        }
+      final int count = counter.incrementAndGet();
+      if (count == 1) {
+        throw new KeeperException.ConnectionLossException();
+      }
 
-        if (count == 2) {
-          throw new HostNotFoundException("Host not found");
-        }
-      });
+      if (count == 2) {
+        throw new HostNotFoundException("Host not found");
+      }
+    });
 
     final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(zkClient)
@@ -236,7 +236,7 @@ public class ZooKeeperRegistrarServiceTest {
     final CountDownLatch latch = new CountDownLatch(initialCount);
 
     final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
-        .setZKRegistrationSignal(latch)
+        .setZkRegistrationSignal(latch)
         .setZooKeeperClient(zkClient)
         .setZooKeeperRegistrar(zooKeeperRegistrar)
         .setRetryIntervalPolicy(retryIntervalPolicy)

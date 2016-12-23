@@ -1,24 +1,33 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.master.resources;
 
-import com.google.common.collect.ImmutableList;
+import static com.spotify.helios.common.protocol.TaskStatusEvents.Status.JOB_ID_NOT_FOUND;
+import static com.spotify.helios.common.protocol.TaskStatusEvents.Status.OK;
+import static com.spotify.helios.master.http.Responses.badRequest;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
@@ -26,21 +35,12 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
-import com.codahale.metrics.annotation.ExceptionMetered;
-import com.codahale.metrics.annotation.Timed;
-
 import java.util.List;
-
 import javax.validation.Valid;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-
-import static com.spotify.helios.common.protocol.TaskStatusEvents.Status.JOB_ID_NOT_FOUND;
-import static com.spotify.helios.common.protocol.TaskStatusEvents.Status.OK;
-import static com.spotify.helios.master.http.Responses.badRequest;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/history")
 public class HistoryResource {

@@ -1,27 +1,30 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Testing Library
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.testing;
 
+import static java.lang.Integer.toHexString;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 import com.google.common.base.Preconditions;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -31,10 +34,8 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static java.lang.Integer.toHexString;
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is used to manage job prefix files on disk, which TemporaryJobs uses to keep track
@@ -56,7 +57,6 @@ class JobPrefixFile implements AutoCloseable {
   /**
    * Creates a JobPrefixFile using a randomly generated filename in the specified directory.
    * @return a new JobPrefixFile
-   * @throws IOException
    */
   public static JobPrefixFile create(Path directory) throws IOException {
     return create(null, directory);
@@ -67,7 +67,6 @@ class JobPrefixFile implements AutoCloseable {
    * @param prefix the job prefix, which will be the name of the file
    * @param directory the directory where the file will be created
    * @return a new JobPrefixFile
-   * @throws IOException
    */
   public static JobPrefixFile create(final String prefix, final Path directory)
       throws IOException {
@@ -81,7 +80,7 @@ class JobPrefixFile implements AutoCloseable {
    * be thrown.
    * @param file the path to the file
    * @return a new JobPrefixFile if a file lock can be obtained. Null if a lock for the file is
-   * already held by either this process or another.
+   *         already held by either this process or another.
    */
   public static JobPrefixFile tryFromExistingFile(final Path file) throws IOException {
     Preconditions.checkNotNull(file);

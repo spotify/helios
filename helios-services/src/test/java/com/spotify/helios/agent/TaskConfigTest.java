@@ -1,25 +1,33 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
-
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
@@ -28,16 +36,8 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.serviceregistration.ServiceRegistration.EndpointHealthCheck;
-
-import org.junit.Test;
-
 import java.util.Set;
-
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 public class TaskConfigTest {
   private static final String HOST = "HOST";
@@ -62,16 +62,16 @@ public class TaskConfigTest {
     final String path = "/health";
 
     final Job job = JOB.toBuilder()
-      .setHealthCheck(HealthCheck.newHttpHealthCheck()
-        .setPath(path)
-        .setPort(PORT_NAME).build())
-      .build();
+        .setHealthCheck(HealthCheck.newHttpHealthCheck()
+            .setPath(path)
+            .setPort(PORT_NAME).build())
+        .build();
 
     final TaskConfig taskConfig = TaskConfig.builder()
-      .namespace("test")
-      .host(HOST)
-      .job(job)
-      .build();
+        .namespace("test")
+        .host(HOST)
+        .job(job)
+        .build();
 
     final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertEquals(path, endpoint.getHealthCheck().getPath());
@@ -82,15 +82,15 @@ public class TaskConfigTest {
   @Test
   public void testRegistrationWithTcpHealthCheck() throws Exception {
     final Job job = JOB.toBuilder()
-      .setHealthCheck(HealthCheck.newTcpHealthCheck()
-        .setPort(PORT_NAME).build())
-      .build();
+        .setHealthCheck(HealthCheck.newTcpHealthCheck()
+            .setPort(PORT_NAME).build())
+        .build();
 
     final TaskConfig taskConfig = TaskConfig.builder()
-      .namespace("test")
-      .host(HOST)
-      .job(job)
-      .build();
+        .namespace("test")
+        .host(HOST)
+        .job(job)
+        .build();
 
     final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertEquals(EndpointHealthCheck.TCP, endpoint.getHealthCheck().getType());
@@ -100,10 +100,10 @@ public class TaskConfigTest {
   @Test
   public void testRegistrationWithoutHealthCheck() throws Exception {
     final TaskConfig taskConfig = TaskConfig.builder()
-      .namespace("test")
-      .host(HOST)
-      .job(JOB)
-      .build();
+        .namespace("test")
+        .host(HOST)
+        .job(JOB)
+        .build();
 
     final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertNull(endpoint.getHealthCheck());

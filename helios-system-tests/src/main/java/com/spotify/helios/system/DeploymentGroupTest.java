@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2015 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios System Tests
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.system;
@@ -28,6 +31,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
@@ -45,26 +56,17 @@ import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.MasterMain;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestName;
 
 public class DeploymentGroupTest extends SystemTestBase {
@@ -102,8 +104,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "group1", "foo=bar");
     final String output = cli("list-deployment-groups", "--json");
     final List<String> deploymentGroups = OBJECT_MAPPER.readValue(
-        output, new TypeReference<List<String>>() {
-    });
+        output, new TypeReference<List<String>>() { });
     assertEquals(Arrays.asList("group1", "group2"), deploymentGroups);
   }
 
@@ -221,6 +222,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     final String newHost = testHost() + "4";
     final String anotherNewHost = testHost() + "5";
 
+    @SuppressWarnings("VariableDeclarationUsageDistance")
     AgentMain oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar");
     awaitUpWithLabels(oldHost, "foo", "bar");
 

@@ -1,52 +1,35 @@
-/*
- * Copyright (c) 2015 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.client.tls;
 
+import static com.spotify.helios.common.Hash.sha1;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+
+import com.eaio.uuid.UUID;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.BaseEncoding;
-
-import com.eaio.uuid.UUID;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
-
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x500.X500NameBuilder;
-import org.bouncycastle.asn1.x500.style.BCStyle;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.KeyUsage;
-import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.X509ExtensionUtils;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.bouncycastle.operator.DigestCalculator;
-import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.math.BigInteger;
@@ -70,10 +53,27 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import static com.spotify.helios.common.Hash.sha1;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x500.X500NameBuilder;
+import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509ExtensionUtils;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.operator.DigestCalculator;
+import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class X509CertificateFactory {
 
@@ -158,8 +158,8 @@ public class X509CertificateFactory {
 
     final UUID uuid = new UUID();
     final Calendar calendar = Calendar.getInstance();
-    final X500Name issuerDN = new X500Name("C=US,O=Spotify,CN=helios-client");
-    final X500Name subjectDN = new X500NameBuilder().addRDN(BCStyle.UID, username).build();
+    final X500Name issuerdn = new X500Name("C=US,O=Spotify,CN=helios-client");
+    final X500Name subjectdn = new X500NameBuilder().addRDN(BCStyle.UID, username).build();
 
     calendar.add(Calendar.MILLISECOND, -validBeforeMilliseconds);
     final Date notBefore = calendar.getTime();
@@ -178,9 +178,9 @@ public class X509CertificateFactory {
       final SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
           ASN1Sequence.getInstance(keyPair.getPublic().getEncoded()));
 
-      final X509v3CertificateBuilder builder = new X509v3CertificateBuilder(issuerDN, serialNumber,
+      final X509v3CertificateBuilder builder = new X509v3CertificateBuilder(issuerdn, serialNumber,
                                                                             notBefore, notAfter,
-                                                                            subjectDN,
+                                                                            subjectdn,
                                                                             subjectPublicKeyInfo);
 
       final DigestCalculator digestCalculator = new BcDigestCalculatorProvider()
@@ -203,7 +203,7 @@ public class X509CertificateFactory {
                                                                                    identity));
 
       final X509Certificate certificate = CERTIFICATE_CONVERTER.getCertificate(holder);
-      log.debug("generated certificate:\n{}", asPEMString(certificate));
+      log.debug("generated certificate:\n{}", asPemString(certificate));
 
       return new CertificateAndPrivateKey(certificate, keyPair.getPrivate());
     } catch (Exception e) {
@@ -218,8 +218,8 @@ public class X509CertificateFactory {
     try {
       Files.createDirectories(cacheDirectory);
 
-      final String certPem = asPEMString(certificateAndPrivateKey.getCertificate());
-      final String keyPem = asPEMString(certificateAndPrivateKey.getPrivateKey());
+      final String certPem = asPemString(certificateAndPrivateKey.getCertificate());
+      final String keyPem = asPemString(certificateAndPrivateKey.getPrivateKey());
 
       // overwrite any existing file, and make sure it's only readable by the current user
       final Set<StandardOpenOption> options = ImmutableSet.of(CREATE, WRITE);
@@ -245,11 +245,11 @@ public class X509CertificateFactory {
     }
   }
 
-  private static String asPEMString(final Object o) throws IOException {
+  private static String asPemString(final Object obj) throws IOException {
     final StringWriter sw = new StringWriter();
 
     try (final JcaPEMWriter pw = new JcaPEMWriter(sw)) {
-      pw.writeObject(o);
+      pw.writeObject(obj);
     }
 
     return sw.toString();

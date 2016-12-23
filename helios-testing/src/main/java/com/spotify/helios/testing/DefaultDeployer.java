@@ -1,45 +1,45 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Testing Library
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.testing;
+
+import static com.google.common.base.Predicates.containsPattern;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.lang.String.format;
+import static org.junit.Assert.fail;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
-
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.HostStatus.Status;
 import com.spotify.helios.common.descriptors.Job;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import static com.google.common.base.Predicates.containsPattern;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.lang.String.format;
-import static org.junit.Assert.fail;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultDeployer implements Deployer {
 
@@ -68,8 +68,8 @@ public class DefaultDeployer implements Deployer {
                              final Prober prober,
                              final TemporaryJobReports.ReportWriter reportWriter) {
     if (isNullOrEmpty(hostFilter)) {
-      fail("a host filter pattern must be passed to hostFilter(), " +
-           "or one must be specified in HELIOS_HOST_FILTER");
+      fail("a host filter pattern must be passed to hostFilter(), "
+           + "or one must be specified in HELIOS_HOST_FILTER");
     }
 
     final List<String> hosts;
@@ -101,6 +101,29 @@ public class DefaultDeployer implements Deployer {
     return deploy(job, Collections.singletonList(chosenHost), waitPorts, prober, reportWriter);
   }
 
+  @Override
+  public TemporaryJob deploy(final Job job, final List<String> hosts, final Set<String> waitPorts,
+                             final Prober prober,
+                             final TemporaryJobReports.ReportWriter reportWriter) {
+    if (!readyToDeploy) {
+      fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
+           + " to put @Rule before TemporaryJobs");
+    }
+
+    if (hosts.isEmpty()) {
+      fail("at least one host must be explicitly specified, or deploy() must be called with "
+           + "no arguments to automatically select a host");
+    }
+
+    log.info("Deploying {} to {}", job.getImage(), Joiner.on(", ").skipNulls().join(hosts));
+    final TemporaryJob temporaryJob = new TemporaryJob(client, prober, reportWriter, job, hosts,
+        waitPorts, jobDeployedMessageFormat,
+        deployTimeoutMillis);
+    jobs.add(temporaryJob);
+    temporaryJob.deploy();
+    return temporaryJob;
+  }
+
   @VisibleForTesting
   String pickHost(final List<String> filteredHosts) {
     final List<String> mutatedList = Lists.newArrayList(filteredHosts);
@@ -120,29 +143,6 @@ public class DefaultDeployer implements Deployer {
         throw Throwables.propagate(e);
       }
     }
-  }
-
-  @Override
-  public TemporaryJob deploy(final Job job, final List<String> hosts, final Set<String> waitPorts,
-                             final Prober prober,
-                             final TemporaryJobReports.ReportWriter reportWriter) {
-    if (!readyToDeploy) {
-      fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
-           + " to put @Rule before TemporaryJobs");
-    }
-
-    if (hosts.isEmpty()) {
-      fail("at least one host must be explicitly specified, or deploy() must be called with " +
-           "no arguments to automatically select a host");
-    }
-
-    log.info("Deploying {} to {}", job.getImage(), Joiner.on(", ").skipNulls().join(hosts));
-    final TemporaryJob temporaryJob = new TemporaryJob(client, prober, reportWriter, job, hosts,
-                                                       waitPorts, jobDeployedMessageFormat,
-                                                       deployTimeoutMillis);
-    jobs.add(temporaryJob);
-    temporaryJob.deploy();
-    return temporaryJob;
   }
 
   @Override

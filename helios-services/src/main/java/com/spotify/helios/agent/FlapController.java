@@ -1,30 +1,31 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
 
-import com.google.common.collect.Queues;
+import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.Queues;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
-
 import java.util.Deque;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Tracks container starts and exits and determines if the task is "flapping", which is to say:
@@ -33,9 +34,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class FlapController {
 
   /**
-   * Number of restarts in the time period to consider the job flapping
+   * Number of restarts in the time period to consider the job flapping.
    */
   private static final int DEFAULT_FLAPPING_RESTART_COUNT = 10;
+
   /**
    * If total runtime of the container over the last n restarts is less than this, we throttle.
    */

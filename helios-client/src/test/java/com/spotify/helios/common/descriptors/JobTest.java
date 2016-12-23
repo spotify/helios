@@ -1,41 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.common.descriptors;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.io.BaseEncoding;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.common.Hash;
-import com.spotify.helios.common.Json;
-
-import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -48,6 +31,23 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.io.BaseEncoding;
+import com.spotify.helios.common.Hash;
+import com.spotify.helios.common.Json;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.junit.Test;
 
 public class JobTest {
 
@@ -330,7 +330,7 @@ public class JobTest {
   }
 
   @Test
-  public void verifySha1ID() throws IOException {
+  public void verifySha1Id() throws IOException {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
                                                    "image", "foobar:4711",
                                                    "name", "foozbarz",
@@ -351,7 +351,7 @@ public class JobTest {
   }
 
   @Test
-  public void verifySha1IDWithEnv() throws IOException {
+  public void verifySha1IdWithEnv() throws IOException {
     final Map<String, String> env = ImmutableMap.of("FOO", "BAR");
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
                                                    "image", "foobar:4711",
@@ -409,7 +409,7 @@ public class JobTest {
         .setVersion("17")
         .build();
 
-     removeFieldAndParse(job, "env");
+    removeFieldAndParse(job, "env");
   }
 
   @Test

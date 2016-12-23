@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2016 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Testing Library
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.testing;
@@ -40,6 +43,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("AvoidEscapedUnicodeCharacters")
 public class LoggingLogStreamFollowerTest {
 
   private final LoggerContext context = new LoggerContext();
@@ -220,7 +224,7 @@ public class LoggingLogStreamFollowerTest {
   }
 
   @Test
-  public void testDropPartialUTF8Sequence() throws Exception {
+  public void testDropPartialUtf8Sequence() throws Exception {
     final byte[] annoyingData = "௵".getBytes(Charsets.UTF_8);
     assertThat(annoyingData.length, is(3));
 
@@ -258,6 +262,14 @@ public class LoggingLogStreamFollowerTest {
     return message(LogMessage.Stream.STDOUT, chunk);
   }
 
+  private static LogMessage stdout(byte[] chunk) {
+    return message(LogMessage.Stream.STDOUT, chunk);
+  }
+
+  private static LogMessage stderr(byte[] chunk) {
+    return message(LogMessage.Stream.STDERR, chunk);
+  }
+
   private static LogMessage stderr(String chunk) {
     return message(LogMessage.Stream.STDERR, chunk);
   }
@@ -265,14 +277,6 @@ public class LoggingLogStreamFollowerTest {
   private static LogMessage message(
       final LogMessage.Stream stream, final String chunk) {
     return message(stream, chunk.getBytes(Charsets.UTF_8));
-  }
-
-  private static LogMessage stdout(byte[] chunk) {
-    return message(LogMessage.Stream.STDOUT, chunk);
-  }
-
-  private static LogMessage stderr(byte[] chunk) {
-    return message(LogMessage.Stream.STDERR, chunk);
   }
 
   private static LogMessage message(

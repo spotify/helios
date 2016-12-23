@@ -1,23 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon.statistics;
-
-import com.spotify.helios.common.Version;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -30,12 +31,10 @@ import com.codahale.metrics.Timer;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.spotify.helios.common.Version;
 import eu.toolchain.ffwd.FastForward;
 import eu.toolchain.ffwd.Metric;
 import io.dropwizard.lifecycle.Managed;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -47,6 +46,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Sends the metrics in a v3 MetricRegistry to
@@ -92,8 +93,8 @@ public class FastForwardReporter implements Managed {
    * Overload of {@link #create(MetricRegistry, Optional, String, int)} which allows for setting
    * additional attributes in each reported metric.
    *
-   * The additional attributes are modeled as a Supplier to allow for attributes that might change
-   * values at runtime.
+   * <p>The additional attributes are modeled as a Supplier to allow for attributes that might
+   * change values at runtime.
    */
   public static FastForwardReporter create(
       MetricRegistry registry,

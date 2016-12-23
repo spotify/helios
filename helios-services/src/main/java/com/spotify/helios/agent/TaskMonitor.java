@@ -1,38 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
-
-import com.google.common.util.concurrent.MoreExecutors;
-
-import com.spotify.docker.client.exceptions.ImageNotFoundException;
-import com.spotify.docker.client.exceptions.ImagePullFailedException;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.ThrottleState;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.util.Objects;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
@@ -47,6 +33,20 @@ import static com.spotify.helios.common.descriptors.ThrottleState.IMAGE_PULL_FAI
 import static com.spotify.helios.common.descriptors.ThrottleState.NO;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import com.google.common.util.concurrent.MoreExecutors;
+import com.spotify.docker.client.exceptions.ImageNotFoundException;
+import com.spotify.docker.client.exceptions.ImagePullFailedException;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
+import java.io.Closeable;
+import java.util.Objects;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A monitor for {@link TaskRunner}, processing events into observations about the health of a task,
@@ -95,23 +95,15 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
   }
 
   @Override
-  protected void finalize() throws Throwable {
-    super.finalize();
-    if (!scheduler.isShutdown()) {
-      log.error("task monitor not properly closed: {}", jobId);
-    }
-  }
-
-  @Override
-  public void failed(final Throwable t, String containerError) {
-    if (t instanceof InterruptedException) {
+  public void failed(final Throwable th, String containerError) {
+    if (th instanceof InterruptedException) {
       // Ignore failures due to interruptions as they're used when tearing down the agent and do
       // not indicate actual runner failures.
       return;
     }
-    if (t instanceof ImageNotFoundException) {
+    if (th instanceof ImageNotFoundException) {
       imageFailure(IMAGE_MISSING);
-    } else if (t instanceof ImagePullFailedException) {
+    } else if (th instanceof ImagePullFailedException) {
       imageFailure(IMAGE_PULL_FAILED);
     }
     // Don't use updateState() to avoid calling statusUpdater.update() twice in a row.
@@ -261,6 +253,7 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
         try {
           statusUpdater.update();
         } catch (InterruptedException ignore) {
+          // ignore
         }
       }
     }

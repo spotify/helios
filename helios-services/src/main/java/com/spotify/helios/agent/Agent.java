@@ -1,46 +1,24 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.agent;
-
-import com.google.common.base.Predicate;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.AbstractIdleService;
-
-import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.Task;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.servicescommon.PersistentAtomicReference;
-import com.spotify.helios.servicescommon.Reactor;
-import com.spotify.helios.servicescommon.ReactorFactory;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.in;
@@ -49,6 +27,28 @@ import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
+import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.AbstractIdleService;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.Task;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.servicescommon.PersistentAtomicReference;
+import com.spotify.helios.servicescommon.Reactor;
+import com.spotify.helios.servicescommon.ReactorFactory;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Runs jobs to implement the desired container deployment state.
@@ -282,9 +282,9 @@ public class Agent extends AbstractIdleService {
         final JobId jobId = entry.getKey();
         final Execution execution = entry.getValue();
         final Supervisor supervisor = supervisors.get(jobId);
-        if (supervisor == null &&
-            execution.getGoal() == START &&
-            execution.getPorts() != null) {
+        if (supervisor == null
+            && execution.getGoal() == START
+            && execution.getPorts() != null) {
           createSupervisor(execution.getJob(), execution.getPorts());
         }
       }

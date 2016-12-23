@@ -1,18 +1,21 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Client
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.common.descriptors;
@@ -20,14 +23,13 @@ package com.spotify.helios.common.descriptors;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Basically, a pair of {@link JobId} and {@link Goal}.  This is different than {@link Task}
  * which has a {@link Job} and not a {@link JobId}.
  *
- * A typical JSON representation might be:
+ * <p>A typical JSON representation might be:
  * <pre>
  * {
  *   "job": "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
@@ -121,25 +123,25 @@ public class Deployment extends Descriptor {
 
   @Override
   public String toString() {
-    return "Deployment{" +
-           "jobId=" + jobId +
-           ", goal=" + goal +
-           ", deployerUser='" + deployerUser + '\'' +
-           ", deployerMaster='" + deployerMaster + '\'' +
-           ", deploymentGroupName='" + deploymentGroupName + '\'' +
-           '}';
+    return "Deployment{"
+           + "jobId=" + jobId
+           + ", goal=" + goal
+           + ", deployerUser='" + deployerUser + '\''
+           + ", deployerMaster='" + deployerMaster + '\''
+           + ", deploymentGroupName='" + deploymentGroupName + '\''
+           + '}';
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) {
+  public boolean equals(Object obj) {
+    if (this == obj) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
 
-    final Deployment that = (Deployment) o;
+    final Deployment that = (Deployment) obj;
 
     if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
       return false;

@@ -1,25 +1,38 @@
-/*
- * Copyright (c) 2014 Spotify AB.
- *
+/*-
+ * -\-\-
+ * Helios Services
+ * --
+ * Copyright (C) 2016 Spotify AB
+ * --
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * -/-/-
  */
 
 package com.spotify.helios.servicescommon.coordination;
 
+import static com.spotify.helios.Polling.await;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter.noop;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
+import static org.junit.Assert.assertArrayEquals;
+
 import com.spotify.helios.Parallelized;
 import com.spotify.helios.ZooKeeperTestingServerManager;
-
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.concurrent.Callable;
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
@@ -27,18 +40,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.concurrent.Callable;
-
-import static com.spotify.helios.Polling.await;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter.noop;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.zookeeper.KeeperException.NodeExistsException;
-import static org.junit.Assert.assertArrayEquals;
 
 @RunWith(Parallelized.class)
 public class ZooKeeperUpdatingPersistentDirectoryTest {
@@ -98,6 +99,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     try {
       zk.curatorWithSuperAuth().create().forPath(FOO_PATH, "old".getBytes());
     } catch (NodeExistsException ignore) {
+      // ignored
     }
     sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
@@ -117,6 +119,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     try {
       zk.curatorWithSuperAuth().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
+      // ignored
     }
     sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
@@ -146,6 +149,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     try {
       zk.curatorWithSuperAuth().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
+      // ignored
     }
     sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
