@@ -21,9 +21,12 @@
 package com.spotify.helios.common.descriptors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.spotify.helios.common.ListViewer.localSublist;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.ListViewer;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -110,6 +113,18 @@ public class DeploymentGroupTasks extends Descriptor {
   public String toString() {
     return "DeploymentGroupTasks{"
            + "rolloutTasks=" + rolloutTasks
+           + ", taskIndex=" + taskIndex
+           + ", deploymentGroup=" + deploymentGroup
+           + '}';
+  }
+
+  /**
+   * Returns a string of an instance of this class that gives a local view of the
+   * {@link RolloutTask}s based on the taskIndex. Useful if there are many {@link RolloutTask}s.
+   */
+  public String toSummaryString() {
+    return "DeploymentGroupTasks{"
+           + "rolloutTasks=..., " + localSublist(taskIndex, 5, rolloutTasks) + ", ..."
            + ", taskIndex=" + taskIndex
            + ", deploymentGroup=" + deploymentGroup
            + '}';
