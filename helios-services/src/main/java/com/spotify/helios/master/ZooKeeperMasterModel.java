@@ -774,8 +774,10 @@ public class ZooKeeperMasterModel implements MasterModel {
       final VersionedValue<DeploymentGroupTasks> versionedTasks = entry.getValue();
       final DeploymentGroupTasks tasks = versionedTasks.value();
 
-      log.info("rolling-update step on deployment-group: name={}, tasks={}",
-          deploymentGroupName, tasks);
+      log.info("rolling-update step on deployment-group {}. Doing taskIndex {} of {}. "
+               + "DeploymentGroupTasks={}",
+          deploymentGroupName, tasks.getTaskIndex(), tasks.getRolloutTasks().size(),
+          tasks.toSummaryString());
 
       try {
         final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
