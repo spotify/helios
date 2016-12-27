@@ -67,8 +67,10 @@ public class BindVolumeContainerDecorator implements ContainerDecorator {
 
   @Override
   public void decorateHostConfig(Job job, Optional<String> dockerVersion,
-                                 HostConfig.Builder hostConfig) {
+                                 HostConfig.Builder hostConfigBuilder) {
     final List<String> b = Lists.newArrayList();
+
+    final HostConfig hostConfig = hostConfigBuilder.build();
 
     if (hostConfig.binds() != null) {
       b.addAll(hostConfig.binds());
@@ -76,7 +78,7 @@ public class BindVolumeContainerDecorator implements ContainerDecorator {
 
     b.addAll(this.binds);
 
-    hostConfig.binds(b);
+    hostConfigBuilder.binds(b);
   }
 
   @Override
