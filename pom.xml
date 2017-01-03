@@ -392,6 +392,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <autoReleaseAfterClose>true</autoReleaseAfterClose>
     <jacoco.version>0.7.1.201405082137</jacoco.version>
+    <jdeb.skip>false</jdeb.skip>
     <surefire.version>2.16</surefire.version>
     <surefireArgLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</surefireArgLine>
   </properties>
@@ -778,6 +779,7 @@
           <version>1.1.1</version>
           <configuration>
             <attach>false</attach>
+            <skip>${jdeb.skip}</skip>
           </configuration>
         </plugin>
       </plugins>
