@@ -36,7 +36,6 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -61,6 +60,7 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -100,8 +100,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -561,6 +563,10 @@ public class HeliosClient implements Closeable {
   public static class Builder {
 
     private static final String HELIOS_CERT_PATH = "HELIOS_CERT_PATH";
+    // used in the name format of the Client's executor's ThreadFactory to differentiate between
+    // different instances of HeliosClient. this way we avoid having multiple threads named
+    // "helios-client-1" etc.
+    private static final AtomicInteger clientCounter = new AtomicInteger(0);
 
     private String user;
     private ClientCertificatePath clientCertificatePath;
@@ -655,9 +661,18 @@ public class HeliosClient implements Closeable {
     }
 
     private static ListeningScheduledExecutorService defaultExecutorService() {
-      final ScheduledExecutorService executor = MoreExecutors.getExitingScheduledExecutorService(
-          (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS);
-      return MoreExecutors.listeningDecorator(executor);
+      final int clientCount = clientCounter.incrementAndGet();
+
+      final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+          .setNameFormat("helios-client-" + clientCount + "-thread-%d")
+          .build();
+
+      final ScheduledThreadPoolExecutor stpe = new ScheduledThreadPoolExecutor(4, threadFactory);
+
+      final ScheduledExecutorService exitingExecutor =
+          MoreExecutors.getExitingScheduledExecutorService(stpe, 0, SECONDS);
+
+      return MoreExecutors.listeningDecorator(exitingExecutor);
     }
 
     private RequestDispatcher createDispatcher() {

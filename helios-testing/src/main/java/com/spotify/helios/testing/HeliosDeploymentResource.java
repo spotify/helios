@@ -60,6 +60,8 @@ public class HeliosDeploymentResource extends ExternalResource {
   public void before() throws Throwable {
     super.before();
 
+    log.info("verifying connectivity to {}", deployment.address());
+
     // wait for the helios master to be available
     Polling.awaitUnchecked(30, TimeUnit.SECONDS,
         "Could not connect to HeliosDeployment at " + deployment.address() + " after %d %s",
