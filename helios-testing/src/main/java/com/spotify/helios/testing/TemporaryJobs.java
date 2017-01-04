@@ -98,9 +98,10 @@ public class TemporaryJobs implements TestRule {
   private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
-
   private final TemporaryJobReports reports;
   private final ThreadLocal<TemporaryJobReports.ReportWriter> reportWriter;
+
+  private boolean removedOldJobs = false;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -109,6 +110,7 @@ public class TemporaryJobs implements TestRule {
               .setDaemon(true)
               .build()),
       0, SECONDS);
+  private final Path prefixDirectory;
 
   TemporaryJobs(final Builder builder, final Config config) {
     this.client = checkNotNull(builder.client, "client");
@@ -122,16 +124,15 @@ public class TemporaryJobs implements TestRule {
         new DefaultDeployer(client, jobs, builder.hostPickingStrategy,
             builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
 
-    final Path prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
+    prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
                                                .or(DEFAULT_PREFIX_DIRECTORY));
     try {
-      removeOldJobs(prefixDirectory);
       if (isNullOrEmpty(builder.jobPrefix)) {
         this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
       } else {
         this.jobPrefixFile = JobPrefixFile.create(builder.jobPrefix, prefixDirectory);
       }
-    } catch (IOException | ExecutionException | InterruptedException e) {
+    } catch (IOException e) {
       throw Throwables.propagate(e);
     }
 
@@ -344,6 +345,7 @@ public class TemporaryJobs implements TestRule {
 
         final TemporaryJobReports.Step test = writer.step("test");
         before();
+        removeOldJobs();
         try {
           perform(base, writer);
           test.markSuccess();
@@ -414,8 +416,15 @@ public class TemporaryJobs implements TestRule {
    * prefix, and the delete the file. If the file is locked, it is currently in use, and will be
    * skipped.
    */
-  private void removeOldJobs(final Path prefixDirectory)
+  private void removeOldJobs()
       throws ExecutionException, InterruptedException, IOException {
+
+    // only perform cleanup once per TemporaryJobs instance; do not redo cleanup if TemporaryJobs
+    // is used as a @Rule in a test class with many test methods
+    if (removedOldJobs) {
+      return;
+    }
+
     final File[] files = prefixDirectory.toFile().listFiles();
     if (files == null || files.length == 0) {
       return;
@@ -474,6 +483,8 @@ public class TemporaryJobs implements TestRule {
         log.warn("Exception processing file {}", file.getPath(), e);
       }
     }
+
+    removedOldJobs = true;
   }
 
   public JobPrefixFile jobPrefixFile() {
