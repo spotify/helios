@@ -20,9 +20,13 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
+import com.google.common.net.InetAddresses;
+
 import org.jetbrains.annotations.Nullable;
 
 
@@ -32,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>A typical JSON representation might be:
  * <pre>
  * {
+ *   "ip": "0.0.0.0",
  *   "externalPort" : 8061,
  *   "internalPort" : 8081,
  *   "protocol" : "tcp"
@@ -41,31 +46,46 @@ import org.jetbrains.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PortMapping extends Descriptor {
 
+  public static final String WILDCARD_ADDRESS = "0.0.0.0";
   public static final String TCP = "tcp";
   public static final String UDP = "udp";
 
+  private final String ip;
   private final int internalPort;
   private final Integer externalPort;
   private final String protocol;
 
-  public PortMapping(@JsonProperty("internalPort") final int internalPort,
-                     @JsonProperty("externalPort") final Integer externalPort,
-                     @JsonProperty("protocol") final String protocol) {
+  public PortMapping(@JsonProperty("ip") @Nullable final String ip,
+                     @JsonProperty("internalPort") final int internalPort,
+                     @JsonProperty("externalPort") @Nullable final Integer externalPort,
+                     @JsonProperty("protocol") @Nullable final String protocol) {
+    this.ip = Optional.fromNullable(ip).or(WILDCARD_ADDRESS);
+    // Validate IP here instead of in PortMappingParser to guaruntee every instance has a valid IP
+    if (!InetAddresses.isInetAddress(this.ip)) {
+      throw new IllegalArgumentException(ip + " is not a valid IP address.");
+    }
+
     this.internalPort = internalPort;
     this.externalPort = externalPort;
     this.protocol = Optional.fromNullable(protocol).or(TCP);
   }
 
   public PortMapping(final int internalPort, final Integer externalPort) {
-    this.internalPort = internalPort;
-    this.externalPort = externalPort;
-    this.protocol = TCP;
+    this(WILDCARD_ADDRESS, internalPort, externalPort, TCP);
   }
 
   public PortMapping(final int internalPort) {
-    this.internalPort = internalPort;
-    this.externalPort = null;
-    this.protocol = TCP;
+    this(WILDCARD_ADDRESS, internalPort, null, TCP);
+  }
+
+  private PortMapping(final Builder builder) {
+    this(checkNotNull(builder.ip), builder.internalPort, builder.externalPort,
+        checkNotNull(builder.protocol));
+  }
+
+  @Nullable
+  public String getIp() {
+    return ip;
   }
 
   public int getInternalPort() {
@@ -99,11 +119,46 @@ public class PortMapping extends Descriptor {
 
   public static PortMapping of(final int internalPort, final Integer externalPort,
                                final String protocol) {
-    return new PortMapping(internalPort, externalPort, protocol);
+    return new PortMapping(WILDCARD_ADDRESS, internalPort, externalPort, protocol);
   }
 
   public static PortMapping of(final int internalPort, final String protocol) {
-    return new PortMapping(internalPort, null, protocol);
+    return new PortMapping(WILDCARD_ADDRESS, internalPort, null, protocol);
+  }
+
+  public static Builder builder() {
+    return new Builder().ip(WILDCARD_ADDRESS).protocol(TCP);
+  }
+
+  public static class Builder {
+    private String ip;
+    private int internalPort;
+    private Integer externalPort;
+    private String protocol;
+
+    public Builder ip(final String ip) {
+      this.ip = ip;
+      return this;
+    }
+
+    public Builder internalPort(final int internalPort) {
+      this.internalPort = internalPort;
+      return this;
+    }
+
+    public Builder externalPort(final Integer externalPort) {
+      this.externalPort = externalPort;
+      return this;
+    }
+
+    public Builder protocol(final String protocol) {
+      this.protocol = protocol;
+      return this;
+    }
+
+    public PortMapping build() {
+      return new PortMapping(this);
+    }
   }
 
   @Override
@@ -117,6 +172,9 @@ public class PortMapping extends Descriptor {
 
     final PortMapping that = (PortMapping) obj;
 
+    if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
+      return false;
+    }
     if (internalPort != that.internalPort) {
       return false;
     }
@@ -134,6 +192,7 @@ public class PortMapping extends Descriptor {
   @Override
   public int hashCode() {
     int result = internalPort;
+    result = 31 * result + (ip != null ? ip.hashCode() : 0);
     result = 31 * result + (externalPort != null ? externalPort.hashCode() : 0);
     result = 31 * result + (protocol != null ? protocol.hashCode() : 0);
     return result;
@@ -142,7 +201,8 @@ public class PortMapping extends Descriptor {
   @Override
   public String toString() {
     return "PortMapping{"
-           + "internalPort=" + internalPort
+           + "ip=" + ip
+           + ", internalPort=" + internalPort
            + ", externalPort=" + externalPort
            + ", protocol='" + protocol + '\''
            + '}';

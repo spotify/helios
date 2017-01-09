@@ -46,10 +46,29 @@ public class PortMappingParserTest {
       TestData.of("http=8080:80", "http", PortMapping.of(8080, 80, TCP)),
       TestData.of("foo=4711:80/tcp", "foo", PortMapping.of(4711, 80, TCP)),
       TestData.of("dns=53:53/udp", "dns", PortMapping.of(53, 53, UDP)),
-      TestData.of("bar=4711", "bar", PortMapping.of(4711, null, TCP))
+      TestData.of("bar=4711", "bar", PortMapping.of(4711, null, TCP)),
+      TestData.of("smtp=0.0.0.0:53:53/udp", "smtp", PortMapping.builder()
+          .ip("0.0.0.0")
+          .internalPort(53)
+          .externalPort(53)
+          .protocol(UDP)
+          .build()),
+      TestData.of("mail=127.0.0.1:23:23/tcp", "mail", PortMapping.builder()
+          .ip("127.0.0.1")
+          .internalPort(23)
+          .externalPort(23)
+          .protocol(TCP)
+          .build()),
+      TestData.of("qux=10.99.0.1:1001:1002", "qux", PortMapping.builder()
+          .ip("10.99.0.1")
+          .internalPort(1001)
+          .externalPort(1002)
+          .protocol(TCP)
+          .build())
   );
 
   private static final List<TestData> BAD_SPECS = ImmutableList.of(
+      TestData.partial("smtp=localhost:53:53/udp"),
       TestData.partial("http8080:80"),
       TestData.partial("foo=80:4711:80/tcp"),
       TestData.partial("=53:53/udp"),
@@ -75,6 +94,14 @@ public class PortMappingParserTest {
       expectedException.expectMessage("Bad port mapping: " + d.getSpec());
       PortMappingParser.parsePortMapping(d.getSpec());
     }
+  }
+
+  @Test
+  public void testParsePortMappingBadIp() throws Exception {
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("999.999.999.999 is not a valid IP address.");
+    final TestData d = TestData.partial("mail=999.999.999.999:23:23/tcp");
+    PortMappingParser.parsePortMapping(d.getSpec());
   }
 
   @Test
