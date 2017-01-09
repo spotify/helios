@@ -20,15 +20,12 @@
 
 package com.spotify.helios.cli.command;
 
-import static com.spotify.helios.cli.Utils.allAsMap;
-import static com.spotify.helios.cli.command.JobStatusFetcher.getJobsStatuses;
 import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.cli.Target;
@@ -84,7 +81,7 @@ public class JobWatchCommand extends MultiTargetControlCommand {
   @Override
   int run(final Namespace options, final List<TargetAndClient> clients,
           final PrintStream out, final boolean json, final BufferedReader stdin)
-              throws ExecutionException, InterruptedException, IOException {
+      throws ExecutionException, InterruptedException, IOException {
     final boolean exact = options.getBoolean(exactArg.getDest());
     final List<String> prefixes = options.getList(prefixesArg.getDest());
     final String jobIdString = options.getString(jobsArg.getDest());
@@ -103,12 +100,10 @@ public class JobWatchCommand extends MultiTargetControlCommand {
     return 0;
   }
 
-
-
   public static void watchJobsOnHosts(final PrintStream out, final boolean exact,
                                       final List<String> resolvedHosts, final List<JobId> jobIds,
                                       final Integer interval, final HeliosClient client)
-                                          throws InterruptedException, ExecutionException {
+      throws InterruptedException, ExecutionException {
     watchJobsOnHosts(out, exact, resolvedHosts, Sets.newHashSet(jobIds), interval,
         ImmutableList.of(new TargetAndClient(client)));
   }
@@ -124,7 +119,7 @@ public class JobWatchCommand extends MultiTargetControlCommand {
 
       final Instant now = new Instant();
       out.printf("-------------------- ------------------------------ -------- "
-          + "---------- [%s UTC]%n", now.toString(formatter));
+                 + "---------- [%s UTC]%n", now.toString(formatter));
       for (final TargetAndClient cc : clients) {
         final Optional<Target> target = cc.getTarget();
         if (clients.size() > 1) {
@@ -147,9 +142,10 @@ public class JobWatchCommand extends MultiTargetControlCommand {
   }
 
   private static void showReport(PrintStream out, boolean exact, final List<String> prefixes,
-      final Set<JobId> jobIds, final DateTimeFormatter formatter, final HeliosClient client)
+                                 final Set<JobId> jobIds, final DateTimeFormatter formatter,
+                                 final HeliosClient client)
       throws ExecutionException, InterruptedException {
-    final Map<JobId, JobStatus> statuses = getStatuses(client, jobIds);
+    final Map<JobId, JobStatus> statuses = client.jobStatuses(jobIds).get();
 
     for (final JobId jobId : jobIds) {
       final JobStatus jobStatus = statuses.get(jobId);
@@ -202,10 +198,6 @@ public class JobWatchCommand extends MultiTargetControlCommand {
   private static Map<JobId, JobStatus> getStatuses(final HeliosClient client,
                                                    final Set<JobId> jobIds)
       throws ExecutionException, InterruptedException {
-    final Map<JobId, ListenableFuture<JobStatus>> futures = getJobsStatuses(client, jobIds);
-
-    final Map<JobId, JobStatus> statuses = Maps.newTreeMap();
-    statuses.putAll(allAsMap(futures));
-    return statuses;
+    return client.jobStatuses(jobIds).get();
   }
 }

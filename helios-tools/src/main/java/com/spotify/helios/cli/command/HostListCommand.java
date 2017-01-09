@@ -25,7 +25,6 @@ import static com.google.common.collect.Ordering.natural;
 import static com.spotify.helios.cli.Output.formatHostname;
 import static com.spotify.helios.cli.Output.humanDuration;
 import static com.spotify.helios.cli.Output.table;
-import static com.spotify.helios.cli.Utils.allAsMap;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -39,8 +38,6 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -56,7 +53,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import net.sourceforge.argparse4j.inf.Argument;
@@ -172,32 +168,20 @@ public class HostListCommand extends ControlCommand {
         }
       }
     } else {
-      final Map<String, ListenableFuture<HostStatus>> statuses = Maps.newTreeMap();
-      try {
-        final Map<String, HostStatus> hostStatuses = client.hostStatuses(hosts, queryParams).get();
-        for (final Entry<String, HostStatus> entry : hostStatuses.entrySet()) {
-          statuses.put(entry.getKey(), Futures.immediateFuture(entry.getValue()));
-        }
-      } catch (ExecutionException e) {
-        System.err.println("Warning: masters failed batch status fetching.  Falling back to"
-                           + " slower host status method");
-        for (final String host : hosts) {
-          statuses.put(host, client.hostStatus(host, queryParams));
-        }
-      }
+      final Map<String, HostStatus> statuses = client.hostStatuses(hosts, queryParams).get();
       if (json) {
         final Map<String, HostStatus> sorted = Maps.newTreeMap();
-        sorted.putAll(allAsMap(statuses));
+        sorted.putAll(statuses);
         out.println(Json.asPrettyStringUnchecked(sorted));
       } else {
         final Table table = table(out);
         table.row("HOST", "STATUS", "DEPLOYED", "RUNNING", "CPUS", "MEM", "LOAD AVG", "MEM USAGE",
                   "OS", "HELIOS", "DOCKER", "LABELS");
 
-        for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
+        for (final Map.Entry<String, HostStatus> e : statuses.entrySet()) {
 
           final String host = e.getKey();
-          final HostStatus s = e.getValue().get();
+          final HostStatus s = e.getValue();
 
           if (s == null) {
             continue;
