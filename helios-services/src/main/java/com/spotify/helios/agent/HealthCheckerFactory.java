@@ -30,10 +30,13 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.messages.ExecCreation;
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
+
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
@@ -88,13 +91,17 @@ public final class HealthCheckerFactory {
 
       try {
         final List<String> cmd = healthCheck.getCommand();
-        final String execId = docker.execCreate(containerId, cmd.toArray(new String[cmd.size()]),
-                                                DockerClient.ExecCreateParam.attachStdout(),
-                                                DockerClient.ExecCreateParam.attachStderr());
+        final ExecCreation execCreation = docker.execCreate(
+            containerId, cmd.toArray(new String[cmd.size()]),
+            DockerClient.ExecCreateParam.attachStdout(),
+            DockerClient.ExecCreateParam.attachStderr());
+        final String execId = execCreation.id();
 
-        final String output;
+        String output = "";
         try (LogStream stream = docker.execStart(execId)) {
           output = stream.readFully();
+        } catch (IOException e) {
+          // thrown from implicit call to close(). Ignore.
         }
 
         final int exitCode = docker.execInspect(execId).exitCode();

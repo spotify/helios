@@ -225,15 +225,11 @@ public class TaskRunnerTest {
     final ContainerCreation mockCreation = mock(ContainerCreation.class);
     final HealthChecker mockHealthChecker = mock(HealthChecker.class);
 
-    final ContainerInfo stopped = new ContainerInfo() {
-      @Override
-      public ContainerState state() {
-        final ContainerState state = mock(ContainerState.class);
-        when(state.running()).thenReturn(false);
-        when(state.error()).thenReturn("container is a potato");
-        return state;
-      }
-    };
+    final ContainerState stoppedState = mock(ContainerState.class);
+    when(stoppedState.running()).thenReturn(false);
+    when(stoppedState.error()).thenReturn("container is a potato");
+    final ContainerInfo stopped = mock(ContainerInfo.class);
+    when(stopped.state()).thenReturn(stoppedState);
 
     when(mockCreation.id()).thenReturn("potato");
     when(mockDocker.inspectContainer(anyString())).thenReturn(stopped);

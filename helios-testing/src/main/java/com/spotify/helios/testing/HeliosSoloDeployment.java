@@ -231,7 +231,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private List<String> containerEnv(final Set<String> builderEnv) {
     final HashSet<String> env = new HashSet<>(builderEnv);
-    env.add("DOCKER_HOST=" + containerDockerHost.bindURI().toString());
+    env.add("DOCKER_HOST=" + containerDockerHost.bindUri().toString());
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
     }
@@ -240,8 +240,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private List<String> containerBinds() {
     final HashSet<String> binds = new HashSet<>();
-    if (containerDockerHost.bindURI().getScheme().equals("unix")) {
-      final String path = containerDockerHost.bindURI().getPath();
+    if (containerDockerHost.bindUri().getScheme().equals("unix")) {
+      final String path = containerDockerHost.bindUri().getPath();
       binds.add(path + ":" + path);
     }
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
@@ -300,7 +300,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
                       + "DOCKER_HOST contains a full hostname or IP address, not localhost, "
                       + "127.0.0.1, etc.",
               exit.statusCode(),
-              containerDockerHost.bindURI(),
+              containerDockerHost.bindUri(),
               containerDockerHost.dockerCertPath()));
     }
 

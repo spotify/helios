@@ -134,6 +134,13 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>com.spotify</groupId>
+        <artifactId>docker-client</artifactId>
+        <version>7.0.0</version>
+        <classifier>shaded</classifier>
+      </dependency>
+
       <!--compile deps-->
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -262,6 +269,16 @@
             <artifactId>netty</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>4.5</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>4.4.5</version>
       </dependency>
       <!--
       We don't actually use netty directly in this project, but we've added a dependency here

@@ -260,12 +260,12 @@ public class TaskConfig {
     final Map<String, List<PortBinding>> bindings = Maps.newHashMap();
     for (final Map.Entry<String, PortMapping> e : job.getPorts().entrySet()) {
       final PortMapping mapping = e.getValue();
-      final PortBinding binding = new PortBinding();
+      final PortBinding binding;
       final Integer externalPort = mapping.getExternalPort();
       if (externalPort == null) {
-        binding.hostPort(ports.get(e.getKey()).toString());
+        binding = PortBinding.of(null, ports.get(e.getKey()).toString());
       } else {
-        binding.hostPort(externalPort.toString());
+        binding = PortBinding.of(null, externalPort.toString());
       }
       final String entry = containerPort(mapping.getInternalPort(), mapping.getProtocol());
       bindings.put(entry, Collections.singletonList(binding));
