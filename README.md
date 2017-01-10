@@ -70,8 +70,8 @@ Test this by making sure `docker info` works. Then install helios-solo:
 
 ```bash
 # install helios-solo on Debian/Ubuntu
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-$ sudo apt-get install helios-solo
+$ echo "deb https://dl.bintray.com/spotify/deb trusty main" | sudo tee -a /etc/apt/sources.list.d/helios.pref
+$ sudo apt-get update && sudo apt-get install helios-solo
 
 # install helios-solo on OS X
 $ brew tap spotify/public && brew install helios-solo
@@ -95,7 +95,7 @@ as your local Helios cluster. If you have issues, see [the detailed helios-solo 
 Prebuilt Debian packages are available for production use. To install:
 
 ```bash
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+$ echo "deb https://dl.bintray.com/spotify/deb trusty main" | sudo tee -a /etc/apt/sources.list.d/helios.pref
 
 # install Helios command-line tools
 $ sudo apt-get install helios
