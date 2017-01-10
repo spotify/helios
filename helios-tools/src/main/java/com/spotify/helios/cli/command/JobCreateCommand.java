@@ -183,14 +183,18 @@ public class JobCreateCommand extends ControlCommand {
     portArg = parser.addArgument("-p", "--port")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .help("Port mapping. Specify an endpoint name and a single port (e.g. \"http=8080\") for "
-              + "dynamic port mapping and a name=private:public tuple (e.g. \"http=8080:80\") for "
-              + "static port mapping. E.g., foo=4711 will map the internal port 4711 of the "
-              + "container to an arbitrary external port on the host. Specifying foo=4711:80 "
-              + "will map internal port 4711 of the container to port 80 on the host. The "
-              + "protocol will be TCP by default. For UDP, add /udp. E.g. quic=80/udp or "
-              + "dns=53:53/udp. The endpoint name can be used when specifying service registration "
-              + "using -r/--register.");
+        .help("Port mapping of the form "
+              + "<name>=[<IP address>:]<internal port>[:<external port>][/<protocol>].\n\n"
+              + "The IP address defaults to \"0.0.0.0\". Protocol defaults to \"tcp\".\n\n"
+              + "Specify a name and an internal port (e.g. \"http=8080\") for "
+              + "dynamic port mapping. Specify name, internal port, and external port "
+              + "(e.g. \"http=8080:80\") for static port mapping.\n\n"
+              + "For example, foo=4711 will map the internal port 4711 of the "
+              + "container to an arbitrary external port on the host exposed on 0.0.0.0. "
+              + "Specifying foo=127.0.0.1:4711:80 will map internal port 4711 of the container to "
+              + "port 80 on the host and exposed only on loopback.\n\n"
+              + "For UDP, add /udp. E.g. quic=80/udp or dns=53:53/udp. The name can be "
+              + "used when specifying service registration using -r/--register.");
 
     registrationArg = parser.addArgument("-r", "--register")
         .action(append())
