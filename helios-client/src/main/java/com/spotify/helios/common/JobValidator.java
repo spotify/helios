@@ -62,6 +62,9 @@ public class JobValidator {
   private static final Pattern NAME_COMPONENT_PATTERN = Pattern.compile("^([a-z0-9._-]+)$");
   private static final int REPO_NAME_MAX_LENGTH = 255;
 
+  // taken from https://github.com/docker/distribution/blob/3150937b9f2b1b5b096b2634d0e7c44d4a0f89fb/reference/regexp.go#L36-L37
+  private static final Pattern TAG_PATTERN = Pattern.compile("[\\w][\\w.-]{0,127}");
+
   private static final Pattern DIGIT_PERIOD = Pattern.compile("^[0-9.]+$");
 
   private static final Pattern PORT_MAPPING_PROTO_PATTERN = compile("(tcp|udp)");
@@ -364,16 +367,15 @@ public class JobValidator {
   }
 
   private boolean validateTag(final String tag, final Collection<String> errors) {
-    boolean valid = true;
     if (tag.isEmpty()) {
       errors.add("Tag cannot be empty");
-      valid = false;
+      return false;
     }
-    if (tag.contains("/") || tag.contains(":")) {
-      errors.add(format("Illegal tag: \"%s\"", tag));
-      valid = false;
+    if (!TAG_PATTERN.matcher(tag).matches()) {
+      errors.add(format("Illegal tag: \"%s\", must match %s", tag, TAG_PATTERN));
+      return false;
     }
-    return valid;
+    return true;
   }
 
   private boolean validateDigest(final String digest, final Collection<String> errors) {

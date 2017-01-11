@@ -40,7 +40,9 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_SECONDS_TO_WAIT;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_SECURITY_OPT;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.Is.is;
@@ -456,7 +458,7 @@ public class JobValidatorTest {
   @Test
   public void testImageNamespaceWithHyphens() {
     final Job job = VALID_JOB.toBuilder()
-        .setImage("b.gcr.io/cloudsql-docker/gce-proxy:1.05 ")
+        .setImage("b.gcr.io/cloudsql-docker/gce-proxy:1.05")
         .build();
 
     assertThat(validator.validate(job), is(empty()));
@@ -465,10 +467,21 @@ public class JobValidatorTest {
   @Test
   public void testImageNameWithManyNameComponents() {
     final Job job = VALID_JOB.toBuilder()
-        .setImage("b.gcr.io/cloudsql-docker/and/more/components/gce-proxy:1.05 ")
+        .setImage("b.gcr.io/cloudsql-docker/and/more/components/gce-proxy:1.05")
         .build();
 
     assertThat(validator.validate(job), is(empty()));
+  }
+
+  @Test
+  public void testImageNameInvalidTag() {
+    final Job job = VALID_JOB.toBuilder()
+        .setImage("foo/bar:a b c")
+        .build();
+
+    assertThat(validator.validate(job), contains(
+        containsString("Illegal tag: \"a b c\"")
+    ));
   }
 
 }
