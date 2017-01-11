@@ -47,27 +47,28 @@ import java.util.regex.Pattern;
 
 public class JobValidator {
 
-  public static final Pattern NAME_VERSION_PATTERN = Pattern.compile("[0-9a-zA-Z-_.]+");
+  private static final Pattern NAME_VERSION_PATTERN = Pattern.compile("[0-9a-zA-Z-_.]+");
 
-  public static final Pattern HOSTNAME_PATTERN =
+  private static final Pattern HOSTNAME_PATTERN =
       Pattern.compile("^([a-z0-9][a-z0-9-]{0,62}$)");
 
-  public static final Pattern DOMAIN_PATTERN =
+  private static final Pattern DOMAIN_PATTERN =
       Pattern.compile("^(?:(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))"
                       + "(\\.(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])))*)\\.?$");
 
-  public static final Pattern IPV4_PATTERN =
+  private static final Pattern IPV4_PATTERN =
       Pattern.compile("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$");
 
-  public static final Pattern NAMESPACE_PATTERN = Pattern.compile("^([a-z0-9_]{4,30})$");
-  public static final Pattern REPO_PATTERN = Pattern.compile("^([a-z0-9-_.]+)$");
-  public static final Pattern DIGIT_PERIOD = Pattern.compile("^[0-9.]+$");
+  private static final Pattern NAME_COMPONENT_PATTERN = Pattern.compile("^([a-z0-9._-]+)$");
+  private static final int REPO_NAME_MAX_LENGTH = 255;
 
-  public static final Pattern PORT_MAPPING_PROTO_PATTERN = compile("(tcp|udp)");
-  public static final Pattern PORT_MAPPING_NAME_PATTERN = compile("\\S+");
-  public static final Pattern REGISTRATION_NAME_PATTERN = compile("[_\\-\\w]+");
+  private static final Pattern DIGIT_PERIOD = Pattern.compile("^[0-9.]+$");
 
-  public static final List<String> VALID_NETWORK_MODES = ImmutableList.of("bridge", "host");
+  private static final Pattern PORT_MAPPING_PROTO_PATTERN = compile("(tcp|udp)");
+  private static final Pattern PORT_MAPPING_NAME_PATTERN = compile("\\S+");
+  private static final Pattern REGISTRATION_NAME_PATTERN = compile("[_\\-\\w]+");
+
+  private static final List<String> VALID_NETWORK_MODES = ImmutableList.of("bridge", "host");
 
   private final boolean shouldValidateJobHash;
   private final boolean shouldValidateAddCapabilities;
@@ -345,7 +346,7 @@ public class JobValidator {
         && !nameParts[0].contains(":")
         && !nameParts[0].equals("localhost")) {
       // This is a Docker Index repos (ex: samalba/hipache or ubuntu)
-      return validateRepositoryName(repo, errors);
+      return validateRepositoryName(imageRef, repo, errors);
     }
 
     if (nameParts.length < 2) {
@@ -358,7 +359,7 @@ public class JobValidator {
     final String endpoint = nameParts[0];
     final String reposName = nameParts[1];
     valid &= validateEndpoint(endpoint, errors);
-    valid &= validateRepositoryName(reposName, errors);
+    valid &= validateRepositoryName(imageRef, reposName, errors);
     return valid;
   }
 
@@ -423,30 +424,38 @@ public class JobValidator {
     return true;
   }
 
-  private boolean validateRepositoryName(final String repositoryName,
-                                         final Collection<String> errors) {
-    boolean valid = true;
-    String repo;
-    String name;
-    final String[] nameParts = repositoryName.split("/", 2);
-    if (nameParts.length < 2) {
-      repo = "library";
-      name = nameParts[0];
-    } else {
-      repo = nameParts[0];
-      name = nameParts[1];
+  private boolean validateRepositoryName(
+      final String imageName,
+      final String repositoryName,
+      final Collection<String> errors) {
+
+    /*
+    From https://github.com/docker/docker/commit/ea98cf74aad3c2633268d5a0b8a2f80b331ddc0b:
+    The image name which is made up of slash-separated name components, ....
+    Name components may contain lowercase characters, digits and separators. A separator is defined
+    as a period, one or two underscores, or one or more dashes. A name component may not start or
+    end with a separator.
+     */
+    final String[] nameParts = repositoryName.split("/");
+    for (String name : nameParts) {
+      if (!NAME_COMPONENT_PATTERN.matcher(name).matches()) {
+        errors.add(
+            format("Invalid image name (%s), only %s is allowed for each slash-separated "
+                   + "name component (failed on \"%s\")",
+                imageName, NAME_COMPONENT_PATTERN, name)
+        );
+        return false;
+      }
     }
-    if (!REPO_PATTERN.matcher(repo).matches()) {
-      errors.add(format("Invalid repository name (%s), only [a-z0-9-_.] are allowed", repo));
-      valid = false;
-    }
-    if (!NAMESPACE_PATTERN.matcher(name).matches()) {
+
+    if (repositoryName.length() > REPO_NAME_MAX_LENGTH) {
       errors.add(
-        format("Invalid namespace name (%s), only [a-z0-9_] are allowed, size between 4 and 30",
-               name));
-      valid = false;
+          format("Invalid image name (%s), repository name cannot be larger than %d characters",
+              imageName, REPO_NAME_MAX_LENGTH)
+      );
+      return false;
     }
-    return valid;
+    return true;
   }
 
   /**

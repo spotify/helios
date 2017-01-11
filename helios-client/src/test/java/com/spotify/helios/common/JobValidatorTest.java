@@ -265,17 +265,24 @@ public class JobValidatorTest {
     assertEquals(newHashSet("Invalid port in endpoint: \"reg.istry:4711 \""),
                  validator.validate(b.setImage("reg.istry:4711 /repo").build()));
 
-    assertEquals(newHashSet("Invalid repository name ( repo), only [a-z0-9-_.] are allowed"),
+    assertEquals(newHashSet("Invalid image name (reg.istry:4711/ repo), only ^([a-z0-9._-]+)$ is "
+                            + "allowed for each slash-separated name component "
+                            + "(failed on \" repo\")"),
                  validator.validate(b.setImage("reg.istry:4711/ repo").build()));
 
-    assertEquals(newHashSet("Invalid namespace name (namespace ), only [a-z0-9_] are "
-                            + "allowed, size between 4 and 30"),
+    assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace /repo), only "
+                            + "^([a-z0-9._-]+)$ is allowed for each slash-separated name component "
+                            + "(failed on \"namespace \")"),
                  validator.validate(b.setImage("reg.istry:4711/namespace /repo").build()));
 
-    assertEquals(newHashSet("Invalid repository name ( repo), only [a-z0-9-_.] are allowed"),
+    assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace/ repo), only "
+                            + "^([a-z0-9._-]+)$ is allowed for each slash-separated name component "
+                            + "(failed on \" repo\")"),
                  validator.validate(b.setImage("reg.istry:4711/namespace/ repo").build()));
 
-    assertEquals(newHashSet("Invalid repository name (repo ), only [a-z0-9-_.] are allowed"),
+    assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace/repo ), only "
+                            + "^([a-z0-9._-]+)$ is allowed for each slash-separated name component "
+                            + "(failed on \"repo \")"),
                  validator.validate(b.setImage("reg.istry:4711/namespace/repo ").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"foo-.ba|z\""),
@@ -293,17 +300,11 @@ public class JobValidatorTest {
     assertEquals(newHashSet("Invalid port in endpoint: \"foo:-17\""),
                  validator.validate(b.setImage("foo:-17/namespace/baz").build()));
 
-    assertEquals(newHashSet("Invalid repository name (bar/baz/quux), only [a-z0-9-_.] are allowed"),
-                 validator.validate(b.setImage("foos/bar/baz/quux").build()));
-
-    assertEquals(newHashSet("Invalid namespace name (foo), only [a-z0-9_] are allowed, "
-                            + "size between 4 and 30"),
-                 validator.validate(b.setImage("foo/bar").build()));
-
     final String foos = Strings.repeat("foo", 100);
-    assertEquals(newHashSet("Invalid namespace name (" + foos + "), only [a-z0-9_] are allowed, "
-                            + "size between 4 and 30"),
-                 validator.validate(b.setImage(foos + "/bar").build()));
+    final String image = foos + "/bar";
+    assertEquals(newHashSet("Invalid image name (" + image + "), repository name cannot be larger"
+                            + " than 255 characters"),
+                 validator.validate(b.setImage(image).build()));
   }
 
   @Test
@@ -451,4 +452,23 @@ public class JobValidatorTest {
     final Set<String> errors2 = validator2.validate(job);
     assertEquals(0, errors2.size());
   }
+
+  @Test
+  public void testImageNamespaceWithHyphens() {
+    final Job job = VALID_JOB.toBuilder()
+        .setImage("b.gcr.io/cloudsql-docker/gce-proxy:1.05 ")
+        .build();
+
+    assertThat(validator.validate(job), is(empty()));
+  }
+
+  @Test
+  public void testImageNameWithManyNameComponents() {
+    final Job job = VALID_JOB.toBuilder()
+        .setImage("b.gcr.io/cloudsql-docker/and/more/components/gce-proxy:1.05 ")
+        .build();
+
+    assertThat(validator.validate(job), is(empty()));
+  }
+
 }
