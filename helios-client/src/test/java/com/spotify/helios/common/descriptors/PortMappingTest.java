@@ -24,16 +24,14 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.io.Resources.getResource;
 import static com.spotify.helios.common.descriptors.PortMapping.TCP;
 import static com.spotify.helios.common.descriptors.PortMapping.UDP;
-import static com.spotify.helios.common.descriptors.PortMapping.WILDCARD_ADDRESS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.io.Resources;
 import com.spotify.helios.common.Json;
-
 import java.io.IOException;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -58,7 +56,6 @@ public class PortMappingTest {
   public void testJsonDeserializationFromPartial() throws Exception {
     final PortMapping pm = portMappingFromResource("portmapping-partial.json");
     assertThat(pm, equalTo(PortMapping.builder()
-        .ip(WILDCARD_ADDRESS)
         .externalPort(123)
         .internalPort(456)
         .protocol(TCP)
@@ -69,7 +66,6 @@ public class PortMappingTest {
   public void testJsonDeserializationFromInternalPortOnly() throws Exception {
     final PortMapping pm = portMappingFromResource("portmapping-internal-port-only.json");
     assertThat(pm, equalTo(PortMapping.builder()
-        .ip(WILDCARD_ADDRESS)
         .internalPort(456)
         .protocol(TCP)
         .build()));
@@ -85,7 +81,6 @@ public class PortMappingTest {
   public void testJsonDeserializationUnknownFields() throws Exception {
     final PortMapping pm = portMappingFromResource("portmapping-unknown-fields.json");
     assertThat(pm, equalTo(PortMapping.builder()
-        .ip(WILDCARD_ADDRESS)
         .internalPort(456)
         .externalPort(123)
         .protocol(TCP)
@@ -100,8 +95,13 @@ public class PortMappingTest {
         .externalPort(123)
         .protocol(UDP)
         .build();
-    final String json = Json.asPrettyString(pm);
+    final String json = toJson(pm);
     assertThat(json, equalTo(stringFromResource("portmapping-full.json")));
+  }
+
+  private static String toJson(final PortMapping pm) throws JsonProcessingException {
+    // ensure that we use the normalizing writer that is also used when computing a Job.hash
+    return Json.asNormalizedString(pm);
   }
 
   @Test
@@ -110,7 +110,7 @@ public class PortMappingTest {
         .internalPort(456)
         .externalPort(123)
         .build();
-    final String json = Json.asPrettyString(pm);
+    final String json = toJson(pm);
     assertThat(json, equalTo(stringFromResource("portmapping-defaults.json")));
   }
 
@@ -119,7 +119,7 @@ public class PortMappingTest {
     final PortMapping pm = PortMapping.builder()
         .internalPort(456)
         .build();
-    final String json = Json.asPrettyString(pm);
+    final String json = toJson(pm);
     assertThat(json, equalTo(stringFromResource("portmapping-serialized-internal-port-only.json")));
   }
 
