@@ -40,7 +40,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -83,6 +82,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
@@ -109,9 +109,30 @@ public class SupervisorTest {
                                                          "bar", "4711");
   private static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
 
-  private final ContainerInfo runningResponse = mock(ContainerInfo.class);
+  private static final ContainerInfo RUNNING_RESPONSE = new ContainerInfo() {
+    @Override
+    public ContainerState state() {
+      final ContainerState state = Mockito.mock(ContainerState.class);
+      when(state.running()).thenReturn(true);
+      return state;
+    }
 
-  private final ContainerInfo stoppedResponse = mock(ContainerInfo.class);
+    @Override
+    public NetworkSettings networkSettings() {
+      return NetworkSettings.builder()
+          .ports(Collections.emptyMap())
+          .build();
+    }
+  };
+
+  private static final ContainerInfo STOPPED_RESPONSE = new ContainerInfo() {
+    @Override
+    public ContainerState state() {
+      final ContainerState state = Mockito.mock(ContainerState.class);
+      when(state.running()).thenReturn(false);
+      return state;
+    }
+  };
 
   @Mock public AgentModel model;
   @Mock public DockerClient docker;
@@ -127,17 +148,6 @@ public class SupervisorTest {
 
   @Before
   public void setup() throws Exception {
-    final ContainerState runningState = mock(ContainerState.class);
-    when(runningState.running()).thenReturn(true);
-    when(runningResponse.state()).thenReturn(runningState);
-    when(runningResponse.networkSettings()).thenReturn(NetworkSettings.builder()
-          .ports(Collections.emptyMap())
-          .build());
-
-    final ContainerState stoppedState = mock(ContainerState.class);
-    when(stoppedState.running()).thenReturn(false);
-    when(stoppedResponse.state()).thenReturn(stoppedState);
-
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
 
     sut = createSupervisor(JOB);
@@ -169,9 +179,9 @@ public class SupervisorTest {
     final String containerId = "deadbeef";
 
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
-        .thenReturn(ContainerCreation.builder().id(containerId).build());
+        .thenReturn(new ContainerCreation(containerId));
 
-    final ImageInfo imageInfo = mock(ImageInfo.class);
+    final ImageInfo imageInfo = new ImageInfo();
     when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
 
     // Have waitContainer wait forever.
@@ -211,7 +221,7 @@ public class SupervisorTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
-    when(docker.inspectContainer(eq(containerId))).thenReturn(runningResponse);
+    when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
 
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
@@ -230,7 +240,7 @@ public class SupervisorTest {
         eq(containerId), eq(Supervisor.DEFAULT_SECONDS_TO_WAIT_BEFORE_KILL));
 
     // Change docker container state to stopped now that it was killed
-    when(docker.inspectContainer(eq(containerId))).thenReturn(stoppedResponse);
+    when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
 
     // Verify that the pulling state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
@@ -284,9 +294,9 @@ public class SupervisorTest {
 
 
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
-        .thenReturn(ContainerCreation.builder().id(containerId).build());
+        .thenReturn(new ContainerCreation(containerId));
 
-    final ImageInfo imageInfo = mock(ImageInfo.class);
+    final ImageInfo imageInfo = new ImageInfo();
     when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
 
     // Have waitContainer wait forever.
@@ -295,7 +305,7 @@ public class SupervisorTest {
 
     // Start the job (so that a runner exists)
     longKillTimeSupervisor.setGoal(START);
-    when(docker.inspectContainer(eq(containerId))).thenReturn(runningResponse);
+    when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
 
     // This is already verified above, but it works as a hack to wait for the model/docker state
     // to converge in such a way that a setGoal(STOP) will work. :|
@@ -307,7 +317,7 @@ public class SupervisorTest {
         eq(containerId), eq(longKillTimeJob.getSecondsToWaitBeforeKill()));
 
     // Change docker container state to stopped now that it was killed
-    when(docker.inspectContainer(eq(containerId))).thenReturn(stoppedResponse);
+    when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
   }
 
   private String shortJobIdFromContainerName(final String containerName) {
@@ -322,16 +332,16 @@ public class SupervisorTest {
     final String containerId1 = "deadbeef1";
     final String containerId2 = "deadbeef2";
 
-    final ContainerCreation createResponse1 = ContainerCreation.builder().id(containerId1).build();
-    final ContainerCreation createResponse2 = ContainerCreation.builder().id(containerId2).build();
+    final ContainerCreation createResponse1 = new ContainerCreation(containerId1);
+    final ContainerCreation createResponse2 = new ContainerCreation(containerId2);
 
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(createResponse1);
 
-    final ImageInfo imageInfo = mock(ImageInfo.class);
+    final ImageInfo imageInfo = new ImageInfo();
     when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
 
-    when(docker.inspectContainer(eq(containerId1))).thenReturn(runningResponse);
+    when(docker.inspectContainer(eq(containerId1))).thenReturn(RUNNING_RESPONSE);
 
     final SettableFuture<ContainerExit> waitFuture1 = SettableFuture.create();
     final SettableFuture<ContainerExit> waitFuture2 = SettableFuture.create();
@@ -345,11 +355,11 @@ public class SupervisorTest {
     verify(docker, timeout(30000)).waitContainer(containerId1);
 
     // Indicate that the container exited
-    when(docker.inspectContainer(eq(containerId1))).thenReturn(stoppedResponse);
+    when(docker.inspectContainer(eq(containerId1))).thenReturn(STOPPED_RESPONSE);
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(createResponse2);
-    when(docker.inspectContainer(eq(containerId2))).thenReturn(runningResponse);
-    waitFuture1.set(ContainerExit.create(1));
+    when(docker.inspectContainer(eq(containerId2))).thenReturn(RUNNING_RESPONSE);
+    waitFuture1.set(new ContainerExit(1));
 
     // Verify that the container was restarted
     verify(docker, timeout(30000)).createContainer(any(ContainerConfig.class), any(String.class));

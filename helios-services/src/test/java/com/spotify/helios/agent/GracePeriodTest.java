@@ -35,7 +35,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,6 +51,7 @@ import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.ContainerState;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.NetworkSettings;
+import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -120,9 +120,30 @@ public class GracePeriodTest {
   static final Map<String, String> ENV = ImmutableMap.of("foo", "17", "bar", "4711");
   static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
 
-  public final ContainerInfo runningResponse = mock(ContainerInfo.class);
+  public static final ContainerInfo RUNNING_RESPONSE = new ContainerInfo() {
+    @Override
+    public ContainerState state() {
+      final ContainerState state = Mockito.mock(ContainerState.class);
+      when(state.running()).thenReturn(true);
+      return state;
+    }
 
-  public final ContainerInfo stoppedResponse = mock(ContainerInfo.class);
+    @Override
+    public NetworkSettings networkSettings() {
+      return NetworkSettings.builder()
+          .ports(Collections.<String, List<PortBinding>>emptyMap())
+          .build();
+    }
+  };
+
+  public static final ContainerInfo STOPPED_RESPONSE = new ContainerInfo() {
+    @Override
+    public ContainerState state() {
+      final ContainerState state = Mockito.mock(ContainerState.class);
+      when(state.running()).thenReturn(false);
+      return state;
+    }
+  };
 
   @Mock public AgentModel model;
   @Mock public DockerClient docker;
@@ -138,17 +159,6 @@ public class GracePeriodTest {
 
   @Before
   public void setup() throws Exception {
-    final ContainerState runningState = Mockito.mock(ContainerState.class);
-    when(runningState.running()).thenReturn(true);
-    when(runningResponse.state()).thenReturn(runningState);
-    when(runningResponse.networkSettings()).thenReturn(NetworkSettings.builder()
-        .ports(Collections.emptyMap())
-        .build());
-
-    final ContainerState stoppedState = Mockito.mock(ContainerState.class);
-    when(stoppedState.running()).thenReturn(false);
-    when(stoppedResponse.state()).thenReturn(stoppedState);
-
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
     when(registrar.register(any(ServiceRegistration.class)))
         .thenReturn(new NopServiceRegistrationHandle());
@@ -220,7 +230,7 @@ public class GracePeriodTest {
   public void verifySupervisorStartsAndStopsDockerContainer() throws Exception {
     final String containerId = "deadbeef";
 
-    final ContainerCreation createResponse = ContainerCreation.builder().id(containerId).build();
+    final ContainerCreation createResponse = new ContainerCreation(containerId);
 
     final SettableFuture<ContainerCreation> createFuture = SettableFuture.create();
     when(docker.createContainer(any(ContainerConfig.class),
@@ -230,7 +240,7 @@ public class GracePeriodTest {
     doAnswer(futureAnswer(startFuture))
         .when(docker).startContainer(eq(containerId));
 
-    final ImageInfo imageInfo = mock(ImageInfo.class);
+    final ImageInfo imageInfo = new ImageInfo();
     when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
 
     final SettableFuture<ContainerExit> waitFuture = SettableFuture.create();
@@ -284,7 +294,7 @@ public class GracePeriodTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
-    when(docker.inspectContainer(eq(containerId))).thenReturn(runningResponse);
+    when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
     startFuture.set(null);
 
     verify(docker, timeout(30000)).waitContainer(containerId);
@@ -319,7 +329,7 @@ public class GracePeriodTest {
     verify(sleeper).sleep(GRACE_PERIOD_MILLIS);
 
     // Change docker container state to stopped when it's killed
-    when(docker.inspectContainer(eq(containerId))).thenReturn(stoppedResponse);
+    when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
     killFuture.set(null);
 
     // Verify that the stopping state is signalled
