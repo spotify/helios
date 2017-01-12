@@ -58,7 +58,7 @@ public class PollingDockerClient extends DefaultDockerClient {
     while (true) {
       final ContainerInfo info = inspectContainer(containerId);
       if (!info.state().running()) {
-        return ContainerExit.create(info.state().exitCode());
+        return new ContainerExit(info.state().exitCode());
       }
       Thread.sleep(WAIT_INSPECT_INTERVAL_MILLIS);
     }

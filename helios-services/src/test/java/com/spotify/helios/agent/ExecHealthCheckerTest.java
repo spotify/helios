@@ -20,7 +20,6 @@
 
 package com.spotify.helios.agent;
 
-import static java.util.Collections.emptyList;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -32,7 +31,6 @@ import static org.mockito.Mockito.when;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerClient.ExecStartParameter;
 import com.spotify.docker.client.LogStream;
-import com.spotify.docker.client.messages.ExecCreation;
 import com.spotify.docker.client.messages.ExecState;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.Version;
@@ -75,7 +73,7 @@ public class ExecHealthCheckerTest {
     when(docker.version()).thenReturn(version);
     when(docker.execCreate(eq(CONTAINER_ID), any(String[].class),
                            (DockerClient.ExecCreateParam) anyVararg()))
-        .thenReturn(ExecCreation.create(EXEC_ID, emptyList()));
+        .thenReturn(EXEC_ID);
     when(docker.execStart(eq(EXEC_ID), (ExecStartParameter) anyVararg())).thenReturn(log);
     when(docker.execInspect(EXEC_ID)).thenReturn(execState);
 
