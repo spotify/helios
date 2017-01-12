@@ -46,7 +46,6 @@ import org.jetbrains.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PortMapping extends Descriptor {
 
-  public static final String WILDCARD_ADDRESS = "0.0.0.0";
   public static final String TCP = "tcp";
   public static final String UDP = "udp";
 
@@ -59,9 +58,9 @@ public class PortMapping extends Descriptor {
                      @JsonProperty("internalPort") final int internalPort,
                      @JsonProperty("externalPort") @Nullable final Integer externalPort,
                      @JsonProperty("protocol") @Nullable final String protocol) {
-    this.ip = Optional.fromNullable(ip).or(WILDCARD_ADDRESS);
+    this.ip = ip;
     // Validate IP here instead of in PortMappingParser to guaruntee every instance has a valid IP
-    if (!InetAddresses.isInetAddress(this.ip)) {
+    if (ip != null && !InetAddresses.isInetAddress(this.ip)) {
       throw new IllegalArgumentException(ip + " is not a valid IP address.");
     }
 
@@ -71,15 +70,15 @@ public class PortMapping extends Descriptor {
   }
 
   public PortMapping(final int internalPort, final Integer externalPort) {
-    this(WILDCARD_ADDRESS, internalPort, externalPort, TCP);
+    this(null, internalPort, externalPort, TCP);
   }
 
   public PortMapping(final int internalPort) {
-    this(WILDCARD_ADDRESS, internalPort, null, TCP);
+    this(null, internalPort, null, TCP);
   }
 
   private PortMapping(final Builder builder) {
-    this(checkNotNull(builder.ip), builder.internalPort, builder.externalPort,
+    this(builder.ip, builder.internalPort, builder.externalPort,
         checkNotNull(builder.protocol));
   }
 
@@ -119,15 +118,15 @@ public class PortMapping extends Descriptor {
 
   public static PortMapping of(final int internalPort, final Integer externalPort,
                                final String protocol) {
-    return new PortMapping(WILDCARD_ADDRESS, internalPort, externalPort, protocol);
+    return new PortMapping(null, internalPort, externalPort, protocol);
   }
 
   public static PortMapping of(final int internalPort, final String protocol) {
-    return new PortMapping(WILDCARD_ADDRESS, internalPort, null, protocol);
+    return new PortMapping(null, internalPort, null, protocol);
   }
 
   public static Builder builder() {
-    return new Builder().ip(WILDCARD_ADDRESS).protocol(TCP);
+    return new Builder().protocol(TCP);
   }
 
   public static class Builder {

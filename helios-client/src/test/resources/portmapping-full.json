@@ -1,6 +1,1 @@
-{
-  "externalPort" : 123,
-  "internalPort" : 456,
-  "ip" : "1.2.3.4",
-  "protocol" : "udp"
-}
+{"externalPort":123,"internalPort":456,"ip":"1.2.3.4","protocol":"udp"}

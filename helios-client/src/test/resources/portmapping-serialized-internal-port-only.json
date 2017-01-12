@@ -1,6 +1,1 @@
-{
-  "externalPort" : null,
-  "internalPort" : 456,
-  "ip" : "0.0.0.0",
-  "protocol" : "tcp"
-}
+{"internalPort":456,"protocol":"tcp"}

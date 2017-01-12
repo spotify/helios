@@ -22,14 +22,11 @@ package com.spotify.helios.cli.command;
 
 import static com.google.common.base.Optional.fromNullable;
 import static com.spotify.helios.common.descriptors.PortMapping.TCP;
-import static com.spotify.helios.common.descriptors.PortMapping.WILDCARD_ADDRESS;
 import static java.util.regex.Pattern.compile;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.google.common.net.InetAddresses;
 import com.spotify.helios.common.descriptors.PortMapping;
-
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -56,7 +53,7 @@ class PortMappingParser {
     }
 
     final String name = matcher.group("n");
-    final String ip = fromNullable(matcher.group("ip")).or(WILDCARD_ADDRESS);
+    final String ip = matcher.group("ip");
     final int internal = Integer.parseInt(matcher.group("i"));
     final Integer external = nullOrInteger(matcher.group("e"));
     final String protocol = fromNullable(matcher.group("p")).or(TCP);
