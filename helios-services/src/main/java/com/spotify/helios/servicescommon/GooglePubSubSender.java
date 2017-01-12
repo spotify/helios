@@ -139,7 +139,14 @@ public class GooglePubSubSender implements EventSender {
 
     @VisibleForTesting
     void checkHealth() {
-      healthy.set(doCheckHealth());
+      final boolean currentHealth = doCheckHealth();
+      final boolean oldHealth = healthy.getAndSet(currentHealth);
+      // only log that it is healthy on a state change to avoid repeating this message in the logs
+      // on every interval
+      if (currentHealth && !oldHealth) {
+        log.info("successfully checked if pubsub topic {} exists - this instance is now healthy",
+            topic);
+      }
     }
 
     private boolean doCheckHealth() {
@@ -147,8 +154,6 @@ public class GooglePubSubSender implements EventSender {
         // perform a blocking call to see if we can connect to pubsub at all
         // if the topic does not exist, getTopic() returns null and does not throw an exception
         pubsub.getTopic(topic);
-        log.info("successfully checked if pubsub topic {} exists - this instance is healthy",
-            topic);
         return true;
       } catch (RuntimeException ex) {
         // PubSubException is an instance of RuntimeException, catch any other subtypes too
