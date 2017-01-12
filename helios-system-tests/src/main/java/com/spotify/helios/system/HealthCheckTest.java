@@ -39,6 +39,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.ExecCreation;
+import com.spotify.docker.client.messages.Version;
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
@@ -163,7 +164,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
   @Test
   public void testExec() throws Exception {
     final DockerClient dockerClient = getNewDockerClient();
-    assumeThat(dockerClient, is(execCompatibleDockerVersion()));
+    assumeThat(dockerClient.version(), is(execCompatibleDockerVersion()));
 
     startDefaultMaster();
 
@@ -220,17 +221,16 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     assertEquals("wrong protocol", serviceProtocol, registeredEndpoint.getProtocol());
   }
 
-  private static Matcher<DockerClient> execCompatibleDockerVersion() {
-    return new CustomTypeSafeMatcher<DockerClient>("docker version") {
+  private static Matcher<Version> execCompatibleDockerVersion() {
+    return new CustomTypeSafeMatcher<Version>("apiVersion >= 1.18") {
       @Override
-      protected boolean matchesSafely(final DockerClient client) {
+      protected boolean matchesSafely(final Version version) {
         try {
-          final String driver = client.info().executionDriver();
-          final Iterator<String> version =
-              Splitter.on('.').split(client.version().apiVersion()).iterator();
-          final int apiVersionMajor = Integer.parseInt(version.next());
-          final int apiVersionMinor = Integer.parseInt(version.next());
-          return driver.startsWith("native") && apiVersionMajor == 1 && apiVersionMinor >= 18;
+          final Iterator<String> versionParts =
+              Splitter.on('.').split(version.apiVersion()).iterator();
+          final int apiVersionMajor = Integer.parseInt(versionParts.next());
+          final int apiVersionMinor = Integer.parseInt(versionParts.next());
+          return apiVersionMajor == 1 && apiVersionMinor >= 18;
         } catch (Exception e) {
           return false;
         }
