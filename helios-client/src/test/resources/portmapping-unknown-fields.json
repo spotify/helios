@@ -1,0 +1,6 @@
+{
+  "foo" : "bar",
+  "externalPort" : 123,
+  "internalPort" : 456,
+  "something" : "random"
+}

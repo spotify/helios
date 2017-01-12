@@ -67,14 +67,18 @@ public class JobInspectCommand extends WildcardJobCommand {
       new Function<PortMapping, String>() {
         @Override
         public String apply(final PortMapping input) {
-          String str = String.valueOf(input.getInternalPort());
+          final StringBuilder builder = new StringBuilder();
+          if (input.getIp() != null) {
+            builder.append(input.getIp());
+          }
+          builder.append(":").append(input.getInternalPort());
           if (input.getExternalPort() != null) {
-            str += ":" + input.getExternalPort();
+            builder.append(":").append(input.getExternalPort());
           }
           if (input.getProtocol() != null) {
-            str += "/" + input.getProtocol();
+            builder.append("/").append(input.getProtocol());
           }
-          return str;
+          return builder.toString();
         }
       };
 

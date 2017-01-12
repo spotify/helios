@@ -20,6 +20,7 @@
 
 package com.spotify.helios.cli.command;
 
+import static com.spotify.helios.common.descriptors.PortMapping.UDP;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -33,8 +34,11 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
@@ -59,6 +63,19 @@ public class JobInspectCommandTest {
       .setSecondsToWaitBeforeKill(10)
       .setAddCapabilities(ImmutableSet.of("cap1", "cap2"))
       .setDropCapabilities(ImmutableSet.of("cap3", "cap4"))
+      .setPorts(ImmutableMap.of(
+          "foo", PortMapping.builder()
+              .ip("127.0.0.1")
+              .internalPort(80)
+              .externalPort(8080)
+              .protocol(UDP)
+              .build(),
+          "bar", PortMapping.builder()
+              .ip("0.0.0.0")
+              .internalPort(123)
+              .externalPort(456)
+              .build()
+      ))
       .build();
 
   private final Namespace options = mock(Namespace.class);
@@ -94,6 +111,8 @@ public class JobInspectCommandTest {
     assertThat(output, containsString("Time to wait before kill (seconds): 10"));
     assertThat(output, containsString("Add capabilities: cap1, cap2"));
     assertThat(output, containsString("Drop capabilities: cap3, cap4"));
+    assertThat(output, containsString("Ports: bar=0.0.0.0:123:456/tcp"));
+    assertThat(output, containsString("foo=127.0.0.1:80:8080/udp"));
   }
 
   @Test
