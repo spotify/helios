@@ -39,7 +39,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
-import java.util.List;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,11 +86,14 @@ public final class HealthCheckerFactory {
             "docker exec healthcheck is not supported on your docker version");
       }
 
+      final String[] cmd =
+          healthCheck.getCommand().toArray(new String[healthCheck.getCommand().size()]);
+
       try {
-        final List<String> cmd = healthCheck.getCommand();
-        final String execId = docker.execCreate(containerId, cmd.toArray(new String[cmd.size()]),
-                                                DockerClient.ExecCreateParam.attachStdout(),
-                                                DockerClient.ExecCreateParam.attachStderr());
+        final String execId = docker.execCreate(
+            containerId, cmd,
+            DockerClient.ExecCreateParam.attachStdout(),
+            DockerClient.ExecCreateParam.attachStderr());
 
         final String output;
         try (LogStream stream = docker.execStart(execId)) {
@@ -99,14 +102,19 @@ public final class HealthCheckerFactory {
 
         final int exitCode = docker.execInspect(execId).exitCode();
         if (exitCode != 0) {
-          log.info("healthcheck failed with exit code {}. output {}", exitCode, output);
+          log.warn("exec healthcheck containerId={} cmd={} failed with exitCode={} output={}",
+              containerId, Arrays.toString(cmd), exitCode, output);
           return false;
         }
 
         return true;
       } catch (DockerException e) {
+        log.warn("exec healthcheck containerId={} cmd={} failed due to DockerException",
+            containerId, Arrays.toString(cmd), e);
         return false;
       } catch (InterruptedException e) {
+        log.warn("exec healthcheck containerId={} cmd={} failed due to InterruptedException",
+            containerId, Arrays.toString(cmd), e);
         Thread.currentThread().interrupt();
         return false;
       }
@@ -191,10 +199,11 @@ public final class HealthCheckerFactory {
       try {
         url = new URL("http", host, port, healthCheck.getPath());
       } catch (MalformedURLException e) {
+        log.warn("MalformedURLException in http healthchecking containerId={}", containerId, e);
         throw Throwables.propagate(e);
       }
 
-      log.info("about to healthcheck containerId={} with url={} for task={}",
+      log.info("about to http healthcheck containerId={} with url={} for task={}",
                containerId, url, taskConfig);
 
       try {
@@ -203,11 +212,12 @@ public final class HealthCheckerFactory {
         conn.setReadTimeout((int) READ_TIMEOUT_MILLIS);
 
         final int response = conn.getResponseCode();
-        log.warn("healthcheck for containerId={} with url={} returned status={}",
+        log.warn("http healthcheck for containerId={} with url={} returned status={}",
                  containerId, url, response);
         return response >= 200 && response <= 399;
       } catch (Exception e) {
-        log.warn("exception in healthchecking containerId={} with url={}", containerId, url, e);
+        log.warn("exception in http healthchecking containerId={} with url={}",
+            containerId, url, e);
         return false;
       }
     }
@@ -244,12 +254,14 @@ public final class HealthCheckerFactory {
         address = new InetSocketAddress(getBridgeAddress(containerId), port);
       }
 
-      log.info("about to healthcheck containerId={} with address={} for task={}",
+      log.info("about to tcp healthcheck containerId={} with address={} for task={}",
                containerId, address, taskConfig);
 
       try (final Socket s = new Socket()) {
         s.connect(address, CONNECT_TIMEOUT_MILLIS);
       } catch (Exception e) {
+        log.warn("tcp healthcheck failed for containerId={} due to exception={}",
+            containerId, e.toString());
         return false;
       }
 
