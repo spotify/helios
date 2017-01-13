@@ -1150,4 +1150,9 @@ public abstract class SystemTestBase {
   protected void resetAgentStateDir() throws IOException {
     agentStateDirs = temporaryFolder.newFolder(UUID.randomUUID().toString()).toPath();
   }
+
+  protected static boolean isCircleCi() {
+    final String env = System.getenv("CIRCLECI");
+    return env != null && "true".equalsIgnoreCase(env);
+  }
 }

@@ -29,6 +29,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
@@ -163,6 +164,9 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
   @Test
   public void testExec() throws Exception {
+    // CircleCI uses lxc which doesn't support exec - https://circleci.com/docs/docker/#docker-exec
+    assumeFalse(isCircleCi());
+
     final DockerClient dockerClient = getNewDockerClient();
     assumeThat(dockerClient.version(), is(execCompatibleDockerVersion()));
 
