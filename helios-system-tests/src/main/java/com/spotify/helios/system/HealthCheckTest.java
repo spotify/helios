@@ -38,6 +38,7 @@ import static org.mockito.Mockito.verify;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.messages.ExecCreation;
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
@@ -200,7 +201,9 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     // create the file in the container to make the healthcheck succeed
     final String[] makeFileCmd = new String[]{"touch", "file"};
-    final String execId = dockerClient.execCreate(jobState.getContainerId(), makeFileCmd);
+    final ExecCreation execCreation = dockerClient.execCreate(
+        jobState.getContainerId(), makeFileCmd);
+    final String execId = execCreation.id();
     dockerClient.execStart(execId);
 
     awaitTaskState(jobId, testHost(), RUNNING);

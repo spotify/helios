@@ -112,12 +112,9 @@ public class HeliosSoloDeploymentTest {
 
     // the anonymous classes to override a method are to workaround the docker-client "messages"
     // having no mutators, fun
-    when(this.dockerClient.info()).thenReturn(new Info() {
-      @Override
-      public String operatingSystem() {
-        return "foo";
-      }
-    });
+    final Info info = mock(Info.class);
+    when(info.operatingSystem()).thenReturn("foo");
+    when(this.dockerClient.info()).thenReturn(info);
 
     // mock the call to dockerClient.createContainer so we can test the arguments passed to it
     this.containerConfig = ArgumentCaptor.forClass(ContainerConfig.class);
@@ -131,33 +128,19 @@ public class HeliosSoloDeploymentTest {
     // we have to mock out several other calls to get the HeliosSoloDeployment ctor
     // to return non-exceptionally. the anonymous classes to override a method are to workaround
     // the docker-client "messages" having no mutators, fun
-    when(this.dockerClient.info()).thenReturn(new Info() {
-      @Override
-      public String operatingSystem() {
-        return "foo";
-      }
-    });
+    when(this.dockerClient.info()).thenReturn(info);
 
-    when(this.dockerClient.inspectContainer(CONTAINER_ID)).thenReturn(new ContainerInfo() {
-      @Override
-      public NetworkSettings networkSettings() {
-        final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
-        final Map<String, List<PortBinding>> ports =
-            ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
+    final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
+    final Map<String, List<PortBinding>> ports =
+        ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
+    final ContainerInfo containerInfo = mock(ContainerInfo.class);
+    when(containerInfo.networkSettings()).thenReturn(NetworkSettings.builder()
+        .gateway("a-gate-way")
+        .ports(ports)
+        .build());
+    when(this.dockerClient.inspectContainer(CONTAINER_ID)).thenReturn(containerInfo);
 
-        return NetworkSettings.builder()
-            .gateway("a-gate-way")
-            .ports(ports)
-            .build();
-      }
-    });
-
-    when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(new ContainerExit() {
-      @Override
-      public Integer statusCode() {
-        return 0;
-      }
-    });
+    when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(ContainerExit.create(0));
   }
 
   private HeliosSoloDeployment buildHeliosSoloDeployment() {

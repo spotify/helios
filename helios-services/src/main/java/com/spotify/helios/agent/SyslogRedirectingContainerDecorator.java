@@ -29,7 +29,10 @@ import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.LogConfig;
 import com.spotify.helios.common.descriptors.Job;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -46,14 +49,15 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
 
   @Override
   public void decorateHostConfig(Job job, Optional<String> dockerVersion,
-                                 HostConfig.Builder hostConfig) {
+                                 HostConfig.Builder hostConfigBuilder) {
+    final HostConfig hostConfig = hostConfigBuilder.build();
     if (useSyslogRedirector(dockerVersion)) {
       final List<String> binds = Lists.newArrayList();
       if (hostConfig.binds() != null) {
         binds.addAll(hostConfig.binds());
       }
       binds.add("/usr/lib/helios:/helios:ro");
-      hostConfig.binds(binds);
+      hostConfigBuilder.binds(binds);
     } else {
       final ImmutableMap.Builder<String, String> logOpts = ImmutableMap.builder();
 
@@ -62,13 +66,13 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
 
       logOpts.put("tag", job.getId().toString());
 
-      hostConfig.logConfig(LogConfig.create("syslog", logOpts.build()));
+      hostConfigBuilder.logConfig(LogConfig.create("syslog", logOpts.build()));
     }
   }
 
   @Override
   public void decorateContainerConfig(Job job, ImageInfo imageInfo, Optional<String> dockerVersion,
-                                      ContainerConfig.Builder containerConfig) {
+                                      ContainerConfig.Builder containerConfigBuilder) {
     if (!useSyslogRedirector(dockerVersion)) {
       return;
     }
@@ -86,21 +90,23 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
     if (imageConfig.entrypoint() != null) {
       entrypoint.addAll(imageConfig.entrypoint());
     }
-    containerConfig.entrypoint(entrypoint);
+    containerConfigBuilder.entrypoint(entrypoint);
+
+    final ContainerConfig containerConfig = containerConfigBuilder.build();
 
     // If there's no explicit container cmd specified, copy over the one from the image.
     // Only setting the entrypoint causes dockerd to not use the image cmd.
     if ((containerConfig.cmd() == null || containerConfig.cmd().isEmpty())
         && imageConfig.cmd() != null) {
-      containerConfig.cmd(imageConfig.cmd());
+      containerConfigBuilder.cmd(imageConfig.cmd());
     }
 
-    final Set<String> volumes = Sets.newHashSet();
+    final ImmutableMap.Builder<String, Map> volumesBuilder = ImmutableMap.builder();
     if (containerConfig.volumes() != null) {
-      volumes.addAll(containerConfig.volumes());
+      volumesBuilder.putAll(containerConfig.volumes());
     }
-    volumes.add("/helios");
-    containerConfig.volumes(volumes);
+    volumesBuilder.put("/helios", new HashMap<>());
+    containerConfigBuilder.volumes(volumesBuilder.build());
   }
 
   private boolean useSyslogRedirector(Optional<String> dockerVersion) {
