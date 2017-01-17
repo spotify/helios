@@ -23,11 +23,9 @@ package com.spotify.helios.system;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.text.IsEmptyString.isEmptyOrNullString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeFalse;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
@@ -76,7 +74,7 @@ public class ResourcesTest extends SystemTestBase {
   public void testClient() throws Exception {
     // Doesn't work on CircleCI because their lxc-driver can't set cpus
     // See output of `docker run --cpuset-cpus 0-1 spotify/busybox:latest true`
-    assumeThat(getenv("CIRCLECI"), isEmptyOrNullString());
+    assumeFalse(isCircleCi());
 
     final CreateJobResponse created = client.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());

@@ -24,11 +24,9 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
 import static com.spotify.helios.common.descriptors.ThrottleState.NO;
-import static java.lang.System.getenv;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeFalse;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
@@ -47,7 +45,7 @@ public class FlappingTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     // CircleCI boxes are too slow -- the job doesn't stop or restart fast enough to ever flap
-    assumeThat(getenv("CIRCLECI"), isEmptyOrNullString());
+    assumeFalse(isCircleCi());
 
     startDefaultMaster();
     final String host = testHost();
