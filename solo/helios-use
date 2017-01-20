@@ -29,7 +29,15 @@ if [ ! -z "$1" ]; then
 
   echo "Switching to $requested_version"
   docker pull "$REPO:$requested_version"
-  docker tag -f "$REPO:$requested_version" "$REPO:latest"
+
+  client_version=$(docker version --format '{{.Client.Version}}')
+  cv_arr=( ${client_version//./ } )  # replace periods and split into array
+  # Docker 1.12+ doesn't have the -f switch
+  if [ "${cv_arr[1]}" -ge "12" ]; then
+      docker tag "$REPO:$requested_version" "$REPO:latest"
+  else
+      docker tag -f "$REPO:$requested_version" "$REPO:latest"
+  fi
   echo
 
   new_version=$(get_helios_version)

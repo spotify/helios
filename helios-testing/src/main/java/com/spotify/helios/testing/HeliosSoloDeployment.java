@@ -42,6 +42,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -49,7 +50,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
@@ -151,8 +151,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .setEndpoints("http://" + deploymentAddress)
             .build());
 
-    if (builder.logStreamProvider != null) {
-      logService = new HeliosSoloLogService(heliosClient, dockerClient, builder.logStreamProvider);
+    if (builder.logStreamFollower != null) {
+      logService = new HeliosSoloLogService(heliosClient, dockerClient, builder.logStreamFollower);
       logService.startAsync().awaitRunning();
     }
   }
@@ -555,10 +555,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
-    return Futures.withFallback(future, new FutureFallback<T>() {
+    return Futures.catching(future, Exception.class, new Function<Exception, T>() {
       @Override
-      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
-        return Futures.immediateFuture(null);
+      public T apply(@NotNull final Exception e) {
+        return null;
       }
     }).get();
   }
@@ -622,7 +622,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = false;
     private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
-    private LogStreamProvider logStreamProvider = new DefaultLogStreamProvider();
+    // Intentionally picking a publicly accessible class for this log output
+    private LogStreamFollower logStreamFollower =
+        LoggingLogStreamFollower.create(LoggerFactory.getLogger(TemporaryJob.class));
 
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
@@ -769,15 +771,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     /**
-     * Optionally provide a custom {@link LogStreamProvider} that provides streams for writing
+     * Optionally provide a custom {@link LogStreamFollower} that provides streams for writing
      * container stdout/stderr logs. If set to null, logging of container stdout/stderr will be
      * disabled.
      *
-     * @param logStreamProvider The provider to use.
+     * @param logStreamFollower The provider to use.
      * @return This Builder, with its log stream provider configured.
      */
-    public Builder logStreamProvider(final LogStreamProvider logStreamProvider) {
-      this.logStreamProvider = logStreamProvider;
+    public Builder logStreamProvider(final LogStreamFollower logStreamFollower) {
+      this.logStreamFollower = logStreamFollower;
       return this;
     }
 

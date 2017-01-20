@@ -26,9 +26,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
-import com.spotify.helios.servicescommon.KafkaClientProvider;
-import com.spotify.helios.servicescommon.KafkaRecord;
-import com.spotify.helios.servicescommon.KafkaSender;
+import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCache;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -41,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -63,16 +62,16 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final PersistentPathChildrenCache<Task> tasks;
   private final ZooKeeperUpdatingPersistentDirectory taskStatuses;
   private final TaskHistoryWriter historyWriter;
-  private final KafkaSender kafkaSender;
+  private final List<EventSender> eventSenders;
 
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider,
-                             final KafkaClientProvider kafkaProvider,
                              final String host,
                              final Path stateDirectory,
-                             final TaskHistoryWriter historyWriter)
+                             final TaskHistoryWriter historyWriter,
+                             final List<EventSender> eventSenders)
       throws IOException, InterruptedException {
     // TODO(drewc): we're constructing too many heavyweight things in the ctor, these kinds of
     // things should be passed in/provider'd/etc.
@@ -91,7 +90,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
                                                                     Paths.statusHostJobs(host));
     this.historyWriter = historyWriter;
 
-    this.kafkaSender = new KafkaSender(kafkaProvider.getDefaultProducer());
+    this.eventSenders = eventSenders;
   }
 
   @Override
@@ -167,7 +166,10 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
       }
     }
     final TaskStatusEvent event = new TaskStatusEvent(status, System.currentTimeMillis(), agent);
-    kafkaSender.send(KafkaRecord.of(TaskStatusEvent.KAFKA_TOPIC, event.toJsonBytes()));
+    final byte[] message = event.toJsonBytes();
+    for (final EventSender sender : eventSenders) {
+      sender.send(TaskStatusEvent.TASK_STATUS_EVENT_TOPIC, message);
+    }
   }
 
   /**

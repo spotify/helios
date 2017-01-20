@@ -67,7 +67,7 @@ public class HeliosIT {
   public void setup() throws Exception {
     // zookeeper
     final TemporaryJob zk = temporaryJobs.job()
-        .image("jplock/zookeeper:3.4.5")
+        .image("spotify/zookeeper:3.4.5")
         .port("zk", 2181)
         .deploy();
 
@@ -112,7 +112,7 @@ public class HeliosIT {
   @Test
   public void test() throws Exception {
     final CreateJobResponse create = cli(CreateJobResponse.class, "create", "test:1",
-                                         "busybox:latest");
+                                         "spotify/busybox:latest");
     assertThat(create.getStatus(), equalTo(CreateJobResponse.Status.OK));
 
     final JobDeployResponse deploy = cli(JobDeployResponse.class, "deploy", "test:1", TEST_HOST);

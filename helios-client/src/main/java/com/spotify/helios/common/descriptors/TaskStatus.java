@@ -186,7 +186,7 @@ public class TaskStatus extends Descriptor {
            ", ports=" + ports +
            ", env=" + env +
            ", containerError='" + containerError + '\'' +
-           "} " + super.toString();
+           '}';
   }
 
   @Override

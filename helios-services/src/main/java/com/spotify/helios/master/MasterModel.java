@@ -40,9 +40,22 @@ public interface MasterModel {
 
   void deregisterHost(String host) throws HostNotFoundException, HostStillInUseException;
 
+  /**
+   * Returns all hosts.
+   */
   List<String> listHosts();
 
+  /**
+   * Returns hosts with status {@link com.spotify.helios.common.descriptors.HostStatus.Status#UP}.
+   */
+  List<String> listUpHosts();
+
   HostStatus getHostStatus(String host);
+
+  /**
+   * Returns labels for {@code host}. Returns an empty map for hosts not found in the store.
+   */
+  Map<String, String> getHostLabels(String host);
 
   void addJob(Job job) throws JobExistsException;
 

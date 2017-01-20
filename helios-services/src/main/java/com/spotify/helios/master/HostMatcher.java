@@ -65,6 +65,9 @@ public class HostMatcher {
     for (final Map.Entry<String, Map<String, String>> entry : hostsAndLabels.entrySet()) {
       final String host = entry.getKey();
       final Map<String, String> hostLabels = entry.getValue();
+      if (hostLabels == null) {
+        continue;
+      }
 
       // every hostSelector in the group has to have a match in this host.
       // a match meaning the host has a label for that key and the value matches

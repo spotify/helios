@@ -30,7 +30,7 @@ public class JobsTest {
 
   @Test
   public void testGetJobDescription() {
-    final String image = "busybox:latest";
+    final String image = "spotify/busybox:latest";
 
     final Job job = Job.newBuilder()
         .setImage(image)

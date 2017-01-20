@@ -22,6 +22,7 @@ import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdat
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
@@ -47,7 +48,6 @@ import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.rollingupdate.RollingUndeployPlanner;
 import com.spotify.helios.rollingupdate.RollingUpdatePlanner;
-import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -76,6 +76,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -126,7 +127,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class)));
+        Collections.emptyList()));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -150,8 +151,8 @@ public class DeploymentGroupTest {
     // Setup some hosts
     final String oldHost = "host1";
     final String newHost = "host2";
-    final Map<String, HostStatus> undeployHostStatuses = mockHostStatus(masterModel, oldHost);
-    final Map<String, HostStatus> updateHostStatuses = mockHostStatus(masterModel, newHost);
+    client.ensurePath(Paths.statusHostUp(oldHost));
+    client.ensurePath(Paths.statusHostUp(newHost));
 
     // Give the deployment group a host.
     client.setData(
@@ -181,11 +182,11 @@ public class DeploymentGroupTest {
         changed);
 
     // Ensure ZK tasks are written to:
-    // - Perform a rolling update for the added (new) host and the unchanged host
     // - Perform a rolling undeploy for the removed (old) host
+    // - Perform a rolling update for the added (new) host and the unchanged host
     final List<RolloutTask> tasks = ImmutableList.<RolloutTask>builder()
-        .addAll(RollingUpdatePlanner.of(changed).plan(updateHostStatuses))
-        .addAll(RollingUndeployPlanner.of(changed).plan(undeployHostStatuses))
+        .addAll(RollingUndeployPlanner.of(changed).plan(singletonList(oldHost)))
+        .addAll(RollingUpdatePlanner.of(changed).plan(singletonList(newHost)))
         .build();
 
     final ZooKeeperOperation setDeploymentGroupTasks = set(
@@ -208,7 +209,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class)));
+        Collections.emptyList()));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -264,7 +265,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class)));
+        Collections.emptyList()));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -338,7 +339,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class));
+        Collections.emptyList());
 
     if (dgExists) {
       final DeploymentGroup dg = DeploymentGroup.newBuilder()

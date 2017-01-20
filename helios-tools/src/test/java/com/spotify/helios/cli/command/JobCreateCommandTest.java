@@ -124,7 +124,7 @@ public class JobCreateCommandTest {
   @Test
   public void testValidJobCreateCommand() throws Exception {
     when(options.getString("id")).thenReturn(JOB_ID);
-    when(options.getString("image")).thenReturn("busybox:latest");
+    when(options.getString("image")).thenReturn("spotify/busybox:latest");
     when(options.getString("exec_check")).thenReturn(EXEC_HEALTH_CHECK);
     // For some reason the mocked options.getInt() returns 0 by default.
     // Explicitly return null to check that the value from the JSON file doesn't get overwritten.
@@ -160,7 +160,7 @@ public class JobCreateCommandTest {
   @Test
   public void testJobCreateCommandFailsWithInvalidJobID() throws Exception {
     when(options.getString("id")).thenReturn(JOB_NAME);
-    when(options.getString("image")).thenReturn("busybox:latest");
+    when(options.getString("image")).thenReturn("spotify/busybox:latest");
     final int ret = runCommand();
     assertEquals(1, ret);
   }
@@ -168,7 +168,7 @@ public class JobCreateCommandTest {
   @Test
   public void testJobCreateCommandFailsWithInvalidPortProtocol() throws Exception {
     when(options.getString("id")).thenReturn(JOB_ID);
-    when(options.getString("image")).thenReturn("busybox");
+    when(options.getString("image")).thenReturn("spotify/busybox:latest");
     doReturn(ImmutableList.of("dns=53:53/http")).when(options).getList("port");
     final int ret = runCommand(true);
 
@@ -181,7 +181,7 @@ public class JobCreateCommandTest {
   @Test(expected = IllegalArgumentException.class)
   public void testJobCreateCommandFailsWithInvalidFilePath() throws Exception {
     when(options.getString("id")).thenReturn(JOB_ID);
-    when(options.getString("image")).thenReturn("busybox:latest");
+    when(options.getString("image")).thenReturn("spotify/busybox:latest");
     doReturn(new File("non/existant/file")).when(options).get("file");
     runCommand();
   }
@@ -195,7 +195,7 @@ public class JobCreateCommandTest {
     envVars.put("GIT_COMMIT", "abcdef1234");
 
     when(options.getString("id")).thenReturn(JOB_ID);
-    when(options.getString("image")).thenReturn("busybox:latest");
+    when(options.getString("image")).thenReturn("spotify/busybox:latest");
 
     when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("foo=bar"));
 

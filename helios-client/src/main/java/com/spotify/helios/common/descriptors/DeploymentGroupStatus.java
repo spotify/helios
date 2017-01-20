@@ -100,7 +100,7 @@ public class DeploymentGroupStatus extends Descriptor {
     return "DeploymentGroupStatus{" +
            "state=" + state +
            ", error='" + error + '\'' +
-           "} " + super.toString();
+           "}";
   }
 
   public static class Builder {

@@ -19,23 +19,22 @@ package com.spotify.helios.rollingupdate;
 
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import org.junit.Test;
 
 import java.util.List;
-import java.util.Map;
 
 public class RollingUndeployPlannerTest {
+
+  private static final List<String> HOSTS =
+      ImmutableList.of("agent1", "agent2", "agent3", "agent4");
 
   @Test
   public void testSerialRollout() {
@@ -44,18 +43,10 @@ public class RollingUndeployPlannerTest {
                                .setParallelism(1)
                                .build())
         .build();
-    final HostStatus statusUp = mock(HostStatus.class);
-    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
-    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
-        "agent1", statusUp,
-        "agent2", statusUp,
-        "agent3", statusUp,
-        "agent4", statusUp
-    );
 
     final RolloutPlanner rolloutPlanner = RollingUndeployPlanner.of(deploymentGroup);
 
-    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(HOSTS);
 
     final List<RolloutTask> expected = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.FORCE_UNDEPLOY_JOBS, "agent1"),
@@ -81,18 +72,10 @@ public class RollingUndeployPlannerTest {
                                .setParallelism(2)
                                .build())
         .build();
-    final HostStatus statusUp = mock(HostStatus.class);
-    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
-    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
-        "agent1", statusUp,
-        "agent2", statusUp,
-        "agent3", statusUp,
-        "agent4", statusUp
-    );
 
     final RolloutPlanner rolloutPlanner = RollingUndeployPlanner.of(deploymentGroup);
 
-    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(HOSTS);
 
     final List<RolloutTask> expected = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.FORCE_UNDEPLOY_JOBS, "agent1"),
@@ -118,18 +101,10 @@ public class RollingUndeployPlannerTest {
                                .setParallelism(3)
                                .build())
         .build();
-    final HostStatus statusUp = mock(HostStatus.class);
-    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
-    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
-        "agent1", statusUp,
-        "agent2", statusUp,
-        "agent3", statusUp,
-        "agent4", statusUp
-    );
 
     final RolloutPlanner rolloutPlanner = RollingUndeployPlanner.of(deploymentGroup);
 
-    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(HOSTS);
 
     final List<RolloutTask> expected = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.FORCE_UNDEPLOY_JOBS, "agent1"),

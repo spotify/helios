@@ -18,6 +18,7 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerHost;
+import com.spotify.helios.servicescommon.CommonConfiguration;
 import com.spotify.helios.servicescommon.FastForwardConfig;
 
 import java.net.InetSocketAddress;
@@ -25,12 +26,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-import io.dropwizard.Configuration;
-
 /**
  * The configuration of the Helios agent.
  */
-public class AgentConfig extends Configuration {
+public class AgentConfig extends CommonConfiguration<AgentConfig> {
 
   private String domain;
   private String name;
@@ -57,7 +56,6 @@ public class AgentConfig extends Configuration {
   private InetSocketAddress httpEndpoint;
   private boolean noHttp;
   private List<String> binds;
-  private List<String> kafkaBrokers;
   private Map<String, String> labels;
   private boolean zooKeeperEnableAcls;
   private String zookeeperAclMasterUser;
@@ -285,15 +283,6 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setBinds(List<String> binds) {
     this.binds = binds;
-    return this;
-  }
-
-  public List<String> getKafkaBrokers() {
-    return kafkaBrokers;
-  }
-
-  public AgentConfig setKafkaBrokers(List<String> kafkaBrokers) {
-    this.kafkaBrokers = kafkaBrokers;
     return this;
   }
 

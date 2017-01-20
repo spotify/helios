@@ -15,16 +15,11 @@
  * under the License.
  */
 
-package com.spotify.helios.testing;
+package com.spotify.helios.servicescommon;
 
-import com.spotify.helios.common.descriptors.JobId;
+import io.dropwizard.lifecycle.Managed;
 
-import java.io.OutputStream;
+public interface EventSender extends Managed {
 
-public interface LogStreamProvider {
-
-  OutputStream getStdoutStream(JobId jobId, String containerId);
-
-  OutputStream getStderrStream(JobId jobId, String containerId);
-
+  void send(String topic, byte[] message);
 }

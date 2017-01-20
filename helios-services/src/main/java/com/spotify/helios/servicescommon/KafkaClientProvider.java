@@ -17,9 +17,7 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -31,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
@@ -43,15 +43,11 @@ public class KafkaClientProvider {
   private static final String KAFKA_QUORUM_PARAMETER = "1";
   public static final int MAX_BLOCK_TIMEOUT = 1000;
 
-  private final Optional<ImmutableMap<String, Object>> partialConfigs;
+  private final Optional<Map<String, Object>> partialConfigs;
 
   public KafkaClientProvider(@Nullable final List<String> brokerList) {
-    partialConfigs = Optional.fromNullable(brokerList).transform(
-        new Function<List<String>, ImmutableMap<String, Object>>() {
-      @Nullable
-      @Override
-      public ImmutableMap<String, Object> apply(List<String> input) {
-        return ImmutableMap.<String, Object>builder()
+    partialConfigs = Optional.ofNullable(brokerList).map(
+        input -> ImmutableMap.<String, Object>builder()
             .put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, Joiner.on(',').join(input))
             .put(ProducerConfig.CLIENT_ID_CONFIG, KAFKA_HELIOS_CLIENT_ID)
 
@@ -82,14 +78,12 @@ public class KafkaClientProvider {
             // call to KafkaProducer.send() will throw a BufferExhaustedException exception.
             .put(ProducerConfig.BLOCK_ON_BUFFER_FULL_CONFIG, false)
 
-            .build();
-      }
-    });
+            .build());
   }
 
   /**
-   * Returns a producer that uses {@link org.apache.kafka.common.serialization.StringSerializer} for
-   * keys and {@link org.apache.kafka.common.serialization.ByteArraySerializer} for values.
+   * Returns a producer that uses {@link StringSerializer} for
+   * keys and {@link ByteArraySerializer} for values.
    * @return An {@link Optional} of {@link KafkaProducer}.
    */
   public Optional<KafkaProducer<String, byte[]>> getDefaultProducer() {
@@ -108,17 +102,11 @@ public class KafkaClientProvider {
       @NotNull final Serializer<K> keySerializer,
       @NotNull final Serializer<V> valueSerializer) {
     try {
-      return partialConfigs.transform(
-          new Function<ImmutableMap<String, Object>, KafkaProducer<K, V>>() {
-            @Nullable
-            @Override
-            public KafkaProducer<K, V> apply(ImmutableMap<String, Object> input) {
-              return new KafkaProducer<>(input, keySerializer, valueSerializer);
-            }
-          });
+      return partialConfigs.map(
+          input -> new KafkaProducer<>(input, keySerializer, valueSerializer));
     } catch (final Exception e) {
       log.warn("error while generating KafkaProducer - {}", e);
-      return Optional.absent();
+      return Optional.empty();
     }
   }
 }

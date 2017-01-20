@@ -20,9 +20,9 @@ package com.spotify.helios.client;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.util.concurrent.Futures.catching;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
-import static com.google.common.util.concurrent.Futures.withFallback;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
@@ -83,7 +83,6 @@ import com.google.common.collect.Multimaps;
 import com.google.common.escape.Escaper;
 import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -400,12 +399,13 @@ public class HeliosClient implements Closeable {
   public ListenableFuture<VersionResponse> version() {
     // Create a fallback in case we fail to connect to the master. Return null if this happens.
     // The transform below will handle this and return an appropriate error message to the caller.
-    final ListenableFuture<Response> futureWithFallback = withFallback(
+    final ListenableFuture<Response> futureWithFallback = catching(
         request(uri("/version/"), "GET"),
-        new FutureFallback<Response>() {
+        Exception.class,
+        new Function<Exception, Response>() {
           @Override
-          public ListenableFuture<Response> create(@NotNull Throwable t) throws Exception {
-            return immediateFuture(null);
+          public Response apply(@NotNull Exception e) {
+            return null;
           }
         }
     );

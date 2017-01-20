@@ -92,6 +92,6 @@ public class ServicePortParameters extends Descriptor {
   public String toString() {
     return "ServicePortParameters{" +
            "tags=" + tags +
-           "} " + super.toString();
+           '}';
   }
 }

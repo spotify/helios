@@ -74,7 +74,7 @@ public class ResourcesTest extends SystemTestBase {
   @Test
   public void testClient() throws Exception {
     // Doesn't work on CircleCI because their lxc-driver can't set cpus
-    // See output of `docker run --cpuset-cpus 0-1 busybox true`
+    // See output of `docker run --cpuset-cpus 0-1 spotify/busybox:latest true`
     assumeThat(getenv("CIRCLECI"), isEmptyOrNullString());
 
     final CreateJobResponse created = client.createJob(job).get();

@@ -36,8 +36,9 @@ import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.servicescommon.EventSender;
+import com.spotify.helios.servicescommon.EventSenderFactory;
 import com.spotify.helios.servicescommon.FastForwardConfig;
-import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -61,6 +62,8 @@ import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
@@ -175,6 +178,9 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     // Configure metrics
     final MetricRegistry metricsRegistry = environment.metrics();
+    metricsRegistry.registerAll(new GarbageCollectorMetricSet());
+    metricsRegistry.registerAll(new MemoryUsageGaugeSet());
+
     final RiemannSupport riemannSupport = new RiemannSupport(
         metricsRegistry, config.getRiemannHostPort(), config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
@@ -230,8 +236,9 @@ public class AgentService extends AbstractIdleService implements Managed {
         new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
-        config.getKafkaBrokers());
+
+    final List<EventSender> eventSenders =
+        EventSenderFactory.build(environment, config, metricsRegistry);
 
     final TaskHistoryWriter historyWriter;
     if (config.isJobHistoryDisabled()) {
@@ -242,8 +249,8 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     try {
-      this.model = new ZooKeeperAgentModel(zkClientProvider, kafkaClientProvider,
-                                           config.getName(), stateDirectory, historyWriter);
+      this.model = new ZooKeeperAgentModel(
+          zkClientProvider, config.getName(), stateDirectory, historyWriter, eventSenders);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }

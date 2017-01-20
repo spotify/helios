@@ -39,6 +39,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -88,6 +89,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -96,12 +98,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.google.common.io.Files;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 import com.sun.jersey.api.client.ClientResponse;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -147,13 +147,13 @@ public abstract class SystemTestBase {
   public static final int WAIT_TIMEOUT_SECONDS = 40;
   public static final int LONG_WAIT_SECONDS = 400;
 
-  public static final String BUSYBOX = "busybox:latest";
+  public static final String BUSYBOX = "spotify/busybox:latest";
   public static final String BUSYBOX_WITH_DIGEST =
       "busybox@sha256:16a2a52884c2a9481ed267c2d46483eac7693b813a63132368ab098a71303f8a";
-  public static final String NGINX = "rohan/nginx-alpine:latest";
-  public static final String UHTTPD = "fnichol/docker-uhttpd:latest";
+  public static final String NGINX = "spotify/nginx-alpine:latest";
+  public static final String UHTTPD = "spotify/docker-uhttpd:latest";
   public static final String ALPINE = "spotify/alpine:latest";
-  public static final String MEMCACHED = "rohan/memcached-mini:latest";
+  public static final String MEMCACHED = "spotify/memcached-mini:latest";
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
@@ -922,25 +922,26 @@ public abstract class SystemTestBase {
 
   protected HostStatus awaitHostStatusWithLabels(final HeliosClient client,
                                                  final String host,
-                                                 final HostStatus.Status status)
-      throws Exception {
-    return awaitHostStatusWithLabels(client, host, status, LONG_WAIT_SECONDS, SECONDS);
-  }
-
-  protected HostStatus awaitHostStatusWithLabels(final HeliosClient client, final String host,
                                                  final HostStatus.Status status,
-                                                 final int timeout,
-                                                 final TimeUnit timeUnit) throws Exception {
-    return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
-      @Override
-      public HostStatus call() throws Exception {
-        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
-        if (hostStatus == null || hostStatus.getLabels().size() == 0) {
-          return null;
-        }
-        return (hostStatus.getStatus() == status) ? hostStatus : null;
+                                                 final Map<String, String> labels)
+      throws Exception {
+
+    final HostStatus hostStatus = Polling.await(LONG_WAIT_SECONDS, SECONDS, () -> {
+      final HostStatus candidate = getOrNull(client.hostStatus(host));
+
+      if (candidate == null || candidate.getStatus() != status
+          // labels are stored in ZK after the host has come up
+          || candidate.getLabels().size() == 0) {
+
+        return null;
       }
+      return candidate;
     });
+
+    assertThat("host " + host + " has status=" + status + " with labels=" + hostStatus.getLabels(),
+        hostStatus.getLabels(), is(labels));
+
+    return hostStatus;
   }
 
   protected HostStatus awaitHostStatusWithHostInfo(final HeliosClient client, final String host,
@@ -1032,10 +1033,10 @@ public abstract class SystemTestBase {
 
   protected <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
-    return Futures.withFallback(future, new FutureFallback<T>() {
+    return Futures.catching(future, Exception.class, new Function<Exception, T>() {
       @Override
-      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
-        return Futures.immediateFuture(null);
+      public T apply(@NotNull final Exception e) {
+        return null;
       }
     }).get();
   }

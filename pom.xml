@@ -128,7 +128,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>18.0</version>
+        <version>19.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -263,7 +263,7 @@
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
-        <artifactId>mockito-all</artifactId>
+        <artifactId>mockito-core</artifactId>
         <version>1.9.5</version>
         <scope>test</scope>
       </dependency>
@@ -393,6 +393,7 @@
               <forkCount>1C</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>${surefireArgLine}</argLine>
+              <rerunFailingTestsCount>2</rerunFailingTestsCount>
               <systemPropertyVariables>
                 <junit.parallel.threads>1</junit.parallel.threads>
                 <logToFile>false</logToFile>

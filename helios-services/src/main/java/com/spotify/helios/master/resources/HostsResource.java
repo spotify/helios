@@ -122,11 +122,7 @@ public class HostsResource {
           })
           .collect(Collectors.toList());
 
-      final Map<String, Map<String, String>> hostsAndLabels = hosts.stream()
-          .collect(Collectors.toMap(Function.identity(),
-                                    host -> model.getHostStatus(host).getLabels()
-                   )
-          );
+      final Map<String, Map<String, String>> hostsAndLabels = getLabels(hosts);
 
       final HostMatcher matcher = new HostMatcher(hostsAndLabels);
       hosts = matcher.getMatchingHosts(selectors);
@@ -198,12 +194,15 @@ public class HostsResource {
       @PathParam("id") final String host,
       @QueryParam("status") @DefaultValue("") final String statusFilter) {
     final HostStatus status = model.getHostStatus(host);
+    final Optional<HostStatus> response;
     if (status != null &&
         (isNullOrEmpty(statusFilter) || statusFilter.equals(status.getStatus().toString()))) {
-      return Optional.of(status);
+      response = Optional.of(status);
     } else {
-      return Optional.absent();
+      response = Optional.absent();
     }
+    log.debug("hostStatus: host={}, statusFilter={}, returning: {}", host, statusFilter, response);
+    return response;
   }
 
   /**
@@ -357,5 +356,9 @@ public class HostsResource {
       throw badRequest();
     }
     return Optional.fromNullable(model.getDeployment(host, jobId));
+  }
+
+  private Map<String, Map<String, String>> getLabels(final List<String> hosts) {
+    return hosts.stream().collect(Collectors.toMap(Function.identity(), model::getHostLabels));
   }
 }

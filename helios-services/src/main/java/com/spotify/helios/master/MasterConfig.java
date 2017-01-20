@@ -17,21 +17,19 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.collect.ImmutableSet;
-
+import com.spotify.helios.servicescommon.CommonConfiguration;
 import com.spotify.helios.servicescommon.FastForwardConfig;
+
+import com.google.common.collect.ImmutableSet;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
-
-import io.dropwizard.Configuration;
 
 /**
  * The collection of the configuration info of the master.
  */
-public class MasterConfig extends Configuration {
+public class MasterConfig extends CommonConfiguration<MasterConfig> {
 
   // TODO (dano): defaults
 
@@ -50,7 +48,6 @@ public class MasterConfig extends Configuration {
   private boolean noZooKeeperMasterRegistration;
   private InetSocketAddress adminEndpoint;
   private InetSocketAddress httpEndpoint;
-  private List<String> kafkaBrokers;
   private Path stateDirectory;
   private boolean zooKeeperEnableAcls;
   private String zookeeperAclAgentUser;
@@ -187,15 +184,6 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setHttpEndpoint(InetSocketAddress httpEndpoint) {
     this.httpEndpoint = httpEndpoint;
-    return this;
-  }
-
-  public List<String> getKafkaBrokers() {
-    return kafkaBrokers;
-  }
-
-  public MasterConfig setKafkaBrokers(List<String> kafkaBrokers) {
-    this.kafkaBrokers = kafkaBrokers;
     return this;
   }
 

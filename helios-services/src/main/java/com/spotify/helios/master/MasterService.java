@@ -40,9 +40,9 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.EventSender;
+import com.spotify.helios.servicescommon.EventSenderFactory;
 import com.spotify.helios.servicescommon.FastForwardConfig;
-import com.spotify.helios.servicescommon.KafkaClientProvider;
-import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
@@ -188,8 +188,6 @@ public class MasterService extends AbstractIdleService {
         riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
-        config.getKafkaBrokers());
 
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
@@ -202,12 +200,11 @@ public class MasterService extends AbstractIdleService {
       }
     }
 
-    // Make a KafkaProducer for events that can be serialized to an array of bytes,
-    // and wrap it in our KafkaSender.
-    final KafkaSender kafkaSender = new KafkaSender(kafkaClientProvider.getDefaultProducer());
+    final List<EventSender> eventSenders =
+        EventSenderFactory.build(environment, config, metricsRegistry);
 
     final ZooKeeperMasterModel model =
-        new ZooKeeperMasterModel(zkClientProvider, config.getName(), kafkaSender);
+        new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);

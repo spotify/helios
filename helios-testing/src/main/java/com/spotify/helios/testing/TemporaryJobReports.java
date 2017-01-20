@@ -19,124 +19,33 @@ package com.spotify.helios.testing;
 
 import com.google.common.collect.Maps;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
-
 import org.junit.runner.Description;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Path;
 import java.util.Map;
 
-import static java.lang.String.format;
-
 /**
- * Reports a stream of TemporaryJobEvent events to a JSON file.
+ * Reports a stream of TemporaryJobEvent events
  */
-public class TemporaryJobReports {
-  private static final Logger log = LoggerFactory.getLogger(TemporaryJobReports.class);
+public abstract class TemporaryJobReports {
 
-  private final Path outputDir;
+  public abstract ReportWriter getWriterForTest(final Description testDescription);
 
-  TemporaryJobReports(final Path outputDir) {
-    this.outputDir = outputDir;
-    this.outputDir.toFile().mkdirs();
-  }
+  public abstract ReportWriter getDefaultWriter();
 
-  public ReportWriter getWriterForTest(final Description testDescription) {
-    return new ReportWriter(outputDir, testDescription.getClassName(),
-            testDescription.getMethodName());
-  }
-
-  public ReportWriter getWriterForStream(final OutputStream outputStream) {
-    return new ReportWriter(outputStream);
-  }
-
-  public static class ReportWriter implements Closeable {
-
-    private final JsonGenerator jg;
-
-    private final String testClassName;
-    private final String testName;
-
-    private ReportWriter(final Path outputDir, final String testClassName, final String testName) {
-      this.testClassName = testClassName;
-      this.testName = testName;
-
-      final String logFilename = format("%s.%s.json", testClassName, testName).replace('$', '_');
-      final File logFile = outputDir.resolve(logFilename).toFile();
-
-      JsonGenerator jg = null;
-      try {
-        jg = new JsonFactory().createGenerator(logFile, JsonEncoding.UTF8);
-        jg.writeStartArray();
-      } catch (IOException e) {
-        log.error("exception creating event log: {} - {}", logFile.getAbsolutePath(), e);
-      } finally {
-        this.jg = jg;
-      }
-    }
-
-    private ReportWriter(final OutputStream outputStream) {
-      this.testClassName = null;
-      this.testName = null;
-
-      JsonGenerator jg = null;
-      try {
-        jg = new JsonFactory().createGenerator(outputStream, JsonEncoding.UTF8);
-      } catch (IOException e) {
-        log.error("exception creating event log: {}", e);
-      } finally {
-        this.jg = jg;
-      }
-    }
-
+  public abstract static class ReportWriter implements Closeable {
     public Step step(final String step) {
       return new Step(this, step);
     }
 
-    private void writeEvent(final String step, final double timestamp, final double duration,
-                            final Boolean success, final Map<String, Object> tags) {
-      final TemporaryJobEvent event = new TemporaryJobEvent(
-          timestamp,
-          duration,
-          testClassName,
-          testName,
-          step,
-          success,
-          tags
-      );
-
-      writeEvent(event);
-    }
-
-    private void writeEvent(final TemporaryJobEvent event) {
-      if (jg == null) {
-        return;
-      }
-
-      try {
-        Json.writer().writeValue(jg, event);
-      } catch (IOException e) {
-        log.error("exception writing event to log: {} - {}", event, e);
-      }
-    }
+    protected abstract void writeEvent(
+        final String step, final double timestamp, final double duration, final Boolean success,
+        final Map<String, Object> tags);
 
     @Override
     public void close() throws IOException {
-      if (jg != null) {
-        jg.close();
-      }
     }
-
   }
 
   public static class Step {

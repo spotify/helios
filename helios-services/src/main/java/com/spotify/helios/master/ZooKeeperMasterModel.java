@@ -64,8 +64,7 @@ import com.spotify.helios.rollingupdate.RollingUpdateError;
 import com.spotify.helios.rollingupdate.RollingUpdateOp;
 import com.spotify.helios.rollingupdate.RollingUpdateOpFactory;
 import com.spotify.helios.rollingupdate.RollingUpdatePlanner;
-import com.spotify.helios.servicescommon.KafkaRecord;
-import com.spotify.helios.servicescommon.KafkaSender;
+import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.VersionedValue;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Node;
@@ -91,6 +90,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
+import java.util.stream.Collectors;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.BadVersionException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -103,6 +103,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -145,26 +146,26 @@ public class ZooKeeperMasterModel implements MasterModel {
       STRING_LIST_TYPE =
       new TypeReference<List<String>>() {};
 
-  private static final String DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
+  private static final String DEPLOYMENT_GROUP_EVENT_TOPIC = "HeliosDeploymentGroupEvents";
   private static final DeploymentGroupEventFactory DEPLOYMENT_GROUP_EVENT_FACTORY =
       new DeploymentGroupEventFactory();
 
   private final ZooKeeperClientProvider provider;
   private final String name;
-  private final KafkaSender kafkaSender;
+  private final List<EventSender> eventSenders;
 
   /**
    * Constructor
    * @param provider         {@link ZooKeeperClientProvider}
    * @param name             The hostname of the machine running the {@link MasterModel}
-   * @param kafkaSender      {@link KafkaSender}
+   * @param eventSenders     {@link EventSender}
    */
   public ZooKeeperMasterModel(final ZooKeeperClientProvider provider,
                               final String name,
-                              final KafkaSender kafkaSender) {
+                              final List<EventSender> eventSenders) {
     this.provider = Preconditions.checkNotNull(provider);
     this.name = Preconditions.checkNotNull(name);
-    this.kafkaSender = Preconditions.checkNotNull(kafkaSender);
+    this.eventSenders = Preconditions.checkNotNull(eventSenders);
   }
 
   /**
@@ -182,14 +183,27 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  /**
-   * Returns a list of the hosts/agents that have been registered.
-   */
   @Override
   public List<String> listHosts() {
     try {
       // TODO (dano): only return hosts whose agents completed registration (i.e. has id nodes)
       return provider.get("listHosts").getChildren(Paths.configHosts());
+    } catch (KeeperException.NoNodeException e) {
+      return emptyList();
+    } catch (KeeperException e) {
+      throw new HeliosRuntimeException("listing hosts failed", e);
+    }
+  }
+
+  @Override
+  public List<String> listUpHosts() {
+    try {
+      // TODO (dano): only return hosts whose agents completed registration (i.e. has id nodes)
+      final ZooKeeperClient client = provider.get("listHosts");
+      return client.getChildren(Paths.configHosts())
+          .stream()
+          .filter(host -> checkHostUp(client, host))
+          .collect(Collectors.toList());
     } catch (KeeperException.NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {
@@ -544,6 +558,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       final List<String> removedHosts = removedHosts(curHosts, hosts, previouslyRemovedHosts);
 
+      log.info("for deployment-group name={}, curHosts={}, new hosts={}, "
+               + "previouslyRemovedHosts={}, derived removedHosts={}",
+          groupName, curHosts, hosts, previouslyRemovedHosts, removedHosts);
+
       final List<ZooKeeperOperation> ops = Lists.newArrayList();
       ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
       ops.add(set(Paths.statusDeploymentGroupRemovedHosts(groupName), Json.asBytes(removedHosts)));
@@ -578,7 +596,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           groupName, deploymentGroup.getJobId(), ops);
 
       client.transaction(ops);
-      emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, events);
+      emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, events);
     } catch (BadVersionException e) {
       // some other master beat us in processing this host update. not exceptional.
       // ideally we would check the path in the exception, but curator doesn't provide a path
@@ -627,7 +645,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       client.transaction(operations);
 
-      emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
+      emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, op.events());
       log.info("initiated rolling-update on deployment-group: name={}, jobId={}",
           deploymentGroup.getName(), jobId);
     } catch (final NoNodeException e) {
@@ -650,31 +668,39 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                   final List<String> undeployHosts,
                                                   final ZooKeeperClient zooKeeperClient)
       throws KeeperException {
-    final ImmutableList.Builder<RolloutTask> rolloutTasks = ImmutableList.builder();
-    rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
-                            .plan(getHostStatuses(updateHosts)));
+    final List<RolloutTask> rolloutTasks = new ArrayList<>();
+
+    // give precedence to the updateHosts list so we don't end up in a state where we updated a host
+    // and then removed the job from it (because of buggy logic in the calling method)
+    final List<String> updateHostsCopy = new ArrayList<>(updateHosts);
+    final List<String> undeployHostsCopy = new ArrayList<>(undeployHosts);
+    undeployHostsCopy.removeAll(updateHostsCopy);
+
+    // we only care about hosts that are UP
+    final List<String> upHostsToUndeploy = undeployHostsCopy.stream()
+        .filter(host -> checkHostUp(zooKeeperClient, host))
+        .collect(Collectors.toList());
+    final List<String> upHostsToDeploy = updateHostsCopy.stream()
+        .filter(host -> checkHostUp(zooKeeperClient, host))
+        .collect(Collectors.toList());
+
     rolloutTasks.addAll(RollingUndeployPlanner.of(deploymentGroup)
-                            .plan(getHostStatuses(undeployHosts)));
+                            .plan(upHostsToUndeploy));
+    rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
+                            .plan(upHostsToDeploy));
+
+    log.info("generated rolloutTasks for deployment-group name={} "
+             + "updateHosts={} undeployHosts={}: {}",
+        deploymentGroup.getName(), updateHosts, undeployHosts, rolloutTasks);
 
     final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
-        .setRolloutTasks(rolloutTasks.build())
+        .setRolloutTasks(rolloutTasks)
         .setTaskIndex(0)
         .setDeploymentGroup(deploymentGroup)
         .build();
 
     return new RollingUpdateOpFactory(tasks, DEPLOYMENT_GROUP_EVENT_FACTORY)
         .start(deploymentGroup, zooKeeperClient);
-  }
-
-  private Map<String, HostStatus> getHostStatuses(final List<String> hosts) {
-    final ImmutableMap.Builder<String, HostStatus> hostsAndStatuses = ImmutableMap.builder();
-    hosts.forEach(host -> {
-      final HostStatus status = getHostStatus(host);
-      if (status != null) {
-        hostsAndStatuses.put(host, status);
-      }
-    });
-    return hostsAndStatuses.build();
   }
 
   private Map<String, VersionedValue<DeploymentGroupTasks>> getDeploymentGroupTasks(
@@ -776,7 +802,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
           try {
             client.transaction(ops);
-            emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
+            emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, op.events());
           } catch (BadVersionException e) {
             // some other master beat us in processing this rolling update step. not exceptional.
             // ideally we would check the path in the exception, but curator doesn't provide a path
@@ -796,7 +822,10 @@ public class ZooKeeperMasterModel implements MasterModel {
   private void emitEvents(final String topic, final List<Map<String, Object>> events) {
     // Emit events
     for (final Map<String, Object> event : events) {
-      kafkaSender.send(KafkaRecord.of(topic, Json.asBytesUnchecked(event)));
+      final byte[] message = Json.asBytesUnchecked(event);
+      for (final EventSender sender : eventSenders) {
+        sender.send(topic, message);
+      }
     }
   }
 
@@ -947,7 +976,6 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                        final DeploymentGroup deploymentGroup,
                                                        final String host) {
     final TaskStatus taskStatus = getTaskStatus(client, host, deploymentGroup.getJobId());
-    final JobId jobId = deploymentGroup.getJobId();
 
     if (taskStatus == null) {
       // The task status (i.e. /status/hosts/<host>/job/<job-id>) has been removed, indicating the
@@ -973,7 +1001,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final int version = node.getStat().getVersion();
       final List<String> hostsToUndeploy = Json.read(node.getBytes(), STRING_LIST_TYPE);
 
-      if (!hostsToUndeploy.removeAll(ImmutableList.of(host))) {
+      if (!hostsToUndeploy.remove(host)) {
         // Something already removed this host. Don't bother trying to update the removed hosts.
         return opFactory.nextTask();
       }
@@ -1674,17 +1702,10 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   @Override
   public HostStatus getHostStatus(final String host) {
-    final Stat stat;
     final ZooKeeperClient client = provider.get("getHostStatus");
 
-    try {
-      stat = client.exists(Paths.configHostId(host));
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException("Failed to check host status", e);
-    }
-
-    if (stat == null) {
-      log.warn("Missing configuration for host {}", host);
+    if (!ZooKeeperRegistrarUtil.isHostRegistered(client, host)) {
+      log.warn("Host {} isn't registered in ZooKeeper.", host);
       return null;
     }
 
@@ -1705,6 +1726,18 @@ public class ZooKeeperMasterModel implements MasterModel {
         .setEnvironment(environment)
         .setLabels(labels)
         .build();
+  }
+
+  @Override
+  public Map<String, String> getHostLabels(final String host) {
+    final ZooKeeperClient client = provider.get("getHostStatus");
+
+    if (!ZooKeeperRegistrarUtil.isHostRegistered(client, host)) {
+      return emptyMap();
+    }
+
+    final Map<String, String> labels = getLabels(client, host);
+    return labels == null ? emptyMap() : labels;
   }
 
   private <T> T tryGetEntity(final ZooKeeperClient client, String path, TypeReference<T> type,

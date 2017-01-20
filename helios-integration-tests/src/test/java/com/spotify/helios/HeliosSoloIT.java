@@ -26,27 +26,30 @@ import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.testing.HeliosDeploymentResource;
 import com.spotify.helios.testing.HeliosSoloDeployment;
-import com.spotify.helios.testing.InMemoryLogStreamProvider;
+import com.spotify.helios.testing.InMemoryLogStreamFollower;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import com.google.common.net.HostAndPort;
 
 import org.apache.commons.io.IOUtils;
+import org.awaitility.Awaitility;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.net.Socket;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 public class HeliosSoloIT {
 
   @Rule
   public final ExpectedException expected = ExpectedException.none();
 
-  private static final InMemoryLogStreamProvider logStreamProvider =
-      new InMemoryLogStreamProvider();
+  private static final InMemoryLogStreamFollower logStreamProvider =
+      InMemoryLogStreamFollower.create();
 
   @ClassRule
   public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
@@ -102,7 +105,7 @@ public class HeliosSoloIT {
         .image(ALPINE)
         .port("nc", 4711, ports.localPort("nc"))
         .command("sh", "-c",
-                 "apk-install bind-tools " +
+                 "apk add --update bind-tools " +
                  "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) " +
                  "&& export HOST=$(echo $SRV | cut -d' ' -f4) " +
                  "&& export PORT=$(echo $SRV | cut -d' ' -f3) " +
@@ -114,10 +117,15 @@ public class HeliosSoloIT {
 
     // Connect to alpine container to get the curl response. If we get back the nginx welcome page
     // we know that helios properly registered the nginx service in SkyDNS.
-    try (final Socket s = new Socket(alpineAddress.getHostText(), alpineAddress.getPort())) {
-      final String result = IOUtils.toString(s.getInputStream()).trim();
-      assertThat(result, containsString("Welcome to nginx!"));
-    }
+    final Callable<String> socketResponse = () -> {
+      try (final Socket s = new Socket(alpineAddress.getHostText(), alpineAddress.getPort())) {
+        return IOUtils.toString(s.getInputStream()).trim();
+      }
+    };
+    // allow a few retries for a delay in the apk install of bind-tools
+    Awaitility.await("alpine container returns nginx welcome")
+        .atMost(10, TimeUnit.SECONDS)
+        .until(socketResponse, containsString("Welcome to nginx!"));
 
     // also throw in a check to make sure log streaming is working
     assertThat(new String(logStreamProvider.getStderr(nginx.job().getId())),

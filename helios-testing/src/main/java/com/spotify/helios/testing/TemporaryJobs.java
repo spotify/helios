@@ -135,14 +135,19 @@ public class TemporaryJobs implements TestRule {
       throw Throwables.propagate(e);
     }
 
-    final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
-                                                   .or(DEFAULT_TEST_REPORT_DIRECTORY));
-    this.reports = new TemporaryJobReports(testReportDirectory);
+    if (builder.reports == null) {
+      final Path testReportDirectory = Paths.get(
+          fromNullable(builder.testReportDirectory).or(DEFAULT_TEST_REPORT_DIRECTORY));
+      this.reports = new TemporaryJobJsonReports(testReportDirectory);
+    } else {
+      this.reports = builder.reports;
+    }
+
     this.reportWriter = new ThreadLocal<TemporaryJobReports.ReportWriter>() {
       @Override
       protected TemporaryJobReports.ReportWriter initialValue() {
-        log.warn("unable to determine test context, writing event log to stdout");
-        return TemporaryJobs.this.reports.getWriterForStream(System.out);
+        log.warn("unable to determine test context, writing to default event log");
+        return TemporaryJobs.this.reports.getDefaultWriter();
       }
     };
 
@@ -523,6 +528,7 @@ public class TemporaryJobs implements TestRule {
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
     private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
+    private TemporaryJobReports reports;
 
     Builder(String profile, Config rootConfig, Map<String, String> env,
             HeliosClient.Builder clientBuilder) {
@@ -711,6 +717,11 @@ public class TemporaryJobs implements TestRule {
 
     public Builder prefixDirectory(final String prefixDirectory) {
       this.prefixDirectory = prefixDirectory;
+      return this;
+    }
+
+    public Builder reports(final TemporaryJobReports reports) {
+      this.reports = reports;
       return this;
     }
 

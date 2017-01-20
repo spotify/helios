@@ -17,10 +17,11 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import org.junit.Test;
+
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +33,7 @@ public class KafkaClientProviderTest {
     final KafkaClientProvider provider = new KafkaClientProvider(null);
 
     assertEquals("KafkaClientProvider should return absent when null list of seed hosts is passed",
-        Optional.absent(), provider.getDefaultProducer());
+        Optional.empty(), provider.getDefaultProducer());
   }
 
   @Test

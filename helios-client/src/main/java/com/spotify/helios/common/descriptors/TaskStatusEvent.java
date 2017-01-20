@@ -35,7 +35,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskStatusEvent extends Descriptor {
 
-  public static final String KAFKA_TOPIC = "HeliosTaskStatusEvents";
+  public static final String TASK_STATUS_EVENT_TOPIC = "HeliosTaskStatusEvents";
 
   private final TaskStatus status;
   private final long timestamp;
@@ -74,6 +74,6 @@ public class TaskStatusEvent extends Descriptor {
            "status=" + status +
            ", timestamp=" + timestamp +
            ", host='" + host + '\'' +
-           "} " + super.toString();
+           '}';
   }
 }
