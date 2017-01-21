@@ -29,9 +29,9 @@ import com.google.common.collect.ImmutableList;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
+import com.spotify.sshagenttls.CertFileHttpsHandler;
 import com.spotify.sshagenttls.CertKeyPaths;
-import com.spotify.sshagenttls.HttpsHandlers;
-
+import com.spotify.sshagenttls.SshAgentHttpsHandler;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
@@ -39,10 +39,14 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+
+import javax.security.auth.x500.X500Principal;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,8 +137,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     final CertKeyPaths clientCertificatePath = this.clientCertificatePath.get();
     log.debug("configuring CertificateFileHttpsHandler with {}", clientCertificatePath);
 
-    delegate.setExtraHttpsHandler(
-        HttpsHandlers.createCertFileHttpsHandler(user, false, clientCertificatePath)
+    delegate.setExtraHttpsHandler(CertFileHttpsHandler.create(false, clientCertificatePath)
     );
 
     return doConnect(ipUri, method, entity, headers);
@@ -154,8 +157,14 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     while (!queue.isEmpty()) {
       final Identity identity = queue.poll();
 
-      delegate.setExtraHttpsHandler(
-          HttpsHandlers.createSshAgentHttpsHandler(user, false, agentProxy.get(), identity));
+      delegate.setExtraHttpsHandler(SshAgentHttpsHandler.builder()
+          .setUser(user)
+          .setFailOnCertError(false)
+          .setAgentProxy(agentProxy.get())
+          .setIdentity(identity)
+          .setX500Principal(new X500Principal("C=US,O=Spotify,CN=helios-client"))
+          .setCertCacheDir(Paths.get(System.getProperty("user.home"), ".helios"))
+          .build());
 
       connection = doConnect(uri, method, entity, headers);
 
