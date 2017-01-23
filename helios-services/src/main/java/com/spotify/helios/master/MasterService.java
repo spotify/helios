@@ -207,7 +207,7 @@ public class MasterService extends AbstractIdleService {
             deploymentGroupEventTopic);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
-        zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
+        zooKeeperClient, riemannFacade, TimeUnit.MINUTES, 2);
 
     environment.lifecycle().manage(zooKeeperHealthChecker);
     environment.healthChecks().register("zookeeper", zooKeeperHealthChecker);
