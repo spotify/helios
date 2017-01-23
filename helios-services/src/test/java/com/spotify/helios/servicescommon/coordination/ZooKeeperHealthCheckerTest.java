@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 import com.aphyr.riemann.Proto.Event;
+import com.codahale.metrics.health.HealthCheck;
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
@@ -38,6 +39,7 @@ import org.junit.Test;
 public class ZooKeeperHealthCheckerTest {
   private CapturingRiemannClient riemannClient;
   private ZooKeeperTestManager zk;
+  private ZooKeeperHealthChecker healthCheck;
 
   @Before
   public void setUp() throws Exception {
@@ -55,13 +57,12 @@ public class ZooKeeperHealthCheckerTest {
   @Test
   public void test() throws Exception {
     final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curatorWithSuperAuth());
-    client.ensurePath("/foo/bar");
-    final ZooKeeperHealthChecker hc = new ZooKeeperHealthChecker(
-        client, "/foo", riemannClient.facade(), MILLISECONDS, 1);
-    hc.start();
+
+    healthCheck = new ZooKeeperHealthChecker(client, riemannClient.facade(), MILLISECONDS, 1);
+    healthCheck.start();
 
     // Start in our garden of eden where everything travaileth together in harmony....
-    awaitHealthy(hc, 1, MINUTES);
+    awaitHealthy(1, MINUTES);
 
     // Alas!  Behold!  Our zookeeper hath been slain with the sword of the wrath of the random!
     zk.stop();
@@ -70,17 +71,17 @@ public class ZooKeeperHealthCheckerTest {
     // And lo, our zookeeper hath been resurrected and our foe vanquished!
     zk.start();
     awaitState("ok", 1, MINUTES);
-    awaitHealthy(hc, 1, MINUTES);
+    awaitHealthy(1, MINUTES);
 
     // And they lived happily ever after
   }
 
-  private void awaitHealthy(final ZooKeeperHealthChecker hc, final int duration,
-                            final TimeUnit timeUnit) throws Exception {
+  private void awaitHealthy(final int duration, final TimeUnit timeUnit) throws Exception {
     Polling.await(duration, timeUnit, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
-        return hc.check().isHealthy() ? true : null;
+        final HealthCheck.Result result = healthCheck.execute();
+        return result.isHealthy() ? true : null;
       }
     });
   }

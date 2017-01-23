@@ -328,10 +328,8 @@ public class AgentService extends AbstractIdleService implements Managed {
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator,
                            reaper);
 
-    final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
-                                                                              Paths.statusHosts(),
-                                                                              riemannFacade,
-                                                                              TimeUnit.MINUTES, 2);
+    final ZooKeeperHealthChecker zkHealthChecker =
+        new ZooKeeperHealthChecker(zooKeeperClient, riemannFacade, TimeUnit.MINUTES, 2);
     environment.lifecycle().manage(zkHealthChecker);
 
     if (!config.getNoHttp()) {
