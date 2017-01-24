@@ -46,7 +46,6 @@ public class AgentConfig extends CommonConfiguration<AgentConfig> {
   private boolean inhibitMetrics;
   private Path stateDirectory;
   private String statsdHostPort;
-  private String riemannHostPort;
   private String serviceRegistryAddress;
   private int portRangeStart;
   private int portRangeEnd;
@@ -183,15 +182,6 @@ public class AgentConfig extends CommonConfiguration<AgentConfig> {
 
   public String getStatsdHostPort() {
     return statsdHostPort;
-  }
-
-  public AgentConfig setRiemannHostPort(String hostPort) {
-    this.riemannHostPort = hostPort;
-    return this;
-  }
-
-  public String getRiemannHostPort() {
-    return riemannHostPort;
   }
 
   public AgentConfig setServiceRegistryAddress(final String address) {

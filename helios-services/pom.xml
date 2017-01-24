@@ -347,11 +347,6 @@
       <artifactId>hamcrest-library</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.aphyr</groupId>
-      <artifactId>riemann-java-client</artifactId>
-      <version>0.2.10</version>
-    </dependency>
-    <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
       <scope>test</scope>

@@ -61,14 +61,10 @@ import com.spotify.helios.servicescommon.EventSenderFactory;
 import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
-import com.spotify.helios.servicescommon.RiemannFacade;
-import com.spotify.helios.servicescommon.RiemannHeartBeat;
-import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ServiceUtil;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarService;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
@@ -88,9 +84,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 import org.apache.curator.RetryPolicy;
@@ -152,9 +146,6 @@ public class MasterService extends AbstractIdleService {
     metricsRegistry.registerAll(new GarbageCollectorMetricSet());
     metricsRegistry.registerAll(new MemoryUsageGaugeSet());
 
-    final RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry,
-        config.getRiemannHostPort(), config.getName(), "helios-master");
-    final RiemannFacade riemannFacade = riemannSupport.getFacade();
     log.info("Starting metrics");
     final Metrics metrics;
     if (config.isInhibitMetrics()) {
@@ -162,7 +153,6 @@ public class MasterService extends AbstractIdleService {
     } else {
       metrics = new MetricsImpl(metricsRegistry, MetricsImpl.Type.MASTER);
       metrics.start();
-      environment.lifecycle().manage(riemannSupport);
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
         environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
                                                                  metricsRegistry));
@@ -181,8 +171,8 @@ public class MasterService extends AbstractIdleService {
 
     // Set up the master model
     this.zooKeeperClient = setupZookeeperClient(config);
-    final ZooKeeperModelReporter modelReporter = new ZooKeeperModelReporter(
-        riemannFacade, metrics.getZooKeeperMetrics());
+    final ZooKeeperModelReporter modelReporter =
+        new ZooKeeperModelReporter(metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
 
@@ -206,8 +196,8 @@ public class MasterService extends AbstractIdleService {
         new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders,
             deploymentGroupEventTopic);
 
-    final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
-        zooKeeperClient, riemannFacade, TimeUnit.MINUTES, 2);
+    final ZooKeeperHealthChecker zooKeeperHealthChecker =
+        new ZooKeeperHealthChecker(zooKeeperClient);
 
     environment.lifecycle().manage(zooKeeperHealthChecker);
     environment.healthChecks().register("zookeeper", zooKeeperHealthChecker);
@@ -216,8 +206,6 @@ public class MasterService extends AbstractIdleService {
     environment.healthChecks().getNames().forEach(
         name -> environment.metrics().register(
             "helios." + name + ".ok", new HealthCheckGauge(environment.healthChecks(), name)));
-
-    environment.lifecycle().manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
 
     // Set up service registrar
     this.registrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),

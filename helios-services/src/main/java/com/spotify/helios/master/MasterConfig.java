@@ -39,7 +39,6 @@ public class MasterConfig extends CommonConfiguration<MasterConfig> {
   private String name;
   private boolean inhibitMetrics;
   private String statsdHostPort;
-  private String riemannHostPort;
   private String serviceRegistryAddress;
   private String sentryDsn;
   private Path serviceRegistrarPlugin;
@@ -140,15 +139,6 @@ public class MasterConfig extends CommonConfiguration<MasterConfig> {
 
   public String getStatsdHostPort() {
     return statsdHostPort;
-  }
-
-  public MasterConfig setRiemannHostPort(String hostPort) {
-    this.riemannHostPort = hostPort;
-    return this;
-  }
-
-  public String getRiemannHostPort() {
-    return riemannHostPort;
   }
 
   public MasterConfig setServiceRegistryAddress(final String address) {
