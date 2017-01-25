@@ -181,3 +181,8 @@ $ docker logs helios-solo-container
 
 $ helios-up && docker exec -it helios-solo-container bash
 ```
+
+Known issues
+------------
+
+ * SkyDNS does not handle DNS TCP responses well. We have a workaround in place to use UDP for responses up to 32768 bytes in size. Any response larger than that will cause a `SERVFAIL`. When this happens SkyDns will log `skydns: failure to forward request "dns: failed to unpack truncated message"`. See https://github.com/spotify/helios/pull/900 and https://github.com/spotify/helios/pull/1081 for more information.
