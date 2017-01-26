@@ -136,6 +136,11 @@ public class JobValidator {
     // Verify service registrations
     for (final ServiceEndpoint registration : job.getRegistration().keySet()) {
       final ServicePorts servicePorts = job.getRegistration().get(registration);
+      if (servicePorts == null || servicePorts.getPorts() == null) {
+        errors.add(format("registration for '%s' is malformed: does not have a port mapping",
+            registration.getName()));
+        continue;
+      }
       for (final String portName : servicePorts.getPorts().keySet()) {
         if (!job.getPorts().containsKey(portName)) {
           errors.add(format("Service registration refers to missing port mapping: %s=%s",

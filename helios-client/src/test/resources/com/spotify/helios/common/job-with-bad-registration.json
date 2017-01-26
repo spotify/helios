@@ -1,0 +1,20 @@
+{
+  "id": "job-with-bad-registration:1:4ee3a68429951bb9603b753c73fcefab27420dbe",
+  "image": "example.net/foo/bar",
+  "ports": {
+    "http": {
+      "internalPort": 8080,
+      "protocol": "tcp"
+    }
+  },
+  "registration": {
+    "my-cool-service/http": {
+      "ports": {
+        "http": {}
+      }
+    },
+    "volumes": {
+      "/some/path:ro": "/another/path"
+    }
+  }
+}

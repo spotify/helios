@@ -20,6 +20,7 @@
 
 package com.spotify.helios.common;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.DEFAULT_NETWORK_MODE;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
@@ -54,6 +55,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.io.Resources;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -61,6 +63,8 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
@@ -482,6 +486,22 @@ public class JobValidatorTest {
     assertThat(validator.validate(job), contains(
         containsString("Illegal tag: \"a b c\"")
     ));
+  }
+
+  /**
+   * Tests that Jobs deserialized from JSON representation that happen to have malformed
+   * "registration" sections are properly handled. This mimics a real life test case where the
+   * "volumes" entry was accidentally indented wrong and included within the "registration"
+   * section.
+   */
+  @Test
+  public void testJobFromJsonWithInvalidRegistration() throws Exception {
+    final URL resource = getClass().getResource("job-with-bad-registration.json");
+    final byte[] bytes = Resources.toByteArray(resource);
+    final Job job = Json.read(bytes, Job.class);
+
+    assertThat(validator.validate(job),
+        contains("registration for 'volumes' is malformed: does not have a port mapping"));
   }
 
 }
