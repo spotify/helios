@@ -51,7 +51,6 @@ public class ZooKeeperHealthCheckerTest {
     final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curatorWithSuperAuth());
 
     healthCheck = new ZooKeeperHealthChecker(client);
-    healthCheck.start();
 
     // Start in our garden of eden where everything travaileth together in harmony....
     awaitHealthy(1, MINUTES);

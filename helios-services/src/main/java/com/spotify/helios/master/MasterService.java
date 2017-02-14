@@ -199,7 +199,6 @@ public class MasterService extends AbstractIdleService {
     final ZooKeeperHealthChecker zooKeeperHealthChecker =
         new ZooKeeperHealthChecker(zooKeeperClient);
 
-    environment.lifecycle().manage(zooKeeperHealthChecker);
     environment.healthChecks().register("zookeeper", zooKeeperHealthChecker);
 
     // Report health checks as a gauge metric
