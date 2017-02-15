@@ -321,7 +321,6 @@ public class AgentService extends AbstractIdleService implements Managed {
                            reaper);
 
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient);
-    environment.lifecycle().manage(zkHealthChecker);
 
     if (!config.getNoHttp()) {
 
