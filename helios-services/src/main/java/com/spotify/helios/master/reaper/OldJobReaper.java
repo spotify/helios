@@ -104,7 +104,6 @@ public class OldJobReaper extends RateLimitedService<Job> {
 
   @Override
   void processItem(final Job job) {
-    log.info("Deciding whether to reap job {}", job.getId());
     final JobId jobId = job.getId();
 
     try {
@@ -155,12 +154,12 @@ public class OldJobReaper extends RateLimitedService<Job> {
         }
       } else {
         // A job that's deployed should NOT BE reaped regardless of its history or creation date
-        log.info("NOT reaping job '{}' (it is deployed)", jobId);
         reap = false;
       }
 
       if (reap) {
         try {
+          log.info("reaping old job '{}'", job.getId());
           masterModel.removeJob(jobId, job.getToken());
         } catch (Exception e) {
           log.warn("Failed to reap old job '{}'", jobId, e);
