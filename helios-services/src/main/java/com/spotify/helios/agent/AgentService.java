@@ -61,7 +61,6 @@ import com.spotify.helios.servicescommon.ServiceUtil;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarService;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
@@ -321,11 +320,14 @@ public class AgentService extends AbstractIdleService implements Managed {
                            reaper);
 
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient);
+    final DockerDaemonHealthChecker dockerDaemonHealthChecker =
+        new DockerDaemonHealthChecker(dockerClient);
 
     if (!config.getNoHttp()) {
 
       environment.healthChecks().register("docker", dockerHealthChecker);
       environment.healthChecks().register("zookeeper", zkHealthChecker);
+      environment.healthChecks().register("dockerd", dockerDaemonHealthChecker);
 
       // Report health checks as a gauge metric
       environment.healthChecks().getNames().forEach(
