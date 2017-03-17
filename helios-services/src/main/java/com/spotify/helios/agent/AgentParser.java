@@ -70,6 +70,7 @@ public class AgentParser extends ServiceParser {
   private Argument zkAclMasterDigest;
   private Argument zkAclAgentPassword;
   private Argument disableJobHistory;
+  private Argument connectionPoolSize;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -145,7 +146,8 @@ public class AgentParser extends ServiceParser {
         .setPubsubPrefixes(getPubsubPrefixes())
         .setLabels(labels)
         .setFfwdConfig(ffwdConfig(options))
-        .setJobHistoryDisabled(options.getBoolean(disableJobHistory.getDest()));
+        .setJobHistoryDisabled(options.getBoolean(disableJobHistory.getDest()))
+        .setConnectionPoolSize(options.getInt(connectionPoolSize.getDest()));
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -273,6 +275,11 @@ public class AgentParser extends ServiceParser {
         .action(storeTrue())
         .setDefault(false)
         .help("If specified, the agent won't write job histories to ZooKeeper.");
+
+    connectionPoolSize = parser.addArgument("--connection-pool-size")
+            .type(Integer.class)
+            .setDefault(100)
+            .help("Size of the Docker socket connection pool.");
   }
 
   public AgentConfig getAgentConfig() {
