@@ -31,30 +31,23 @@ import com.spotify.docker.client.exceptions.DockerRequestException;
 
 import java.net.URI;
 
-import org.junit.Before;
 import org.junit.Test;
 
 public class DockerDaemonHealthCheckerTest {
 
-  private DockerClient dockerClient;
-
-  @Before
-  public void setUp() throws Exception {
-    dockerClient = mock(DockerClient.class);
-  }
+  private final DockerClient dockerClient = mock(DockerClient.class);
+  private final DockerDaemonHealthChecker sut = new DockerDaemonHealthChecker(dockerClient);
 
   @Test
   public void testHealthy() throws Exception {
-    final DockerDaemonHealthChecker checker = new DockerDaemonHealthChecker(dockerClient);
-    final HealthCheck.Result result = checker.check();
+    final HealthCheck.Result result = sut.check();
     assertThat(result.isHealthy(), is(true));
   }
 
   @Test
   public void testUnhealthy() throws Exception {
     when(dockerClient.ping()).thenThrow(new DockerRequestException("GET", new URI("/ping")));
-    final DockerDaemonHealthChecker checker = new DockerDaemonHealthChecker(dockerClient);
-    final HealthCheck.Result result = checker.check();
+    final HealthCheck.Result result = sut.check();
     assertThat(result.isHealthy(), is(false));
   }
 }
