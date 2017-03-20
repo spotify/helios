@@ -349,8 +349,11 @@ public class AgentService extends AbstractIdleService implements Managed {
 
   private DockerClient createDockerClient(final AgentConfig config) {
     final DefaultDockerClient.Builder builder = DefaultDockerClient.builder()
-            .uri(config.getDockerHost().uri())
-            .connectionPoolSize(config.getConnectionPoolSize());
+            .uri(config.getDockerHost().uri());
+
+    if (config.getConnectionPoolSize() != -1) {
+      builder.connectionPoolSize(config.getConnectionPoolSize());
+    }
 
     if (!isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
       final Path dockerCertPath = java.nio.file.Paths.get(config.getDockerHost().dockerCertPath());
