@@ -66,6 +66,7 @@ public class AgentConfig extends CommonConfiguration<AgentConfig> {
   private FastForwardConfig fastForwardConfig;
   private List<String> extraHosts;
   private boolean jobHistoryDisabled;
+  private int connectionPoolSize;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -357,6 +358,15 @@ public class AgentConfig extends CommonConfiguration<AgentConfig> {
 
   public AgentConfig setExtraHosts(final List<String> extraHosts) {
     this.extraHosts = extraHosts;
+    return this;
+  }
+
+  public int getConnectionPoolSize() {
+    return connectionPoolSize;
+  }
+
+  public AgentConfig setConnectionPoolSize(final int connectionPoolSize) {
+    this.connectionPoolSize = connectionPoolSize;
     return this;
   }
 }

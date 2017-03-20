@@ -42,6 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
+import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerCertificateException;
@@ -349,10 +350,14 @@ public class AgentService extends AbstractIdleService implements Managed {
   }
 
   private DockerClient createDockerClient(final AgentConfig config) {
-    final DockerClient dockerClient;
-    if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
-      dockerClient = new PollingDockerClient(config.getDockerHost().uri());
-    } else {
+    final DefaultDockerClient.Builder builder = DefaultDockerClient.builder()
+            .uri(config.getDockerHost().uri());
+
+    if (config.getConnectionPoolSize() != -1) {
+      builder.connectionPoolSize(config.getConnectionPoolSize());
+    }
+
+    if (!isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
       final Path dockerCertPath = java.nio.file.Paths.get(config.getDockerHost().dockerCertPath());
       final DockerCertificates dockerCertificates;
       try {
@@ -361,10 +366,10 @@ public class AgentService extends AbstractIdleService implements Managed {
         throw Throwables.propagate(e);
       }
 
-      dockerClient = new PollingDockerClient(config.getDockerHost().uri(), dockerCertificates);
+      builder.dockerCertificates(dockerCertificates);
     }
 
-    return dockerClient;
+    return new PollingDockerClient(builder);
   }
 
   /**
