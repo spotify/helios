@@ -169,22 +169,26 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private String determineHeliosHost(final Info dockerInfo) throws HeliosDeploymentException {
     // note that checkDockerAndGetGateway is intentionally always called even if the return value
     // is discarded, as it does important checks about the local docker installation
-    log.info("checking that docker can be reached from within a container");
     final String probeContainerGateway = checkDockerAndGetGateway();
 
     if (dockerHostAddressIsLocalhost()) {
       if (isDockerForMac(dockerInfo)) {
         try {
+          log.info("determineHeliosHost: local environment appears to be Docker for Mac");
           return InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
           throw new HeliosDeploymentException("Cannot resolve local hostname", e);
         }
       }
 
+      log.info("determineHeliosHost: using value from probe container gateway: {}",
+          probeContainerGateway);
+
       return probeContainerGateway;
     }
 
-    // otherwise return the address of the docker host
+    log.info("determineHeliosHost: using docker host as helios host: {}", dockerHost.address());
+
     return dockerHost.address();
   }
 
@@ -259,6 +263,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    *         Docker daemon's API from inside the container.
    */
   private String checkDockerAndGetGateway() throws HeliosDeploymentException {
+    log.info("checking that docker can be reached from within a container");
+
     final String probeName = randomString();
     final HostConfig hostConfig = HostConfig.builder()
             .binds(binds)
@@ -351,7 +357,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * @throws HeliosDeploymentException if Helios Solo could not be deployed.
    */
   private String deploySolo(final String heliosHost) throws HeliosDeploymentException {
-    //TODO(negz): Don't make this.env immutable so early?
     final List<String> env = new ArrayList<>();
     env.addAll(this.env);
     env.add("HELIOS_NAME=" + agentName);
