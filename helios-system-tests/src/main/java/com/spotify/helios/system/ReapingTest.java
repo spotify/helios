@@ -67,8 +67,10 @@ public class ReapingTest extends SystemTestBase {
 
     // With LXC, killing a container results in exit code 0.
     // In docker 1.5 killing a container results in exit code 137, in previous versions it's -1.
-    final List<Integer> expectedExitCodes = docker.info().executionDriver().startsWith("lxc-")
-                                            ? Collections.singletonList(0) : asList(-1, 137);
+    final String executionDriver = docker.info().executionDriver();
+    final List<Integer> expectedExitCodes =
+        (executionDriver != null && executionDriver.startsWith("lxc-"))
+        ? Collections.singletonList(0) : asList(-1, 137);
 
     // Wait for the agent to kill the container
     final ContainerExit exit1 = docker.waitContainer(intruder1);
