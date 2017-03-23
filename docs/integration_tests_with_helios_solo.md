@@ -46,7 +46,6 @@ public static final RuleChain chain = RuleChain
     .around(temporaryJobs);
 ```
 
-
 ## @ClassRule vs @Rule
 The `@ClassRule RuleChain` above will set up `HeliosSoloDeployment` once for all of the tests
 in your `Test` class. To instead set up (and tear down) a
@@ -60,7 +59,9 @@ will add a lot of overhead to each test. We recommend using
 [helios-solo]: ./helios_solo.md
 [TemporaryJobs]: ./testing_framework.md
 
-## Issues if `DOCKER_HOST` refers to `localhost` or `127.0.0.1`
+## Known Issues
+
+### `DOCKER_HOST` refers to `localhost` or `127.0.0.1`
 
 In order to deploy jobs to itself, the helios-solo container needs to talk to
 the docker daemon running on the host. 
@@ -78,3 +79,40 @@ In this case, `HeliosSoloDeployment` will attempt to be smart and override your
 for you (perhaps because you use a non-default Unix socket address) then you
 can workaround this by making sure your test is launched with a `DOCKER_HOST`
 value that is not localhost.
+
+### Docker for Mac: TemporaryJob without healthcheck is immediately "up"
+When using Docker for Mac, if you deploy a TemporaryJob with a port mapping but
+without any healthchecks, your test will run immediately after the container
+for TemporaryJob has started, which may be before the service inside it has
+fully initialized.
+
+This is because Docker for Mac seems to accept connections on the mapped port
+immediately, before the container starts to listen on the port.  Helios-testing
+connects to the mapped port to judge when the container has finished starting
+up.
+
+To work around this, add a healthcheck to your TemporaryJob.
+
+### Docker for Mac: address for TemporaryJob containers is returned as 127.0.0.1
+HeliosSoloDeployment has [special checks when running under Docker for
+Mac][hsd-dfm] in order to determine what IP address should be used for your
+test to communicate with the container running your TemporaryJob, i.e. the
+return value from `job.address("port name")`.
+
+These checks are necessary so that the IP address is not reported as
+`127.0.0.1` (since Docker for Mac is exposing ports on the local host). A
+return value of `127.0.0.1` will not work if your test intends to pass the
+return value of `job.address("port name")` into a second container to have one
+TemporaryJob talk to another.
+
+These checks rely on having [the hostname of the local host be resolved into a
+non-localhost IP address][hostaddress].
+
+If you are encountering a problem where the return value of `job.address("port
+name")` is `127.0.0.1`, check to make sure that you are not mapping your
+hostname to localhost in `/etc/hosts` (some [bugs for IntelliJ may have
+workarounds that call for doing this][intellij-bug]).
+
+[hsd-dfm]: https://github.com/spotify/helios/commit/4951b7a57144cfbf0b788005ea85530f99664d2c
+[hostaddress]: https://docs.oracle.com/javase/8/docs/api/java/net/InetAddress.html#getHostAddress--
+[intellij-bug]: http://stackoverflow.com/questions/30625785/intellij-freezes-for-about-30-seconds-before-debugging
