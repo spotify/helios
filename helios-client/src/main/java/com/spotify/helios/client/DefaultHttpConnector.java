@@ -24,8 +24,11 @@ import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
+import com.spotify.sshagenttls.HttpsHandler;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
@@ -145,8 +148,8 @@ public class DefaultHttpConnector implements HttpConnector {
   }
 
   private static void setRequestMethod(final HttpURLConnection connection,
-                                final String method,
-                                final boolean isHttps) {
+                                       final String method,
+                                       final boolean isHttps) {
     // Nasty workaround for ancient HttpURLConnection only supporting few methods
     final Class<?> httpUrlConnectionClass = connection.getClass();
     try {
