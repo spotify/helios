@@ -48,8 +48,11 @@ import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.InjectParam;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -91,8 +94,22 @@ public class JobsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Map<JobId, Job> list(@QueryParam("q") @DefaultValue("") final String query) {
-    final Map<JobId, Job> allJobs = model.getJobs();
+  public Map<JobId, Job> list(
+      @QueryParam("q") @DefaultValue("") final String query,
+      @QueryParam("hostPattern") @DefaultValue("") final String hostPattern) {
+
+    final Map<JobId, Job> allJobs;
+    if (!hostPattern.isEmpty()) {
+      // for each host that matches this pattern...
+      allJobs = model.listHosts(hostPattern).stream()
+          // get the host status
+          .map(model::getHostStatus)
+          // then flat map over the jobs deployed to this host
+          .flatMap(hostStatus -> hostStatus.getJobs().keySet().stream())
+          .collect(Collectors.toMap(Function.identity(), model::getJob));
+    } else {
+      allJobs = model.getJobs();
+    }
 
     // Return all jobs if the query string is empty
     if (query.isEmpty()) {
@@ -100,7 +117,7 @@ public class JobsResource {
       return allJobs;
     }
 
-    // Filter jobs
+    // Filter jobs by jobname query
     final Map<JobId, Job> filteredJobs = Maps.newHashMap();
     for (final Map.Entry<JobId, Job> entry : allJobs.entrySet()) {
       if (entry.getKey().toString().contains(query)) {

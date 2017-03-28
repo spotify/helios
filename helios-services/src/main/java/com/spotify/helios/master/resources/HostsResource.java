@@ -97,14 +97,7 @@ public class HostsResource {
   public List<String> list(@QueryParam("namePattern") final String namePattern,
                            @QueryParam("selector") final List<String> hostSelectors) {
 
-    List<String> hosts = model.listHosts();
-
-    if (namePattern != null) {
-      final Predicate<String> matchesPattern = Pattern.compile(namePattern).asPredicate();
-      hosts = hosts.stream()
-          .filter(matchesPattern)
-          .collect(Collectors.toList());
-    }
+    List<String> hosts = namePattern == null ? model.listHosts() : model.listHosts(namePattern);
 
     if (!hostSelectors.isEmpty()) {
       // check that all supplied selectors are parseable/valid
@@ -220,11 +213,11 @@ public class HostsResource {
       final List<String> hosts,
       @QueryParam("status") @DefaultValue("") final String statusFilter) {
     final Map<String, HostStatus> statuses = Maps.newHashMap();
-    for (final String current : hosts) {
-      final HostStatus status = model.getHostStatus(current);
+    for (final String host : hosts) {
+      final HostStatus status = model.getHostStatus(host);
       if (status != null) {
         if (isNullOrEmpty(statusFilter) || statusFilter.equals(status.getStatus().toString())) {
-          statuses.put(current, status);
+          statuses.put(host, status);
         }
       }
     }
