@@ -44,6 +44,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
@@ -62,7 +63,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -91,7 +91,6 @@ import com.spotify.helios.common.protocol.VersionResponse;
 import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagenttls.CertKeyPaths;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -99,6 +98,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,6 +108,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nullable;
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -120,6 +121,9 @@ public class HeliosClient implements Closeable {
   private final String user;
   private final RequestDispatcher dispatcher;
   private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
+
+  private final TypeReference<Map<JobId, Job>> jobIdMap = new TypeReference<Map<JobId, Job>>() {
+  };
 
   public HeliosClient(final String user, final RequestDispatcher dispatcher) {
     this.user = checkNotNull(user);
@@ -440,13 +444,39 @@ public class HeliosClient implements Closeable {
                                                        ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
-  public ListenableFuture<Map<JobId, Job>> jobs(final String query) {
-    return get(uri("/jobs", ImmutableMap.of("q", query)), new TypeReference<Map<JobId, Job>>() {
-    });
+  /**
+   * Lists all jobs that exist in the Helios cluster.
+   */
+  public ListenableFuture<Map<JobId, Job>> jobs() {
+    return jobs(null, null);
   }
 
-  public ListenableFuture<Map<JobId, Job>> jobs() {
-    return get(uri("/jobs"), new TypeReference<Map<JobId, Job>>() {});
+  /**
+   * Lists all jobs in the cluster whose name starts with the given string.
+   *
+   * @param jobQuery job name filter
+   */
+  public ListenableFuture<Map<JobId, Job>> jobs(@Nullable final String jobQuery) {
+    return jobs(jobQuery, null);
+  }
+
+  /**
+   * Lists all jobs in the cluster whose name starts with the given string, and that are deployed to
+   * hosts that match the given name pattern.
+   *
+   * @param jobQuery        job name filter
+   * @param hostNamePattern hostname filter
+   */
+  public ListenableFuture<Map<JobId, Job>> jobs(@Nullable final String jobQuery,
+                                                @Nullable final String hostNamePattern) {
+    final Map<String, String> params = new HashMap<>();
+    if (!Strings.isNullOrEmpty(jobQuery)) {
+      params.put("q", jobQuery);
+    }
+    if (!Strings.isNullOrEmpty(hostNamePattern)) {
+      params.put("hostPattern", hostNamePattern);
+    }
+    return get(uri("/jobs", params), jobIdMap);
   }
 
   public ListenableFuture<TaskStatusEvents> jobHistory(final JobId jobId) {

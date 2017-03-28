@@ -35,7 +35,6 @@ import com.spotify.helios.cli.JobStatusTable;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -44,6 +43,7 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -85,20 +85,14 @@ public class JobStatusCommand extends ControlCommand {
     final String hostPattern = options.getString(hostArg.getDest());
     final boolean full = options.getBoolean(fullArg.getDest());
 
-    final Map<JobId, Job> jobs;
-    if (Strings.isNullOrEmpty(jobIdString)) {
-      jobs = client.jobs().get();
-    } else {
-      jobs = client.jobs(jobIdString).get();
+    if (Strings.isNullOrEmpty(jobIdString) && Strings.isNullOrEmpty(hostPattern)) {
+      if (!json) {
+        out.printf("WARNING: listing status of all hosts in the cluster is a slow operation. "
+                   + "Consider adding the --job and/or --host flag(s)!");
+      }
     }
 
-    if (jobs == null) {
-      out.printf("The specified Helios master either returned an error or job id matcher "
-                 + "\"%s\" matched no jobs%n", jobIdString);
-      return 1;
-    }
-
-    final Set<JobId> jobIds = jobs.keySet();
+    final Set<JobId> jobIds = client.jobs(jobIdString, hostPattern).get().keySet();
 
     if (!Strings.isNullOrEmpty(jobIdString) && jobIds.isEmpty()) {
       if (json) {
@@ -109,8 +103,7 @@ public class JobStatusCommand extends ControlCommand {
       return 1;
     }
 
-    final Map<JobId, JobStatus> statuses = Maps.newTreeMap();
-    statuses.putAll(client.jobStatuses(jobIds).get());
+    final Map<JobId, JobStatus> statuses = new TreeMap<>(client.jobStatuses(jobIds).get());
 
     if (json) {
       showJsonStatuses(out, hostPattern, jobIds, statuses);
@@ -209,8 +202,7 @@ public class JobStatusCommand extends ControlCommand {
         continue;
       }
 
-      final Map<String, TaskStatus> taskStatuses = Maps.newTreeMap();
-      taskStatuses.putAll(jobStatus.getTaskStatuses());
+      final Map<String, TaskStatus> taskStatuses = new TreeMap<>(jobStatus.getTaskStatuses());
 
       // Add keys for jobs that were deployed to a host,
       // but for which we didn't get a reported task status.
@@ -221,16 +213,19 @@ public class JobStatusCommand extends ControlCommand {
         }
       }
 
-      final FluentIterable<String> matchingHosts = FluentIterable
+      // even though job-filtering based on host patterns is done server-side since c99364ae,
+      // we still need to filter TaskStatuses by hosts here as the job's TaskStatus applies includes
+      // all hosts the job is deployed to
+      final FluentIterable<String> hosts = FluentIterable
           .from(taskStatuses.keySet())
           .filter(containsPattern(hostPattern));
 
       if (Strings.isNullOrEmpty(hostPattern)
-          || !Strings.isNullOrEmpty(hostPattern) && !matchingHosts.isEmpty()) {
+          || !Strings.isNullOrEmpty(hostPattern) && !hosts.isEmpty()) {
         noHostMatchedEver = false;
       }
 
-      statusDisplayer.matchedStatus(jobStatus, matchingHosts, taskStatuses);
+      statusDisplayer.matchedStatus(jobStatus, hosts, taskStatuses);
 
     }
     return noHostMatchedEver;
