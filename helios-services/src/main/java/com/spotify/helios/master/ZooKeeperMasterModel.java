@@ -100,6 +100,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.BadVersionException;
@@ -198,6 +200,15 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("listing hosts failed", e);
     }
+  }
+
+  @Override
+  public List<String> listHosts(final String namePatternFilter) {
+    Preconditions.checkNotNull(namePatternFilter, "namePatternFilter");
+    final Predicate<String> matchesPattern = Pattern.compile(namePatternFilter).asPredicate();
+    return listHosts().stream()
+        .filter(matchesPattern)
+        .collect(Collectors.toList());
   }
 
   /**

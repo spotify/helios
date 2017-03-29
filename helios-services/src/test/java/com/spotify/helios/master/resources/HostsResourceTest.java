@@ -29,6 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.spotify.helios.master.MasterModel;
 import java.util.Collections;
 import java.util.HashMap;
@@ -81,8 +82,13 @@ public class HostsResourceTest {
 
   @Test
   public void listHostsNameFilter() {
+    when(model.listHosts("foo.example")).thenReturn(hosts);
     assertThat(resource.list("foo.example", NO_SELECTOR_ARG), equalTo(hosts));
+
+    when(model.listHosts("host1")).thenReturn(ImmutableList.of("host1.foo.example.com"));
     assertThat(resource.list("host1", NO_SELECTOR_ARG), contains("host1.foo.example.com"));
+
+    when(model.listHosts("host5")).thenReturn(ImmutableList.of());
     assertThat(resource.list("host5", NO_SELECTOR_ARG), empty());
   }
 
@@ -119,8 +125,10 @@ public class HostsResourceTest {
   // Test behavior when both a name pattern and selector list is specified.
   @Test
   public void listHostsNameAndSelectorFilter() {
+    when(model.listHosts("foo.example.com")).thenReturn(hosts);
     assertThat(resource.list("foo.example.com", ImmutableList.of("site=foo")), equalTo(hosts));
 
+    when(model.listHosts("host3")).thenReturn(ImmutableList.of("host3.foo.example.com"));
     assertThat(resource.list("host3", ImmutableList.of("index =2")), empty());
 
     assertThat(resource.list("host3", ImmutableList.of("index!=2")),

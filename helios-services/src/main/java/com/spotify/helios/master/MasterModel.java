@@ -45,6 +45,8 @@ public interface MasterModel {
 
   List<String> listHosts();
 
+  List<String> listHosts(String namePatternFilter);
+
   HostStatus getHostStatus(String host);
 
   /**

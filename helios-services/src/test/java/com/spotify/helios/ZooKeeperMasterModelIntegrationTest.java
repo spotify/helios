@@ -24,6 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -140,6 +141,27 @@ public class ZooKeeperMasterModelIntegrationTest {
 
     model.deregisterHost(HOST);
     assertThat(model.listHosts(), contains(secondHost));
+  }
+
+  @Test
+  public void testHostListingWithNamePatternFilter() throws Exception {
+    // sanity check that no hosts exist
+    assertThat(model.listHosts(), empty());
+
+    final String hostname = "host1";
+    model.registerHost(hostname, "foo");
+    for (int i = 1; i <= hostname.length(); i++) {
+      assertThat(model.listHosts(hostname.substring(0, i)), contains(hostname));
+    }
+    // negative match
+    assertThat(model.listHosts("host2"), is(empty()));
+
+    final String secondHost = "host2";
+    model.registerHost(secondHost, "bar");
+    assertThat(model.listHosts("host"), contains(hostname, secondHost));
+
+    model.deregisterHost(hostname);
+    assertThat(model.listHosts(secondHost), contains(secondHost));
   }
 
   @Test
