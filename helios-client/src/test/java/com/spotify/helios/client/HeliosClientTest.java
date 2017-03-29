@@ -22,6 +22,7 @@ package com.spotify.helios.client;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.argThat;
@@ -33,9 +34,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
 import java.net.URI;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
@@ -66,7 +71,7 @@ public class HeliosClientTest {
   private static Response response(final String method, int statusCode, Object payload) {
     // second param is request URI, which is not relevant here
     return new Response(method, null, statusCode, Json.asBytesUnchecked(payload),
-                        Collections.<String, List<String>>emptyMap());
+        Collections.<String, List<String>>emptyMap());
   }
 
   @SuppressWarnings("unchecked")
@@ -79,7 +84,7 @@ public class HeliosClientTest {
         .thenReturn(Futures.immediateFuture(response));
   }
 
-  /** A Mathcer that tests that the URI has a path equal to the given path. */
+  /** A Matcher that tests that the URI has a path equal to the given path. */
   private static Matcher<URI> hasPath(final String path) {
     return new FeatureMatcher<URI, String>(Matchers.equalTo(path), "path", "path") {
       @Override
@@ -94,7 +99,7 @@ public class HeliosClientTest {
    */
   private static Matcher<URI> containsQuery(final String rawQuerySubstring) {
     return new FeatureMatcher<URI, String>(Matchers.containsString(rawQuerySubstring), "query",
-                                           "query") {
+        "query") {
       @Override
       protected String featureValueOf(final URI actual) {
         return actual.getRawQuery();
@@ -107,8 +112,8 @@ public class HeliosClientTest {
     final List<String> hosts = ImmutableList.of("foo1", "foo2", "foo3");
 
     mockResponse("GET",
-                 allOf(hasPath("/hosts/"), containsQuery("namePattern=foo")),
-                 response("GET", 200, hosts));
+        allOf(hasPath("/hosts/"), containsQuery("namePattern=foo")),
+        response("GET", 200, hosts));
 
     assertThat(client.listHosts("foo").get(), equalTo(hosts));
   }
@@ -118,13 +123,69 @@ public class HeliosClientTest {
     final List<String> hosts = ImmutableList.of("foo1", "foo2", "foo3");
 
     mockResponse("GET",
-                 allOf(hasPath("/hosts/"),
-                       containsQuery("selector=foo%3Dbar"),
-                       containsQuery("selector=site%3Dabc")
-                 ),
-                 response("GET", 200, hosts));
+        allOf(hasPath("/hosts/"),
+            containsQuery("selector=foo%3Dbar"),
+            containsQuery("selector=site%3Dabc")
+        ),
+        response("GET", 200, hosts));
 
     final Set<String> selectors = ImmutableSet.of("foo=bar", "site=abc");
     assertThat(client.listHosts(selectors).get(), equalTo(hosts));
+  }
+
+  private static Map<JobId, Job> fakeJobs(JobId... jobIds) {
+    Map<JobId, Job> jobs = new HashMap<>();
+    for (JobId jobId : jobIds) {
+      final Job job = Job.newBuilder()
+          .setName(jobId.getName())
+          .setVersion(jobId.getVersion())
+          .setHash(jobId.getHash())
+          .build();
+      jobs.put(jobId, job);
+    }
+    return jobs;
+  }
+
+  @Test
+  public void listJobs() throws Exception {
+    final Map<JobId, Job> jobs = fakeJobs(JobId.parse("foobar:v1"));
+
+    mockResponse("GET",
+        hasPath("/jobs"),
+        response("GET", 200, jobs)
+    );
+
+    assertThat(client.jobs().get(), is(jobs));
+  }
+
+  @Test
+  public void listJobsWithJobFilter() throws Exception {
+    final Map<JobId, Job> jobs = fakeJobs(JobId.parse("foobar:v1"));
+
+    mockResponse("GET",
+        allOf(
+            hasPath("/jobs"),
+            containsQuery("q=foo")
+        ),
+        response("GET", 200, jobs)
+    );
+
+    assertThat(client.jobs("foo").get(), is(jobs));
+  }
+
+  @Test
+  public void listJobsWithJobAndHostFilter() throws Exception {
+    final Map<JobId, Job> jobs = fakeJobs(JobId.parse("foobar:v1"));
+
+    mockResponse("GET",
+        allOf(
+            hasPath("/jobs"),
+            containsQuery("q=foo"),
+            containsQuery("hostPattern=bar")
+        ),
+        response("GET", 200, jobs)
+    );
+
+    assertThat(client.jobs("foo", "bar").get(), is(jobs));
   }
 }
