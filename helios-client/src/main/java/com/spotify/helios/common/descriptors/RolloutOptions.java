@@ -34,27 +34,11 @@ import org.jetbrains.annotations.Nullable;
  * <p>An sample expression of it in JSON might be:
  * <pre>
  * {
- *   "name": "foo-group",
- *   "job": "foo:0.1.0",
- *   "hostSelectors": [
- *     {
- *       "label": "foo",
- *       "operator": "EQUALS"
- *       "operand": "bar",
- *     },
- *     {
- *       "label": "baz",
- *       "operator": "EQUALS"
- *       "operand": "qux",
- *     }
- *   ],
- *   "rolloutOptions": {
- *     "migrate": false,
- *     "parallelism": 2,
- *     "timeout": 1000,
- *     "overlap": true,
- *     "token": "insecure-access-token"
- *   }
+ *   "migrate": false,
+ *   "parallelism": 2,
+ *   "timeout": 1000,
+ *   "overlap": true,
+ *   "token": "insecure-access-token"
  * }
  * </pre>
  */
