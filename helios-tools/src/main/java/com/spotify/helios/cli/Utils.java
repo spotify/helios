@@ -43,8 +43,21 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class Utils {
+public final class Utils {
+
+  private static final Logger log = LoggerFactory.getLogger(Utils.class);
+
+  static final String HTTP_TIMEOUT_ENV_VAR = "HELIOS_CLI_HTTP_TIMEOUT";
+  static final int DEFAULT_HTTP_TIMEOUT_SECS = 30;
+
+  static final String TOTAL_TIMEOUT_ENV_VAR = "HELIOS_CLI_TOTAL_TIMEOUT";
+  static final int DEFAULT_TOTAL_TIMEOUT_SECS = DEFAULT_HTTP_TIMEOUT_SECS * 4;
+
+  private Utils() {
+  }
 
   public static HeliosClient getClient(final Target target, final PrintStream err,
                                        final String username, final Namespace options) {
@@ -60,14 +73,40 @@ public class Utils {
       return null;
     }
 
+    //argparse4j converts names like "--http-timeout" to dests of "http_timeout"
+    final int httpTimeout = parseTimeout(options, "http_timeout",
+        HTTP_TIMEOUT_ENV_VAR, DEFAULT_HTTP_TIMEOUT_SECS);
+
+    final int retryTimeout = parseTimeout(options, "retry_timeout",
+        TOTAL_TIMEOUT_ENV_VAR, DEFAULT_TOTAL_TIMEOUT_SECS);
+
+    log.debug("using HeliosClient httpTimeout={}, retryTimeout={}", httpTimeout, retryTimeout);
+
     return HeliosClient.newBuilder()
         .setEndpointSupplier(Endpoints.of(target.getEndpointSupplier()))
-        //argparse4j converts names like "--http-timeout" to dests of "http_timeout"
-        .setHttpTimeout(options.getInt("http_timeout"), TimeUnit.SECONDS)
-        .setRetryTimeout(options.getInt("retry_timeout"), TimeUnit.SECONDS)
+        .setHttpTimeout(httpTimeout, TimeUnit.SECONDS)
+        .setRetryTimeout(retryTimeout, TimeUnit.SECONDS)
         .setSslHostnameVerification(!options.getBoolean("insecure"))
         .setUser(username)
         .build();
+  }
+
+  /**
+   * Return the timeout value to use, first checking the argument provided to the CLI invocation,
+   * then an environment variable, then the default value.
+   */
+  private static int parseTimeout(
+      final Namespace options, final String dest,
+      final String envVarName, final int defaultValue) {
+
+    if (options.getInt(dest) != null) {
+      return options.getInt(dest);
+    }
+    if (System.getenv(envVarName) != null) {
+      // if this is not an integer then let it blow up
+      return Integer.parseInt(System.getenv(envVarName));
+    }
+    return defaultValue;
   }
 
   public static boolean userConfirmed(final PrintStream out, final BufferedReader stdin)
