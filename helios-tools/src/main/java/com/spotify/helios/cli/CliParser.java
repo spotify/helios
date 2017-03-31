@@ -320,17 +320,25 @@ public class CliParser {
                 + "Useful when using -z flag to connect directly to a master using HTTPS which "
                 + "presents a certificate whose subject does not match the actual hostname.");
 
+      // for http-timeout and retry-timeout, do not set a default value in the argument, so that
+      // envrionment variables can be inspected in the Utils client factory.
       addArgument("--http-timeout")
           .type(Integer.class)
-          .setDefault(10)
-          .help("Timeout (in seconds) for each HTTP/S request to the master.");
+          .help("Timeout (in seconds) for each HTTP/S request to the master. "
+                + "If this flag is not set, the value in the environment variable "
+                + Utils.HTTP_TIMEOUT_ENV_VAR + " will be used. "
+                + "If this environment variable is not set, then the default is "
+                + Utils.DEFAULT_HTTP_TIMEOUT_SECS + " seconds.");
 
       addArgument("--retry-timeout")
           .type(Integer.class)
-          .setDefault(60)
           .help("Total timeout (in seconds) for all of the requests that helios makes to the "
                 + "master. If an individual request fails, helios will retry the request again "
-                + "until successful or until this timeout elapses.");
+                + "until successful or until this timeout elapses. "
+                + "If this flag is not set, the value in the environment variable "
+                + Utils.TOTAL_TIMEOUT_ENV_VAR + " will be used. "
+                + "If this environment variable is not set, then the default is "
+                + Utils.DEFAULT_TOTAL_TIMEOUT_SECS + " seconds.");
     }
 
     private Argument addArgument(final String... nameOrFlags) {
