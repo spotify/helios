@@ -106,6 +106,7 @@ public class JobsResource {
           .map(model::getHostStatus)
           // then flat map over the jobs deployed to this host
           .flatMap(hostStatus -> hostStatus.getJobs().keySet().stream())
+          .distinct()
           .collect(Collectors.toMap(Function.identity(), model::getJob));
     } else {
       allJobs = model.getJobs();
