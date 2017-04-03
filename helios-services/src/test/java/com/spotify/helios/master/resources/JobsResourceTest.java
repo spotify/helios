@@ -98,9 +98,41 @@ public class JobsResourceTest {
     // and it has two jobs deployed to it
     final HostStatus hostStatus = mockHostStatus(ImmutableMap.of(
         jobId1, Deployment.of(jobId1, Goal.START),
-        jobId2, Deployment.of(jobId1, Goal.START)
+        jobId2, Deployment.of(jobId2, Goal.START)
     ));
     when(model.getHostStatus("foobar.example.net")).thenReturn(hostStatus);
+
+    when(model.getJob(jobId1)).thenReturn(job1);
+    when(model.getJob(jobId2)).thenReturn(job2);
+
+    assertThat(resource.list("", namePattern), is(
+        ImmutableMap.of(
+            jobId1, job1,
+            jobId2, job2
+        )
+    ));
+  }
+
+  @Test
+  public void testListJobsWithMultipleDeployments() throws Exception {
+    // two hosts match this name patterns
+    final String namePattern = "foo";
+    when(model.listHosts(namePattern))
+        .thenReturn(ImmutableList.of("foobar.example.net", "barfoo.example.net"));
+
+    final JobId jobId1 = JobId.parse("foobar:1");
+    final JobId jobId2 = JobId.parse("foobat:2");
+
+    final Job job1 = Job.newBuilder().build();
+    final Job job2 = Job.newBuilder().build();
+
+    // and they have two jobs deployed
+    final HostStatus hostStatus = mockHostStatus(ImmutableMap.of(
+        jobId1, Deployment.of(jobId1, Goal.START),
+        jobId2, Deployment.of(jobId2, Goal.START)
+    ));
+    when(model.getHostStatus("foobar.example.net")).thenReturn(hostStatus);
+    when(model.getHostStatus("barfoo.example.net")).thenReturn(hostStatus);
 
     when(model.getJob(jobId1)).thenReturn(job1);
     when(model.getJob(jobId2)).thenReturn(job2);
