@@ -10,35 +10,28 @@ case "$1" in
         exit 1
     fi
 
-    # have docker bind to localhost
-    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://0.0.0.0:2375"'
-    sudo sh -c "echo '$docker_opts' >> /etc/default/docker"
-
-    cat /etc/default/docker
-
-    # Edit pom files to have correct version syntax
+    # edit pom files to have correct version syntax
     for i in $(find . -name pom.xml -not -path './.rvm*'); do sed -i 's/${revision}/0/g' $i; done
 
-    ;;
+    # install docker CLI
+    DOCKER_VERSION=17.03.1-ce
+    curl -L -o /tmp/docker-${DOCKER_VERSION}.tgz \
+      https://get.docker.com/builds/Linux/x86_64/docker-${DOCKER_VERSION}.tgz
+    tar -xz -C /tmp -f /tmp/docker-${DOCKER_VERSION}.tgz
+    mv /tmp/docker/* /usr/bin
 
-  post_machine)
-    # fix permissions on docker.log so it can be collected as an artifact
-    sudo chown ubuntu:ubuntu /var/log/upstart/docker.log
-
-    ;;
-
-  dependencies)
-    mvn clean install -T 2 -Dmaven.javadoc.skip=true -DskipTests=true -B -V
+    # install other build dependencies
+    apt-get update && apt-get install -y python-pip lsof
     pip install codecov
 
     ;;
 
-  test)
-    # fix DOCKER_HOST to be accessible from within containers
-    docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
-      awk -F: '{print $2}' | awk '{print $1}')
-    export DOCKER_HOST="tcp://$docker0_ip:2375"
+  build)
+    mvn clean install -T 2 -Dmaven.javadoc.skip=true -DskipTests=true -B -V
 
+    ;;
+
+  test)
     case $CIRCLE_NODE_INDEX in
       0)
         # run all tests *except* helios-system-tests
@@ -76,7 +69,7 @@ case "$1" in
         ;;
 
       5)
-        sudo apt-get install -y jq
+        apt-get install -y jq
 
         # build images for integration tests
         mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
