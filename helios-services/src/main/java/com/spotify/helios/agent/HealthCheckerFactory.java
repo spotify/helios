@@ -204,7 +204,7 @@ public final class HealthCheckerFactory {
         url = new URL("http", host, port, healthCheck.getPath());
       } catch (MalformedURLException e) {
         log.warn("MalformedURLException in http healthchecking containerId={}", containerId, e);
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
 
       log.info("about to http healthcheck containerId={} with url={} for task={}",

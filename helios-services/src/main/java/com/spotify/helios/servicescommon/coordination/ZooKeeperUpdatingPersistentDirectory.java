@@ -140,7 +140,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
       try {
         entries.set(ImmutableMap.copyOf(mutable));
       } catch (IOException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
     reactor.signal();
@@ -164,7 +164,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
       try {
         entries.set(ImmutableMap.copyOf(mutable));
       } catch (IOException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
     reactor.signal();

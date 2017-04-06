@@ -96,7 +96,7 @@ public class Utils {
       final String json = new String(Files.readAllBytes(Paths.get(path)));
       node = Json.readTree(json);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
     final JsonNode imageNode = node.get("image");
     return (imageNode == null || imageNode.getNodeType() != STRING) ? null : imageNode.asText();
@@ -122,7 +122,7 @@ public class Utils {
         final HostStatus hostStatus = client.hostStatus(hostName).get(10, TimeUnit.SECONDS);
         return hostStatus != null && hostStatus.getStatus() == HostStatus.Status.UP;
       } catch (InterruptedException | ExecutionException | TimeoutException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
   }

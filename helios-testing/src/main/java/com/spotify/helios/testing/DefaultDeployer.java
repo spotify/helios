@@ -140,7 +140,7 @@ public class DefaultDeployer implements Deployer {
           fail("all hosts matching filter pattern are DOWN");
         }
       } catch (InterruptedException | ExecutionException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
   }

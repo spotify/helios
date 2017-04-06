@@ -87,7 +87,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
       digestField.set(null, superDigest);
     } catch (NoSuchAlgorithmException | IllegalAccessException | NoSuchFieldException e) {
       // i mean, for real?
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -95,7 +95,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
     try {
       tempDir = Files.createTempDirectory("helios-zk");
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     start();
@@ -116,7 +116,8 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
       stop();
       deleteDirectory(tempDir.toFile());
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -174,7 +175,8 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
     try {
       start0();
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
 
     curator = createCurator(connectString(zkAddresses));
@@ -182,7 +184,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
     try {
       awaitUp(2, TimeUnit.MINUTES);
     } catch (TimeoutException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -191,7 +193,8 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
     try {
       cluster.stop();
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -209,7 +212,8 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
       cluster.start();
     } catch (Exception e) {
       stop();
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -241,7 +245,8 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
     try {
       zkServers.get(id).restart();
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -249,7 +254,8 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
     try {
       zkServers.get(id).stop();
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -264,7 +270,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
       FileUtils.deleteDirectory(peerDir.toFile());
       Files.createDirectory(peerDir);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -294,7 +300,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
       try {
         Files.createDirectory(peerDir);
       } catch (IOException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
 
       final InstanceSpec spec = new InstanceSpec(

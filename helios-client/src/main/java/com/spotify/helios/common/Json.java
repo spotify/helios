@@ -91,7 +91,7 @@ public class Json {
     try {
       return OBJECT_MAPPER.writeValueAsBytes(value);
     } catch (JsonProcessingException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -119,7 +119,7 @@ public class Json {
     try {
       return asString(value);
     } catch (JsonProcessingException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -147,7 +147,7 @@ public class Json {
     try {
       return asPrettyString(value);
     } catch (JsonProcessingException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -176,7 +176,7 @@ public class Json {
     try {
       return asNormalizedString(value);
     } catch (JsonProcessingException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -212,7 +212,7 @@ public class Json {
     try {
       return OBJECT_MAPPER.readValue(content, clazz);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -220,7 +220,7 @@ public class Json {
     try {
       return OBJECT_MAPPER.readValue(content, typeReference);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -228,7 +228,7 @@ public class Json {
     try {
       return OBJECT_MAPPER.readValue(content, javaType);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -236,7 +236,7 @@ public class Json {
     try {
       return OBJECT_MAPPER.readValue(bytes, clazz);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -244,7 +244,7 @@ public class Json {
     try {
       return OBJECT_MAPPER.readValue(bytes, typeReference);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -252,7 +252,7 @@ public class Json {
     try {
       return OBJECT_MAPPER.readValue(bytes, javaType);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -286,7 +286,7 @@ public class Json {
     try {
       return readTree(bytes);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -294,7 +294,7 @@ public class Json {
     try {
       return readTree(content);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -302,7 +302,7 @@ public class Json {
     try {
       return readTree(file);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

@@ -305,7 +305,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     final List<TaskStatusEvent> jsEvents = Lists.newArrayList();
@@ -317,7 +317,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       } catch (NoNodeException e) {
         continue;
       } catch (KeeperException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
 
       for (final String event : events) {
@@ -328,7 +328,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), h));
         } catch (NoNodeException e) { // ignore, it went away before we read it
         } catch (KeeperException | IOException e) {
-          throw Throwables.propagate(e);
+          throw new RuntimeException(e);
         }
       }
     }
@@ -1409,7 +1409,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       return removeJob(jobId, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -1480,7 +1480,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       deployJob(host, job, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -1886,7 +1886,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       return undeployJob(host, jobId, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

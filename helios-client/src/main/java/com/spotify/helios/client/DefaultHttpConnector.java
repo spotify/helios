@@ -169,7 +169,7 @@ public class DefaultHttpConnector implements HttpConnector {
       methodField.setAccessible(true);
       methodField.set(delegate, method);
     } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

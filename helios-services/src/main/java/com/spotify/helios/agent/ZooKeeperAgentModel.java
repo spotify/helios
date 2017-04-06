@@ -144,7 +144,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
         final TaskStatus status = Json.read(entry.getValue(), TaskStatus.class);
         statuses.put(id, status);
       } catch (IOException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
     return statuses;
@@ -187,7 +187,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     try {
       return parse(data, TaskStatus.class);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

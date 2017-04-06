@@ -142,7 +142,7 @@ public class AgentService extends AbstractIdleService implements Managed {
         Files.createDirectories(stateDirectory);
       } catch (IOException e) {
         log.error("Failed to create state directory: {}", stateDirectory, e);
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
 
@@ -158,7 +158,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       throw new IllegalStateException("State lock file already locked: " + lockPath);
     } catch (IOException e) {
       log.error("Failed to take state lock: {}", lockPath, e);
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     final Path idPath = config.getStateDirectory().resolve("id");
@@ -172,7 +172,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       }
     } catch (IOException e) {
       log.error("Failed to set up id file: {}", idPath, e);
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     // Configure metrics
@@ -249,7 +249,7 @@ public class AgentService extends AbstractIdleService implements Managed {
           new ZooKeeperAgentModel(zkClientProvider, config.getName(), stateDirectory, historyWriter,
               eventSenders, taskStatusEventTopic);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     // Set up service registrar
@@ -313,7 +313,7 @@ public class AgentService extends AbstractIdleService implements Managed {
                                                     JOBID_EXECUTIONS_MAP,
                                                     Suppliers.ofInstance(EMPTY_EXECUTIONS));
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     final Reaper reaper = new Reaper(dockerClient, namespace);
@@ -363,7 +363,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       try {
         dockerCertificates = new DockerCertificates(dockerCertPath);
       } catch (DockerCertificateException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
 
       builder.dockerCertificates(dockerCertificates);

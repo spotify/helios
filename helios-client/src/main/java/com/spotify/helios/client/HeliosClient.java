@@ -158,7 +158,7 @@ public class HeliosClient implements Closeable {
     try {
       return builder.build();
     } catch (URISyntaxException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

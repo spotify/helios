@@ -124,7 +124,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       dockerInfo = this.dockerClient.info();
     } catch (DockerException | InterruptedException e1) {
       // There's not a lot we can do if Docker is unreachable.
-      throw Throwables.propagate(e1);
+      throw new RuntimeException(e1);
     }
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
         .or(containerDockerHost(dockerInfo));

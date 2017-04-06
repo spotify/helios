@@ -205,7 +205,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
       } catch (KeeperException e) {
         throw e;
       } catch (Exception e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
       newSnapshot.put(node, value);
     }
@@ -258,7 +258,8 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
     } catch (KeeperException e) {
       throw e;
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
 
     return newSnapshot;

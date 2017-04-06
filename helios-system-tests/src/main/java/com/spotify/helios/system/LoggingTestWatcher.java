@@ -115,7 +115,7 @@ final class LoggingTestWatcher extends TestWatcher {
     try {
       Files.createDirectories(directory);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     configureLogger("org.eclipse.jetty", Level.ERROR);

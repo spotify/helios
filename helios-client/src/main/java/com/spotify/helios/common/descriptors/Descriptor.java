@@ -37,7 +37,7 @@ public abstract class Descriptor {
     try {
       return Json.asBytes(this);
     } catch (JsonProcessingException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
