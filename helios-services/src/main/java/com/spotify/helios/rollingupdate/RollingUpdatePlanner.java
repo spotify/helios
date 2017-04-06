@@ -25,6 +25,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 import java.util.List;
 
@@ -44,37 +45,43 @@ public class RollingUpdatePlanner implements RolloutPlanner {
   public List<RolloutTask> plan(final List<String> hosts) {
     // generate the rollout tasks
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
-    final int parallelism = deploymentGroup.getRolloutOptions() != null
-                            ? deploymentGroup.getRolloutOptions().getParallelism() : 1;
-    final boolean overlap = deploymentGroup.getRolloutOptions() != null
-                            && deploymentGroup.getRolloutOptions().getOverlap();
+    final RolloutOptions options = deploymentGroup.getRolloutOptions();
+    final int parallelism = options != null ? options.getParallelism() : 1;
+    final boolean overlap = options != null && options.getOverlap();
+    final boolean ignoreFailures = options != null && options.getIgnoreFailures();
 
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
-      rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition) : rolloutTasks(partition));
+      rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition, ignoreFailures)
+                                  : rolloutTasks(partition, ignoreFailures));
     }
 
     return ImmutableList.copyOf(rolloutTasks);
   }
 
-  private List<RolloutTask> rolloutTasks(final List<String> hosts) {
+  private List<RolloutTask> rolloutTasks(final List<String> hosts, final boolean ignoreFailures) {
     final ImmutableList.Builder<RolloutTask> result = ImmutableList.builder();
     for (final String host : hosts) {
       result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
       result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
     }
-    for (final String host : hosts) {
-      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+    if (!ignoreFailures) {
+      for (final String host : hosts) {
+        result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+      }
     }
     return result.build();
   }
 
-  private List<RolloutTask> rolloutTasksWithOverlap(final List<String> hosts) {
+  private List<RolloutTask> rolloutTasksWithOverlap(final List<String> hosts,
+                                                    final boolean ignoreFailures) {
     final ImmutableList.Builder<RolloutTask> result = ImmutableList.builder();
     for (final String host : hosts) {
       result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
     }
-    for (final String host : hosts) {
-      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+    if (!ignoreFailures) {
+      for (final String host : hosts) {
+        result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+      }
     }
     for (final String host : hosts) {
       result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
