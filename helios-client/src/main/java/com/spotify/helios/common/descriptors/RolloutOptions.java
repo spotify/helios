@@ -38,7 +38,8 @@ import org.jetbrains.annotations.Nullable;
  *   "parallelism": 2,
  *   "timeout": 1000,
  *   "overlap": true,
- *   "token": "insecure-access-token"
+ *   "token": "insecure-access-token",
+ *   "ignoreFailures": false
  * }
  * </pre>
  */
@@ -53,17 +54,20 @@ public class RolloutOptions {
   private final boolean migrate;
   private final boolean overlap;
   private final String token;
+  private final boolean ignoreFailures;
 
   public RolloutOptions(@JsonProperty("timeout") final long timeout,
                         @JsonProperty("parallelism") final int parallelism,
                         @JsonProperty("migrate") final boolean migrate,
                         @JsonProperty("overlap") boolean overlap,
-                        @JsonProperty("token") @Nullable String token) {
+                        @JsonProperty("token") @Nullable String token,
+                        @JsonProperty("ignoreFailures") boolean ignoreFailures) {
     this.timeout = timeout;
     this.parallelism = parallelism;
     this.migrate = migrate;
     this.overlap = overlap;
     this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
+    this.ignoreFailures = ignoreFailures;
   }
 
   public static Builder newBuilder() {
@@ -75,7 +79,8 @@ public class RolloutOptions {
         .setTimeout(timeout)
         .setParallelism(parallelism)
         .setMigrate(migrate)
-        .setToken(token);
+        .setToken(token)
+        .setIgnoreFailures(ignoreFailures);
   }
 
   public long getTimeout() {
@@ -96,6 +101,10 @@ public class RolloutOptions {
 
   public String getToken() {
     return token;
+  }
+
+  public boolean getIgnoreFailures() {
+    return ignoreFailures;
   }
 
   @Override
@@ -124,6 +133,9 @@ public class RolloutOptions {
     if (token != null ? !token.equals(that.token) : that.token != null) {
       return false;
     }
+    if (ignoreFailures != that.ignoreFailures) {
+      return false;
+    }
 
     return true;
   }
@@ -135,6 +147,7 @@ public class RolloutOptions {
     result = 31 * result + (migrate ? 1 : 0);
     result = 31 * result + (overlap ? 1 : 0);
     result = 31 * result + (token != null ? token.hashCode() : 0);
+    result = 31 * result + (ignoreFailures ? 1 : 0);
     return result;
   }
 
@@ -146,6 +159,7 @@ public class RolloutOptions {
            + ", migrate=" + migrate
            + ", overlap=" + overlap
            + ", token=" + token
+           + ", ignoreFailures=" + ignoreFailures
            + '}';
   }
 
@@ -156,6 +170,7 @@ public class RolloutOptions {
     private boolean migrate;
     private boolean overlap;
     private String token;
+    private boolean ignoreFailures;
 
     public Builder() {
       this.timeout = DEFAULT_TIMEOUT;
@@ -163,6 +178,7 @@ public class RolloutOptions {
       this.migrate = false;
       this.overlap = false;
       this.token = EMPTY_TOKEN;
+      this.ignoreFailures = false;
     }
 
 
@@ -191,8 +207,13 @@ public class RolloutOptions {
       return this;
     }
 
+    public Builder setIgnoreFailures(final boolean ignoreFailures) {
+      this.ignoreFailures = ignoreFailures;
+      return this;
+    }
+
     public RolloutOptions build() {
-      return new RolloutOptions(timeout, parallelism, migrate, overlap, token);
+      return new RolloutOptions(timeout, parallelism, migrate, overlap, token, ignoreFailures);
     }
   }
 }

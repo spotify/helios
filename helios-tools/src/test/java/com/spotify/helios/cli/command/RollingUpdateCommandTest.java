@@ -66,6 +66,12 @@ public class RollingUpdateCommandTest {
   private static final long TIMEOUT = 300;
   private static final String TOKEN = "my_token";
 
+  private static final RolloutOptions OPTIONS = RolloutOptions.newBuilder()
+      .setTimeout(TIMEOUT)
+      .setParallelism(PARALLELISM)
+      .setToken(TOKEN)
+      .build();
+
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
   private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -141,8 +147,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
     final String expected = (
@@ -169,8 +174,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
     final String expected =
@@ -203,8 +207,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     final String expected =
@@ -236,8 +239,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     final String expected =
@@ -268,8 +270,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     final String expected =
@@ -301,8 +302,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -325,8 +325,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
@@ -356,8 +355,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -388,8 +386,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -419,8 +416,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -449,8 +445,13 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
 
     // Verify that rollingUpdate() was called with migrate=true
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, true, false, TOKEN));
+    final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
+        .setTimeout(TIMEOUT)
+        .setParallelism(PARALLELISM)
+        .setMigrate(true)
+        .setToken(TOKEN)
+        .build();
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, rolloutOptions);
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -478,8 +479,13 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
 
     // Verify that rollingUpdate() was called with migrate=true
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, true, TOKEN));
+    final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
+        .setTimeout(TIMEOUT)
+        .setParallelism(PARALLELISM)
+        .setOverlap(true)
+        .setToken(TOKEN)
+        .build();
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, rolloutOptions);
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
