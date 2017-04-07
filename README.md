@@ -49,7 +49,7 @@ Prerequisities
 --------------
 
 The binary release of Helios is built for Ubuntu 14.04.1 LTS, but Helios should
-be buildable on any platform with at least Java 7 and a recent Maven 3
+be buildable on any platform with at least Java 8 and a recent Maven 3
 available.
 
 Other components that are required for a helios installation are:
@@ -206,7 +206,7 @@ choose Helios?
   etc.  We don't require a specific network topology.  We don't
   require you run a specific operating system.  We don't require that
   you're using Mesos.  Our only requirement is that you have a
-  ZooKeeper cluster somewhere and a Java 7 JVM on the machines which
+  ZooKeeper cluster somewhere and a JVM on the machines which
   Helios runs on.  So if you're using Puppet, Chef, etc., to manage the
   rest of the OS install and configuration, you can still continue to
   do so with whatever Linux OS you're using.
