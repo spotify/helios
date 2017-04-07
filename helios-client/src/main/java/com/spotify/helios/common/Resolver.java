@@ -96,7 +96,7 @@ public abstract class Resolver {
     try {
       endpoint = new URI(protocol, null, host, port, null, null, null);
     } catch (URISyntaxException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
     return endpoint;
   }

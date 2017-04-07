@@ -391,7 +391,7 @@ public class TemporaryJobBuilder {
     try {
       return file.toURI().toURL();
     } catch (MalformedURLException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

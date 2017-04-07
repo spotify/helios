@@ -77,7 +77,8 @@ public class ZooKeeperModelReporter {
       checkException(e, tag, name);
       throw e;
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     } finally {
       metrics.updateTimer(name, clock.getTick() - startTime, TimeUnit.NANOSECONDS);
     }

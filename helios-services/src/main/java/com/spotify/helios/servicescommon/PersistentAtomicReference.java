@@ -115,7 +115,7 @@ public class PersistentAtomicReference<T> {
     try {
       set(newValue);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

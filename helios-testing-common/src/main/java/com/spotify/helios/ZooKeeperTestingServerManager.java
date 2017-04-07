@@ -80,7 +80,7 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
       digestField.set(null, superDigest);
     } catch (NoSuchAlgorithmException | IllegalAccessException | NoSuchFieldException e) {
       // i mean, for real?
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -161,7 +161,8 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
       server = new TestingServer(port, dataDir);
       awaitUp(2, MINUTES);
     } catch (Exception e) {
-      throw Throwables.propagate(e);
+      Throwables.throwIfUnchecked(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -170,7 +171,7 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
     try {
       server.stop();
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -178,7 +179,7 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
     try {
       FileUtils.copyDirectory(dataDir, destination.toFile());
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -187,7 +188,7 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
       FileUtils.deleteDirectory(dataDir);
       FileUtils.copyDirectory(source.toFile(), dataDir);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

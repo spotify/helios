@@ -80,7 +80,7 @@ public class TemporaryPorts extends ExternalResource {
     try {
       Files.createDirectories(lockDirectory);
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -176,7 +176,7 @@ public class TemporaryPorts extends ExternalResource {
       try {
         s.close();
       } catch (IOException e) {
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
 
@@ -215,7 +215,7 @@ public class TemporaryPorts extends ExternalResource {
       return null;
     } catch (IOException e) {
       log.error("Failed to take port lock: {}", path, e);
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

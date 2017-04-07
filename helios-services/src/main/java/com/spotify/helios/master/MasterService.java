@@ -183,7 +183,7 @@ public class MasterService extends AbstractIdleService {
         Files.createDirectories(stateDirectory);
       } catch (IOException e) {
         log.error("Failed to create state directory: {}", stateDirectory, e);
-        throw Throwables.propagate(e);
+        throw new RuntimeException(e);
       }
     }
 

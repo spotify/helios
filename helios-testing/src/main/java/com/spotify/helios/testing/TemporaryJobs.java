@@ -133,7 +133,7 @@ public class TemporaryJobs implements TestRule {
         this.jobPrefixFile = JobPrefixFile.create(builder.jobPrefix, prefixDirectory);
       }
     } catch (IOException e) {
-      throw Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     if (builder.reports == null) {
@@ -378,10 +378,10 @@ public class TemporaryJobs implements TestRule {
           for (int i = 0; i < failures.size(); i++) {
             log.error(format("MultipleFailureException %d:", i), failures.get(i));
           }
-          throw Throwables.propagate(e);
+          throw new RuntimeException(e);
         } catch (Throwable throwable) {
-          Throwables.propagateIfPossible(throwable, Exception.class);
-          throw Throwables.propagate(throwable);
+          Throwables.throwIfUnchecked(throwable);
+          throw new RuntimeException(throwable);
         }
         return null;
       }
@@ -398,7 +398,7 @@ public class TemporaryJobs implements TestRule {
       future.get();
     } catch (ExecutionException e) {
       final Throwable cause = (e.getCause() == null) ? e : e.getCause();
-      throw Throwables.propagate(cause);
+      throw new RuntimeException(cause);
     }
   }
 
@@ -615,7 +615,7 @@ public class TemporaryJobs implements TestRule {
           final URI uri = new URI(dockerHost);
           endpoints("http://" + uri.getHost() + ":5801");
         } catch (URISyntaxException e) {
-          throw Throwables.propagate(e);
+          throw new RuntimeException(e);
         }
       }
 

@@ -73,7 +73,7 @@ public abstract class MultiTargetControlCommand implements CliCommand {
       if (cause instanceof TimeoutException) {
         err.println("Request timed out to master");
       } else {
-        throw Throwables.propagate(cause);
+        throw new RuntimeException(cause);
       }
       return 1;
     } finally {

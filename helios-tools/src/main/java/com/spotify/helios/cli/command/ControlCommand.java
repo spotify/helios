@@ -133,7 +133,7 @@ public abstract class ControlCommand implements CliCommand {
       if (cause instanceof TimeoutException) {
         err.println("Request timed out to master in " + target);
       } else {
-        throw Throwables.propagate(cause);
+        throw new RuntimeException(cause);
       }
       return false;
     } finally {
