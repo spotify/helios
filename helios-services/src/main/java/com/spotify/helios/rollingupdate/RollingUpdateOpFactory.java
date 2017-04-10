@@ -42,8 +42,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RollingUpdateOpFactory {
+
+  private static final Logger log = LoggerFactory.getLogger(RollingUpdateOpFactory.class);
 
   private final DeploymentGroupTasks tasks;
   private final DeploymentGroup deploymentGroup;
@@ -153,11 +157,25 @@ public class RollingUpdateOpFactory {
                                ImmutableList.<Map<String, Object>>of());
   }
 
+  private boolean isIgnoreFailures() {
+    return deploymentGroup.getRolloutOptions() != null
+           && deploymentGroup.getRolloutOptions().getIgnoreFailures();
+  }
+
   public RollingUpdateOp error(final String msg, final String host,
                                final RollingUpdateError errorCode,
                                final Map<String, Object> metadata) {
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
     final String errMsg = isNullOrEmpty(host) ? msg : host + ": " + msg;
+
+    if (isIgnoreFailures()) {
+      log.info(
+          "would have set state=FAILED for deploymentGroup={} but ignoreFailures is set to true "
+          + "for this group/rollout. errorCode={} message={}",
+          deploymentGroup.getName(), errorCode, errMsg);
+
+      return nextTask(operations);
+    }
 
     final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
         .setState(FAILED)
