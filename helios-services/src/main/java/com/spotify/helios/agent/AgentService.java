@@ -51,6 +51,7 @@ import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
+import com.spotify.helios.master.metrics.TotalHealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.EventSenderFactory;
@@ -330,10 +331,17 @@ public class AgentService extends AbstractIdleService implements Managed {
       environment.healthChecks().register("zookeeper", zkHealthChecker);
       environment.healthChecks().register("dockerd", dockerDaemonHealthChecker);
 
-      // Report health checks as a gauge metric
+      // Report each individual healthcheck as a gauge metric
       environment.healthChecks().getNames().forEach(
           name -> environment.metrics().register(
             "helios." + name + ".ok", new HealthCheckGauge(environment.healthChecks(), name)));
+
+      // and add one gauge for the overall health, similar to what HealthCheckServlet does - if
+      // any healthcheck fails, then report overall health of false.
+      // this causes each healthcheck to be executed twice each time metrics are reported, but
+      // this feels ok since each check is cheap.
+      environment.metrics().register("helios.healthy",
+          new TotalHealthCheckGauge(environment.healthChecks()));
 
       environment.jersey().register(new AgentModelTaskResource(model));
       environment.jersey().register(new AgentModelTaskStatusResource(model));
