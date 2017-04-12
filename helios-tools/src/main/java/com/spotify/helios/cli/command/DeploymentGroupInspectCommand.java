@@ -20,11 +20,15 @@
 
 package com.spotify.helios.cli.command;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 import com.google.common.collect.Maps;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
+import com.spotify.helios.common.descriptors.RolloutOptions;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -76,6 +80,23 @@ public class DeploymentGroupInspectCommand extends ControlCommand {
         out.printf("  %s%n", hostSelector.toPrettyString());
       }
       out.printf("Job: %s%n", deploymentGroup.getJobId());
+
+      if (deploymentGroup.getRollingUpdateReason() != null) {
+        out.printf("Rolling update reason: %s%n", deploymentGroup.getRollingUpdateReason());
+      }
+
+      final RolloutOptions rolloutOptions = deploymentGroup.getRolloutOptions();
+      if (rolloutOptions != null) {
+        out.printf("Rollout options:%n");
+        out.printf("  Migrate: %s%n", rolloutOptions.getMigrate());
+        out.printf("  Overlap: %s%n", rolloutOptions.getOverlap());
+        out.printf("  Parallelism: %d%n", rolloutOptions.getParallelism());
+        out.printf("  Timeout: %d%n", rolloutOptions.getTimeout());
+        if (!isNullOrEmpty(rolloutOptions.getToken())) {
+          out.printf("  Token: %s%n", rolloutOptions.getToken());
+        }
+      }
+
     }
 
     return 0;
