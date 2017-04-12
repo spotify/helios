@@ -35,6 +35,8 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutOptions;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
@@ -57,7 +59,24 @@ public class DeploymentGroupInspectCommandTest {
       HostSelector.parse("foo=bar"),
       HostSelector.parse("baz=qux"));
   private static final DeploymentGroup DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
-      .setName(NAME).setHostSelectors(HOST_SELECTORS).setJobId(JOB).build();
+      .setName(NAME)
+      .setHostSelectors(HOST_SELECTORS)
+      .setJobId(JOB)
+      .build();
+  private static final DeploymentGroup DEPLOYMENT_GROUP_WITH_OPTIONS = DeploymentGroup.newBuilder()
+      .setName(NAME)
+      .setHostSelectors(HOST_SELECTORS)
+      .setJobId(JOB)
+      .setRollingUpdateReason(DeploymentGroup.RollingUpdateReason.MANUAL)
+      .setRolloutOptions(RolloutOptions.newBuilder()
+          .setMigrate(true)
+          .setOverlap(true)
+          .setParallelism(2)
+          .setTimeout(10)
+          .setToken("foo")
+          .build()
+      )
+      .build();
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -94,6 +113,29 @@ public class DeploymentGroupInspectCommandTest {
     assertThat(output, containsString("  foo = bar"));
     assertThat(output, containsString("  baz = qux"));
     assertThat(output, containsString("Job: " + JOB.toString()));
+  }
+
+  @Test
+  public void testDeploymentGroupInspectCommandWithOptions() throws Exception {
+    when(client.deploymentGroup(NAME)).thenReturn(
+        Futures.immediateFuture(DEPLOYMENT_GROUP_WITH_OPTIONS));
+    when(options.getString("name")).thenReturn(NAME);
+    final int ret = command.run(options, client, out, false, null);
+
+    assertEquals(0, ret);
+    final String output = baos.toString();
+    assertThat(output, containsString("Name: " + NAME));
+    assertThat(output, containsString("Host selectors:"));
+    assertThat(output, containsString("  foo = bar"));
+    assertThat(output, containsString("  baz = qux"));
+    assertThat(output, containsString("Job: " + JOB.toString()));
+    assertThat(output, containsString("Rolling update reason: MANUAL"));
+    assertThat(output, containsString("Rollout options:"));
+    assertThat(output, containsString("Migrate: true"));
+    assertThat(output, containsString("Overlap: true"));
+    assertThat(output, containsString("Parallelism: 2"));
+    assertThat(output, containsString("Timeout: 10"));
+    assertThat(output, containsString("Token: foo"));
   }
 
   @Test
