@@ -22,7 +22,11 @@ package com.spotify.helios.rollingupdate;
 
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.HOSTS_CHANGED;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -30,6 +34,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -44,9 +49,13 @@ import com.spotify.helios.servicescommon.coordination.SetData;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import org.apache.zookeeper.data.Stat;
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
 public class RollingUpdateOpFactoryTest {
@@ -234,7 +243,7 @@ public class RollingUpdateOpFactoryTest {
         deploymentGroupTasks, eventFactory);
     final RollingUpdateOp op = opFactory.nextTask();
 
-    // A nexTask op with no ZK operations should result advancing the task index
+    // A nextTask op with no ZK operations should result advancing the task index
     assertEquals(1, op.operations().size());
     assertEquals(new SetData("/status/deployment-group-tasks/my_group",
                              deploymentGroupTasks.toBuilder()
@@ -379,5 +388,44 @@ public class RollingUpdateOpFactoryTest {
 
     assertEquals(0, op.operations().size());
     assertEquals(0, op.events().size());
+  }
+
+  @Test
+  public void testErrorWhenIgnoreFailuresIsTrue() {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setName("ignore_failure_group")
+        .setRolloutOptions(RolloutOptions.newBuilder()
+            .setIgnoreFailures(true)
+            .build()
+        )
+        .setRollingUpdateReason(MANUAL)
+        .build();
+
+    // the current task is the AWAIT_RUNNING one
+    final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
+        .setTaskIndex(2)
+        .setRolloutTasks(ImmutableList.of(
+            RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
+            RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1"),
+            RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1")
+        ))
+        .setDeploymentGroup(deploymentGroup)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(tasks, eventFactory);
+
+    final RollingUpdateOp nextOp = opFactory.error("something went wrong", "host1",
+        RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING);
+
+    assertThat(nextOp.operations(), containsInAnyOrder(
+        new SetData("/status/deployment-groups/ignore_failure_group",
+            DeploymentGroupStatus.newBuilder()
+                .setState(DeploymentGroupStatus.State.DONE)
+                .setError(null)
+                .build()
+                .toJsonBytes()
+        ),
+        new Delete("/status/deployment-group-tasks/ignore_failure_group")
+    ));
   }
 }

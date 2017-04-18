@@ -34,6 +34,10 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+/**
+ * A ControlCommand that accepts as input a partial jobId argument. An error is returned if there
+ * are zero or more than one jobs in the cluster that match this partial jobId.
+ */
 abstract class WildcardJobCommand extends ControlCommand {
 
   private final Argument jobArg;

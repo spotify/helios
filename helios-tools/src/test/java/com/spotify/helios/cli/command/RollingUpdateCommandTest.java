@@ -66,6 +66,12 @@ public class RollingUpdateCommandTest {
   private static final long TIMEOUT = 300;
   private static final String TOKEN = "my_token";
 
+  private static final RolloutOptions OPTIONS = RolloutOptions.newBuilder()
+      .setTimeout(TIMEOUT)
+      .setParallelism(PARALLELISM)
+      .setToken(TOKEN)
+      .build();
+
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
   private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -141,20 +147,19 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
-    final String expected = (
+    final String expected =
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ")\n"
+        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
         + "\n"
         + "host1 -> RUNNING (1/3)\n"
         + "host2 -> RUNNING (2/3)\n"
         + "host3 -> RUNNING (3/3)\n"
         + "\n"
         + "Done.\n"
-        + "Duration: 4.00 s\n");
+        + "Duration: 4.00 s\n";
 
     assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
@@ -169,13 +174,12 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
     final String expected =
         "Rolling update (async) started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ")\n";
+        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n";
 
     assertEquals(expected, output);
   }
@@ -203,13 +207,12 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     final String expected =
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ")\n"
+        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
         + "\n"
         + "host1 -> RUNNING (1/3)\n"
         + "\n"
@@ -236,13 +239,12 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     final String expected =
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ")\n"
+        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
         + "\n"
         + "\n"
         + "Timed out! (rolling-update still in progress)\n"
@@ -268,13 +270,12 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     final String expected =
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ")\n"
+        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
         + "\n"
         + "host1 -> RUNNING (1/2)\n"
         + "\n"
@@ -301,8 +302,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -312,6 +312,7 @@ public class RollingUpdateCommandTest {
         .put("timeout", TIMEOUT)
         .put("overlap", false)
         .put("token", TOKEN)
+        .put("ignoreFailures", false)
         .build());
   }
 
@@ -325,16 +326,18 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
 
-    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
-        "status", "OK",
-        "parallelism", PARALLELISM,
-        "timeout", TIMEOUT,
-        "overlap", false,
-        "token", TOKEN));
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
+        .put("status", "OK")
+        .put("parallelism", PARALLELISM)
+        .put("timeout", TIMEOUT)
+        .put("overlap", false)
+        .put("token", TOKEN)
+        .put("ignoreFailures", false)
+        .build()
+    );
   }
 
   @Test
@@ -356,8 +359,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -368,6 +370,7 @@ public class RollingUpdateCommandTest {
         .put("timeout", TIMEOUT)
         .put("overlap", false)
         .put("token", TOKEN)
+        .put("ignoreFailures", false)
         .build());
   }
 
@@ -388,8 +391,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -399,6 +401,7 @@ public class RollingUpdateCommandTest {
         .put("timeout", TIMEOUT)
         .put("overlap", false)
         .put("token", TOKEN)
+        .put("ignoreFailures", false)
         .build());
   }
 
@@ -419,8 +422,7 @@ public class RollingUpdateCommandTest {
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
 
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, false, TOKEN));
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -431,11 +433,13 @@ public class RollingUpdateCommandTest {
         .put("timeout", TIMEOUT)
         .put("overlap", false)
         .put("token", TOKEN)
-        .build());
+        .put("ignoreFailures", false)
+        .build()
+    );
   }
 
   @Test
-  public void testRollingUpdateMigrate() throws Exception {
+  public void testRollingUpdateMigrateJson() throws Exception {
     when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
         .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
 
@@ -449,8 +453,13 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
 
     // Verify that rollingUpdate() was called with migrate=true
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, true, false, TOKEN));
+    final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
+        .setTimeout(TIMEOUT)
+        .setParallelism(PARALLELISM)
+        .setMigrate(true)
+        .setToken(TOKEN)
+        .build();
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, rolloutOptions);
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -460,6 +469,7 @@ public class RollingUpdateCommandTest {
         .put("timeout", TIMEOUT)
         .put("overlap", false)
         .put("token", TOKEN)
+        .put("ignoreFailures", false)
         .build());
   }
   
@@ -478,8 +488,13 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
 
     // Verify that rollingUpdate() was called with migrate=true
-    verify(client).rollingUpdate(
-        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false, true, TOKEN));
+    final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
+        .setTimeout(TIMEOUT)
+        .setParallelism(PARALLELISM)
+        .setOverlap(true)
+        .setToken(TOKEN)
+        .build();
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, rolloutOptions);
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -489,7 +504,9 @@ public class RollingUpdateCommandTest {
         .put("timeout", TIMEOUT)
         .put("overlap", true)
         .put("token", TOKEN)
-        .build());
+        .put("ignoreFailures", false)
+        .build()
+    );
   }
 
   private static class TimeUtil implements RollingUpdateCommand.SleepFunction, Supplier<Long> {

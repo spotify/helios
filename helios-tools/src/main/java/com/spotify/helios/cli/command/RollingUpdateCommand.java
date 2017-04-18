@@ -62,6 +62,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument migrateArg;
   private final Argument overlapArg;
   private final Argument tokenArg;
+  private final Argument ignoreFailuresArg;
 
   public RollingUpdateCommand(final Subparser parser) {
     this(parser, new SleepFunction() {
@@ -131,6 +132,18 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setDefault(EMPTY_TOKEN)
         .help("Insecure access token meant to prevent accidental changes to your job "
               + "(e.g. undeploys).");
+
+    ignoreFailuresArg = parser.addArgument("--ignore-failures")
+        .setDefault(false)
+        .action(storeTrue())
+        .help("When specified, the rolling-update will ignore *all* failures and will proceed "
+              + "to deploying the job to all hosts in the deployment group. The rolling-update "
+              + "will go through the normal rollout plan (respecting the --par and --overlap "
+              + "settings), and will wait for the job to reach RUNNING on each host as normal; "
+              + "however, any failure that would otherwise cause the rolling-update to abort and "
+              + "set the deployment group's status to FAILED is *ignored*. Be *VERY* careful "
+              + "about using this option, as it has the potential to completely take down your "
+              + "service by rolling out a broken job to all of the hosts in your group.");
   }
 
   @Override
@@ -146,6 +159,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final boolean migrate = options.getBoolean(migrateArg.getDest());
     final boolean overlap = options.getBoolean(overlapArg.getDest());
     final String token = options.getString(tokenArg.getDest());
+    final boolean ignoreFailures = options.getBoolean(ignoreFailuresArg.getDest());
 
     checkArgument(timeout > 0, "Timeout must be greater than 0");
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
@@ -159,6 +173,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setMigrate(migrate)
         .setOverlap(overlap)
         .setToken(token)
+        .setIgnoreFailures(ignoreFailures)
         .build();
     final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
 
@@ -173,10 +188,17 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     if (!json) {
       out.println(format("Rolling update%s started: %s -> %s "
-                         + "(parallelism=%d, timeout=%d, overlap=%b, token=%s)%s",
-                         async ? " (async)" : "",
-                         name, jobId.toShortString(), parallelism, timeout, overlap, token,
-                         async ? "" : "\n"));
+                         + "(parallelism=%d, timeout=%d, overlap=%b, token=%s, "
+                         + "ignoreFailures=%b)%s",
+          async ? " (async)" : "",
+          name,
+          jobId.toShortString(),
+          parallelism,
+          timeout,
+          overlap,
+          token,
+          ignoreFailures,
+          async ? "" : "\n"));
     }
 
     final Map<String, Object> jsonOutput = Maps.newHashMap();
@@ -184,6 +206,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     jsonOutput.put("timeout", timeout);
     jsonOutput.put("overlap", overlap);
     jsonOutput.put("token", token);
+    jsonOutput.put("ignoreFailures", ignoreFailures);
 
     if (async) {
       if (json) {
