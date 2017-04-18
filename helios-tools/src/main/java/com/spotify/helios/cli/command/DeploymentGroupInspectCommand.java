@@ -95,6 +95,7 @@ public class DeploymentGroupInspectCommand extends ControlCommand {
         if (!isNullOrEmpty(rolloutOptions.getToken())) {
           out.printf("  Token: %s%n", rolloutOptions.getToken());
         }
+        out.printf("  Ignore failures: %b%n", rolloutOptions.getIgnoreFailures());
       }
 
     }
