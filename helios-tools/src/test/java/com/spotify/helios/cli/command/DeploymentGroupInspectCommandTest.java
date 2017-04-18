@@ -136,6 +136,7 @@ public class DeploymentGroupInspectCommandTest {
     assertThat(output, containsString("Parallelism: 2"));
     assertThat(output, containsString("Timeout: 10"));
     assertThat(output, containsString("Token: foo"));
+    assertThat(output, containsString("Ignore failures: false"));
   }
 
   @Test
