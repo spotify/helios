@@ -185,10 +185,17 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     if (!json) {
       out.println(format("Rolling update%s started: %s -> %s "
-                         + "(parallelism=%d, timeout=%d, overlap=%b, token=%s)%s",
-                         async ? " (async)" : "",
-                         name, jobId.toShortString(), parallelism, timeout, overlap, token,
-                         async ? "" : "\n"));
+                         + "(parallelism=%d, timeout=%d, overlap=%b, token=%s, "
+                         + "ignoreFailures=%b)%s",
+          async ? " (async)" : "",
+          name,
+          jobId.toShortString(),
+          parallelism,
+          timeout,
+          overlap,
+          token,
+          ignoreFailures,
+          async ? "" : "\n"));
     }
 
     final Map<String, Object> jsonOutput = Maps.newHashMap();
@@ -196,6 +203,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     jsonOutput.put("timeout", timeout);
     jsonOutput.put("overlap", overlap);
     jsonOutput.put("token", token);
+    jsonOutput.put("ignoreFailures", ignoreFailures);
 
     if (async) {
       if (json) {
