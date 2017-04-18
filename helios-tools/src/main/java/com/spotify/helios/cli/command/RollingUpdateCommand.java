@@ -136,11 +136,14 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     ignoreFailuresArg = parser.addArgument("--ignore-failures")
         .setDefault(false)
         .action(storeTrue())
-        .help("When specified, the rolling update will continue on to all hosts in the deployment "
-              + "group without waiting for the job to reach the RUNNING state on each host. "
-              + "Be *very* careful about using this option, as it has the potential to completely "
-              + "take down your service by rolling out a broken job to all of the hosts in your "
-              + "group.");
+        .help("When specified, the rolling-update will ignore *all* failures and will proceed "
+              + "to deploying the job to all hosts in the deployment group. The rolling-update "
+              + "will go through the normal rollout plan (respecting the --par and --overlap "
+              + "settings), and will wait for the job to reach RUNNING on each host as normal; "
+              + "however, any failure that would otherwise cause the rolling-update to abort and "
+              + "set the deployment group's status to FAILED is *ignored*. Be *VERY* careful "
+              + "about using this option, as it has the potential to completely take down your "
+              + "service by rolling out a broken job to all of the hosts in your group.");
   }
 
   @Override
