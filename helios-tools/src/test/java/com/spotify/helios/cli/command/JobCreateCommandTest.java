@@ -134,6 +134,7 @@ public class JobCreateCommandTest {
     doReturn(SECURITY_OPT).when(options).getList("security_opt");
     when(options.getString("network_mode")).thenReturn(NETWORK_MODE);
     when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("a=1", "b=2"));
+    when(options.getList("labels")).thenReturn(Lists.<Object>newArrayList("a=b", "c=d"));
     doReturn(ImmutableList.of("cap1", "cap2")).when(options).getList("add_capability");
     doReturn(ImmutableList.of("cap3", "cap4")).when(options).getList("drop_capability");
 
@@ -154,6 +155,7 @@ public class JobCreateCommandTest {
     assertThat(output, containsString("\"expires\":null"));
     assertThat(output, containsString("\"addCapabilities\":[\"cap1\",\"cap2\"]"));
     assertThat(output, containsString("\"dropCapabilities\":[\"cap3\",\"cap4\"]"));
+    assertThat(output, containsString("\"labels\":{\"a\":\"b\",\"c\":\"d\"}"));
   }
 
   @Test
@@ -261,6 +263,33 @@ public class JobCreateCommandTest {
       protected boolean matchesSafely(final Job actual) {
         return Objects.equals(added, actual.getAddCapabilities())
                && Objects.equals(dropped, actual.getDropCapabilities());
+      }
+    };
+  }
+
+  @Test
+  public void testLabelsFromJsonFile() throws Exception {
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("foobar");
+
+    when(options.get("file"))
+            .thenReturn(new File("src/test/resources/job_config_extra_labels.json"));
+
+    when(options.getList("labels")).thenReturn(Collections.emptyList());
+
+    assertEquals(0, runCommand());
+
+    verify(client).createJob(argThat(hasLabels(ImmutableMap.of("foo", "bar", "baz", "qux"))
+    ));
+  }
+
+  private Matcher<Job> hasLabels(final Map<String, String> labels) {
+    final String description = "Job with labels=" + labels;
+
+    return new CustomTypeSafeMatcher<Job>(description) {
+      @Override
+      protected boolean matchesSafely(final Job actual) {
+        return Objects.equals(labels, actual.getLabels());
       }
     };
   }

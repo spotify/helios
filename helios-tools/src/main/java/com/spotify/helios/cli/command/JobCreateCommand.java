@@ -123,6 +123,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument metadataArg;
   private final Argument addCapabilityArg;
   private final Argument dropCapabilityArg;
+  private final Argument labelsArg;
   private final Supplier<Map<String, String>> envVarSupplier;
 
   public JobCreateCommand(final Subparser parser) {
@@ -270,6 +271,12 @@ public class JobCreateCommand extends ControlCommand {
         .setDefault(new ArrayList<String>())
         .help("The Linux capabilities this Helios job drops from its Docker container. "
               + "Defaults to nothing.");
+
+    labelsArg = parser.addArgument("--labels")
+            .action(append())
+            .setDefault(new ArrayList<String>())
+            .help("Labels (key-value pairs) to apply onto the container. "
+                    + "Defaults to nothing.");
 
     this.envVarSupplier = envVarSupplier;
   }
@@ -539,6 +546,13 @@ public class JobCreateCommand extends ControlCommand {
     final List<String> dropCaps = options.getList(dropCapabilityArg.getDest());
     if (dropCaps != null && !dropCaps.isEmpty()) {
       builder.setDropCapabilities(dropCaps);
+    }
+
+    final List<String> labelsList = options.getList(labelsArg.getDest());
+    if (!labelsList.isEmpty()) {
+      final Map<String, String> labels = Maps.newHashMap();
+      labels.putAll(parseListOfPairs(labelsList, "labels"));
+      builder.setLabels(labels);
     }
 
     // We build without a hash here because we want the hash to be calculated server-side.

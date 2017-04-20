@@ -103,6 +103,7 @@ public class JobTest {
     final Map<String, String> setMetadata = ImmutableMap.of("set_metadata_key", "set_metadata_val");
     final Set<String> setAddCapabilities = ImmutableSet.of("set_cap_add1", "set_cap_add2");
     final Set<String> setDropCapabilities = ImmutableSet.of("set_cap_drop1", "set_cap_drop2");
+    final Map<String, String> setLabels = ImmutableMap.of("set_label_key", "set_label_val");
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -118,6 +119,7 @@ public class JobTest {
         ServiceEndpoint.of("add_service", "add_proto"), addServicePorts);
     final Map<String, String> addVolumes = ImmutableMap.of("/add", "/volume");
     final Map<String, String> addMetadata = ImmutableMap.of("add_metadata_key", "add_metadata_val");
+    final Map<String, String> addLabels = ImmutableMap.of("add_labels_key", "add_labels_val");
 
     // Expected output from getXXX
     final String expectedName = setName;
@@ -141,6 +143,7 @@ public class JobTest {
     final Map<String, String> expectedMetadata = concat(setMetadata, addMetadata);
     final Set<String> expectedAddCapabilities = setAddCapabilities;
     final Set<String> expectedDropCapabilities = setDropCapabilities;
+    final Map<String, String> expectedLabels = concat(setLabels, addLabels);
 
     // Check setXXX methods
     builder.setName(setName);
@@ -163,6 +166,7 @@ public class JobTest {
     builder.setMetadata(setMetadata);
     builder.setAddCapabilities(setAddCapabilities);
     builder.setDropCapabilities(setDropCapabilities);
+    builder.setLabels(setLabels);
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -179,6 +183,9 @@ public class JobTest {
     }
     for (final Map.Entry<String, String> entry : addMetadata.entrySet()) {
       builder.addMetadata(entry.getKey(), entry.getValue());
+    }
+    for (final Map.Entry<String, String> entry : addLabels.entrySet()) {
+      builder.addLabels(entry.getKey(), entry.getValue());
     }
 
     assertEquals("name", expectedName, builder.getName());
@@ -202,6 +209,7 @@ public class JobTest {
     assertEquals("addCapabilities", expectedAddCapabilities, builder.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
                  builder.getDropCapabilities());
+    assertEquals("labels", expectedLabels, builder.getLabels());
 
     // Check final output
     final Job job = builder.build();
@@ -225,6 +233,7 @@ public class JobTest {
     assertEquals("metadata", expectedMetadata, job.getMetadata());
     assertEquals("addCapabilities", expectedAddCapabilities, job.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities, job.getDropCapabilities());
+    assertEquals("labels", expectedLabels, job.getLabels());
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -250,6 +259,7 @@ public class JobTest {
     assertEquals("addCapabilities", expectedAddCapabilities, rebuilder.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
                  rebuilder.getDropCapabilities());
+    assertEquals("labels", expectedLabels, rebuilder.getLabels());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -275,6 +285,7 @@ public class JobTest {
     assertEquals("addCapabilities", expectedAddCapabilities, cloned.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
                  cloned.getDropCapabilities());
+    assertEquals("labels", expectedLabels, cloned.getLabels());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -299,6 +310,7 @@ public class JobTest {
     assertEquals("addCapabilities", expectedAddCapabilities, clonedJob.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
                  clonedJob.getDropCapabilities());
+    assertEquals("labels", expectedLabels, clonedJob.getLabels());
   }
 
   @SafeVarargs
