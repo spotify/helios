@@ -54,6 +54,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -157,9 +158,8 @@ public class HostListCommand extends ControlCommand {
       return 1;
     }
 
-    final List<String> sortedHosts = natural().sortedCopy(hosts);
-
     if (quiet) {
+      final List<String> sortedHosts = natural().sortedCopy(hosts);
       if (json) {
         out.println(Json.asPrettyStringUnchecked(sortedHosts));
       } else {
@@ -168,11 +168,11 @@ public class HostListCommand extends ControlCommand {
         }
       }
     } else {
-      final Map<String, HostStatus> statuses = client.hostStatuses(hosts, queryParams).get();
+      final Map<String, HostStatus> statuses =
+          new TreeMap<>(client.hostStatuses(hosts, queryParams).get());
+
       if (json) {
-        final Map<String, HostStatus> sorted = Maps.newTreeMap();
-        sorted.putAll(statuses);
-        out.println(Json.asPrettyStringUnchecked(sorted));
+        out.println(Json.asPrettyStringUnchecked(statuses));
       } else {
         final Table table = table(out);
         table.row("HOST", "STATUS", "DEPLOYED", "RUNNING", "CPUS", "MEM", "LOAD AVG", "MEM USAGE",
