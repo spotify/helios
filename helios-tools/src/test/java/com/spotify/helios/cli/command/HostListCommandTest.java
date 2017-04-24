@@ -69,8 +69,6 @@ public class HostListCommandTest {
   private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
   private final PrintStream out = new PrintStream(baos);
 
-  private static final List<String> HOSTS = ImmutableList.of("host1.", "host2.", "host3.");
-
   private static final String JOB_NAME = "job";
   private static final String JOB_VERSION1 = "1-aaa";
   private static final String JOB_VERSION2 = "3-ccc";
@@ -110,7 +108,11 @@ public class HostListCommandTest {
 
   @Before
   public void setUp() throws ParseException {
-    when(client.listHosts()).thenReturn(immediateFuture(HOSTS));
+    // purposefully in non-sorted order so that tests that verify that the output is sorted are
+    // actually testing HostListCommand behavior and not accidentally testing what value the
+    // mock returns
+    final List<String> hosts = ImmutableList.of("host3.", "host1.", "host2.");
+    when(client.listHosts()).thenReturn(immediateFuture(hosts));
 
     final HostInfo hostInfo = HostInfo.newBuilder()
         .setCpus(4)
@@ -150,12 +152,12 @@ public class HostListCommandTest {
         .build();
 
     final Map<String, HostStatus> statuses = ImmutableMap.of(
-        HOSTS.get(0), upStatus,
-        HOSTS.get(1), upStatus,
-        HOSTS.get(2), downStatus
+        "host3.", downStatus,
+        "host1.", upStatus,
+        "host2.", upStatus
     );
 
-    when(client.hostStatuses(eq(HOSTS), anyMapOf(String.class, String.class)))
+    when(client.hostStatuses(eq(hosts), anyMapOf(String.class, String.class)))
         .thenReturn(immediateFuture(statuses));
   }
 
