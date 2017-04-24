@@ -71,9 +71,12 @@ import org.jetbrains.annotations.Nullable;
  *   },
  *   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
  *   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
+ *   "labels" : {
+ *     "baz": "qux"
+ *   },
  *   "hostname": "myhost",
  *   "metadata": {
- *     "foo": "bar
+ *     "foo": "bar"
  *   },
  *   "networkMode" : "bridge",
  *   "ports" : {
@@ -132,6 +135,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String EMPTY_HOSTNAME = null;
   public static final Map<String, String> EMPTY_METADATA = emptyMap();
   public static final Set<String> EMPTY_CAPS = emptySet();
+  public static final Map<String, String> EMPTY_LABELS = emptyMap();
   public static final Integer EMPTY_SECONDS_TO_WAIT = null;
 
   private final JobId id;
@@ -155,6 +159,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<String, String> metadata;
   private final Set<String> addCapabilities;
   private final Set<String> dropCapabilities;
+  private final Map<String, String> labels;
   private final Integer secondsToWaitBeforeKill;
 
   /**
@@ -188,6 +193,7 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param metadata Arbitrary key-value pairs that can be stored with the Job. Optional.
    * @param addCapabilities Linux capabilities to add for the container. Optional.
    * @param dropCapabilities Linux capabilities to drop for the container. Optional.
+   * @param labels Labels to set on the container. Optional.
    * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
    * @param secondsToWaitBeforeKill The time to ask Docker to wait after sending a SIGTERM to the
    *                                container's main process before sending it a SIGKILL. Optional.
@@ -214,6 +220,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("metadata") @Nullable final Map<String, String> metadata,
       @JsonProperty("addCapabilities") @Nullable final Set<String> addCapabilities,
       @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities,
+      @JsonProperty("labels") @Nullable final Map<String, String> labels,
       @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill) {
     this.id = id;
     this.image = image;
@@ -239,6 +246,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.metadata = Optional.fromNullable(metadata).or(EMPTY_METADATA);
     this.addCapabilities = firstNonNull(addCapabilities, EMPTY_CAPS);
     this.dropCapabilities = firstNonNull(dropCapabilities, EMPTY_CAPS);
+    this.labels = Optional.fromNullable(labels).or(EMPTY_LABELS);
     this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
   }
 
@@ -267,6 +275,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.addCapabilities = ImmutableSet.copyOf(pm.addCapabilities);
     this.dropCapabilities = ImmutableSet.copyOf(pm.dropCapabilities);
     this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
+    this.labels = ImmutableMap.copyOf(pm.labels);
   }
 
   public JobId getId() {
@@ -353,6 +362,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     return dropCapabilities;
   }
 
+  public Map<String, String> getLabels() {
+    return labels;
+  }
+
   public Integer getSecondsToWaitBeforeKill() {
     return secondsToWaitBeforeKill;
   }
@@ -398,6 +411,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            && Objects.equals(this.metadata, that.metadata)
            && Objects.equals(this.addCapabilities, that.addCapabilities)
            && Objects.equals(this.dropCapabilities, that.dropCapabilities)
+           && Objects.equals(this.labels, that.labels)
            && Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill);
   }
 
@@ -407,7 +421,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         id, image, hostname, expires, created, command, env, resources,
         ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
         token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
-        dropCapabilities, secondsToWaitBeforeKill);
+        dropCapabilities, labels, secondsToWaitBeforeKill);
   }
 
   @Override
@@ -434,6 +448,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            + ", metadata=" + metadata
            + ", addCapabilities=" + addCapabilities
            + ", dropCapabilities=" + dropCapabilities
+           + ", labels=" + labels
            + ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill
            + '}';
   }
@@ -466,6 +481,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setMetadata(metadata)
         .setAddCapabilities(addCapabilities)
         .setDropCapabilities(dropCapabilities)
+        .setLabels(labels)
         .setSecondsToWaitBeforeKill(secondsToWaitBeforeKill);
   }
 
@@ -507,6 +523,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, String> metadata;
       public Set<String> addCapabilities;
       public Set<String> dropCapabilities;
+      public Map<String, String> labels;
       public Integer secondsToWaitBeforeKill;
 
       private Parameters() {
@@ -526,6 +543,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.metadata = Maps.newHashMap();
         this.addCapabilities = EMPTY_CAPS;
         this.dropCapabilities = EMPTY_CAPS;
+        this.labels = EMPTY_LABELS;
       }
 
       private Parameters(final Parameters pm) {
@@ -551,6 +569,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.metadata = pm.metadata;
         this.addCapabilities = pm.addCapabilities;
         this.dropCapabilities = pm.dropCapabilities;
+        this.labels = pm.labels;
         this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
       }
 
@@ -708,6 +727,16 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setLabels(final Map<String, String> labels) {
+      pm.labels = Maps.newHashMap(labels);
+      return this;
+    }
+
+    public Builder addLabels(final String name, final String value) {
+      pm.labels.put(name, value);
+      return this;
+    }
+
     public Builder setSecondsToWaitBeforeKill(final Integer secondsToWaitBeforeKill) {
       pm.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
       return this;
@@ -791,6 +820,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Set<String> getDropCapabilities() {
       return pm.dropCapabilities;
+    }
+
+    public Map<String, String> getLabels() {
+      return ImmutableMap.copyOf(pm.labels);
     }
 
     public Integer secondsToWaitBeforeKill() {

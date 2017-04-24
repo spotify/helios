@@ -25,10 +25,14 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -36,6 +40,8 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.serviceregistration.ServiceRegistration.EndpointHealthCheck;
+
+import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
@@ -46,6 +52,7 @@ public class TaskConfigTest {
   private static final int EXTERNAL_PORT = 20000;
   private static final Set<String> CAP_ADDS = ImmutableSet.of("cap1", "cap2");
   private static final Set<String> CAP_DROPS = ImmutableSet.of("cap3", "cap4");
+  private static final Map<String, String> LABELS = ImmutableMap.of("label", "value");
   private static final Job JOB = Job.newBuilder()
       .setName("foobar")
       .setCommand(asList("foo", "bar"))
@@ -55,6 +62,7 @@ public class TaskConfigTest {
       .addRegistration(ServiceEndpoint.of("service", "http"), ServicePorts.of(PORT_NAME))
       .setAddCapabilities(CAP_ADDS)
       .setDropCapabilities(CAP_DROPS)
+      .setLabels(LABELS)
       .build();
 
   @Test
@@ -120,5 +128,19 @@ public class TaskConfigTest {
     final HostConfig hostConfig = taskConfig.hostConfig(Optional.absent());
     assertThat(ImmutableSet.copyOf(hostConfig.capAdd()), equalTo(CAP_ADDS));
     assertThat(ImmutableSet.copyOf(hostConfig.capDrop()), equalTo(CAP_DROPS));
+  }
+
+  @Test
+  public void testContainerConfig() throws Exception {
+    final TaskConfig taskConfig = TaskConfig.builder()
+            .namespace("test")
+            .host(HOST)
+            .job(JOB)
+            .build();
+
+    final ImageInfo imageInfo = mock(ImageInfo.class);
+    final ContainerConfig containerConfig = taskConfig.containerConfig(
+            imageInfo, Optional.absent());
+    assertThat(ImmutableMap.copyOf(containerConfig.labels()), equalTo(LABELS));
   }
 }

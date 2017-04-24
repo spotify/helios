@@ -110,6 +110,7 @@ public class TaskConfig {
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
     builder.volumes(volumes());
+    builder.labels(job.getLabels());
 
     for (final ContainerDecorator decorator : containerDecorators) {
       decorator.decorateContainerConfig(job, imageInfo, dockerVersion, builder);
