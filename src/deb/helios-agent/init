@@ -19,6 +19,12 @@ DEFAULTFILE=/etc/default/helios-agent
 # If the daemon is not there, then exit.
 test -x $DAEMON || exit 5
 
+# upstart should be used to control the daemon if available
+if which initctl >/dev/null && initctl version | grep -q upstart; then
+ log_failure_msg "Upstart should be used to control $NAME (sudo initctl stop/start $NAME)!"
+ exit 5
+fi
+
 case $1 in
  start)
   # Checked the PID file exists and check the actual status of process
