@@ -46,7 +46,8 @@ public class DockerDaemonHealthCheckerTest {
 
   @Test
   public void testUnhealthy() throws Exception {
-    when(dockerClient.ping()).thenThrow(new DockerRequestException("GET", new URI("/ping")));
+    when(dockerClient.ping())
+        .thenThrow(new DockerRequestException("GET", new URI("/ping"), 500, null, null));
     final HealthCheck.Result result = sut.check();
     assertThat(result.isHealthy(), is(false));
   }

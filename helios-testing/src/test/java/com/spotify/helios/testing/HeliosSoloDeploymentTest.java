@@ -131,13 +131,13 @@ public class HeliosSoloDeploymentTest {
     when(this.dockerClient.info()).thenReturn(info);
 
     final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
-    final Map<String, List<PortBinding>> ports =
+    final ImmutableMap<String, List<PortBinding>> ports =
         ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
     final ContainerInfo containerInfo = mock(ContainerInfo.class);
-    when(containerInfo.networkSettings()).thenReturn(NetworkSettings.builder()
-        .gateway("a-gate-way")
-        .ports(ports)
-        .build());
+    final NetworkSettings networkSettings = mock(NetworkSettings.class);
+    when(networkSettings.gateway()).thenReturn("a-gate-way");
+    when(networkSettings.ports()).thenReturn(ports);
+    when(containerInfo.networkSettings()).thenReturn(networkSettings);
     when(this.dockerClient.inspectContainer(CONTAINER_ID)).thenReturn(containerInfo);
 
     when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(ContainerExit.create(0));
