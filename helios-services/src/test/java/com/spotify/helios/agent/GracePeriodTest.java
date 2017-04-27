@@ -141,9 +141,7 @@ public class GracePeriodTest {
     final ContainerState runningState = Mockito.mock(ContainerState.class);
     when(runningState.running()).thenReturn(true);
     when(runningResponse.state()).thenReturn(runningState);
-    when(runningResponse.networkSettings()).thenReturn(NetworkSettings.builder()
-        .ports(Collections.emptyMap())
-        .build());
+    when(runningResponse.networkSettings()).thenReturn(mock(NetworkSettings.class));
 
     final ContainerState stoppedState = Mockito.mock(ContainerState.class);
     when(stoppedState.running()).thenReturn(false);
