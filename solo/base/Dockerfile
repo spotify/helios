@@ -16,7 +16,7 @@ RUN curl -o $SKYDNS_PLUGIN_DEB -L $SKYDNS_PLUGIN_DEB_URI \
     && rm $SKYDNS_PLUGIN_DEB
 
 # Install Go (from the official golang Dockerfile)
-ENV GOLANG_VERSION 1.6
+ENV GOLANG_VERSION 1.8.1
 ENV PATH /go/bin:/usr/local/go/bin:$PATH
 ENV GOPATH /go
 
