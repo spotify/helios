@@ -20,17 +20,22 @@
 
 package com.spotify.helios.agent;
 
-import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.io.BaseEncoding.base16;
 import static com.spotify.helios.cli.Utils.argToStringMap;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.net.InetAddresses;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.helios.servicescommon.ServiceParser;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -72,6 +77,8 @@ public class AgentParser extends ServiceParser {
   private Argument zkAclAgentPassword;
   private Argument disableJobHistory;
   private Argument connectionPoolSize;
+  private Argument googleCloudCredentialsFile;
+  private Argument useGoogleDefaultApplicationCredentials;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -148,7 +155,7 @@ public class AgentParser extends ServiceParser {
         .setLabels(labels)
         .setFfwdConfig(ffwdConfig(options))
         .setJobHistoryDisabled(options.getBoolean(disableJobHistory.getDest()))
-        .setConnectionPoolSize(fromNullable(options.getInt(connectionPoolSize.getDest())).or(-1));
+        .setConnectionPoolSize(firstNonNull(options.getInt(connectionPoolSize.getDest()), -1));
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -173,6 +180,42 @@ public class AgentParser extends ServiceParser {
         options.getList(addHostArg.getDest()),
         AddExtraHostContainerDecorator::isValidArg,
         arg -> "Invalid ExtraHost " + arg));
+
+    // options for GCR
+    final File googleAccountCredentials =
+        options.get(this.googleCloudCredentialsFile.getDest());
+
+    final boolean useGoogleDefaultCredentials =
+        options.getBoolean(this.useGoogleDefaultApplicationCredentials.getDest());
+
+    if (useGoogleDefaultCredentials || googleAccountCredentials != null) {
+      try {
+        agentConfig.setGoogleCredentials(
+            loadGoogleCredentials(useGoogleDefaultCredentials, googleAccountCredentials));
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Cannot setup Google Container Registry credentials", e);
+      }
+    }
+  }
+
+  private GoogleCredentials loadGoogleCredentials(
+      final boolean useDefaultCredentials,
+      final File credentialsFile)
+      throws ArgumentParserException, IOException {
+
+    if (useDefaultCredentials && credentialsFile != null) {
+      final String msg = String.format("Cannot set both %s and %s",
+          this.googleCloudCredentialsFile.getDest(),
+          this.useGoogleDefaultApplicationCredentials.getDest());
+      throw new IllegalArgumentException(msg);
+    }
+
+    if (useDefaultCredentials) {
+      return GoogleCredentials.getApplicationDefault();
+    }
+    try (final FileInputStream stream = new FileInputStream(credentialsFile)) {
+      return GoogleCredentials.fromStream(stream);
+    }
   }
 
   /**
@@ -280,6 +323,19 @@ public class AgentParser extends ServiceParser {
     connectionPoolSize = parser.addArgument("--docker-connection-pool-size")
             .type(Integer.class)
             .help("Size of the Docker socket connection pool.");
+
+    googleCloudCredentialsFile = parser.addArgument("--docker-gcp-account-credentials")
+        .type(fileType().verifyExists().verifyCanRead())
+        .help("When set, helios-agent will configure the docker-client to use the Google Cloud "
+              + "user or service account whose credentials are contained in the specified file for "
+              + "pulling images from Google Container Registry.");
+
+    useGoogleDefaultApplicationCredentials =
+        parser.addArgument("--docker-use-gcp-application-default-credentials")
+            .action(storeTrue())
+            .help("When set, helios-agent will configure the docker-client to use the Google Cloud "
+                + "Application Default Credentials for pulling images from "
+                + "Google Container Registry.");
   }
 
   public AgentConfig getAgentConfig() {

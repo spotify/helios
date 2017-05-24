@@ -20,6 +20,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.helios.servicescommon.CommonConfiguration;
 import com.spotify.helios.servicescommon.FastForwardConfig;
@@ -67,6 +68,9 @@ public class AgentConfig extends CommonConfiguration<AgentConfig> {
   private List<String> extraHosts;
   private boolean jobHistoryDisabled;
   private int connectionPoolSize;
+
+  /** Credentials to use with Google Container Registry. */
+  private GoogleCredentials googleCredentials;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -367,6 +371,15 @@ public class AgentConfig extends CommonConfiguration<AgentConfig> {
 
   public AgentConfig setConnectionPoolSize(final int connectionPoolSize) {
     this.connectionPoolSize = connectionPoolSize;
+    return this;
+  }
+
+  public GoogleCredentials getGoogleCredentials() {
+    return googleCredentials;
+  }
+
+  public AgentConfig setGoogleCredentials(final GoogleCredentials googleCredentials) {
+    this.googleCredentials = googleCredentials;
     return this;
   }
 }
