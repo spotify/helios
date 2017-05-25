@@ -83,6 +83,12 @@ This means new agents that match the labels will automatically be told to deploy
 See more rolling-update options with `helios rolling-update -h`, e.g. parallel deployments and
 failure timeouts.
 
+#### Overlap
+
+If you add `--overlap`, the `rolling-update` will, for every host, first deploy the new version of
+a job before undeploying the old one. Note that the command will fail if the job contains static
+port assignments.
+
 ### Status
 
 Check on the status:
