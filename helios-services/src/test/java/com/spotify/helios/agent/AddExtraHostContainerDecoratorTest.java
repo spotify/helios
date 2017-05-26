@@ -35,7 +35,7 @@ public class AddExtraHostContainerDecoratorTest {
 
   @Test
   public void simpleTest() {
-    final List<String> hosts = ImmutableList.of("one", "two");
+    final List<String> hosts = ImmutableList.of("one:one", "two:two");
     final AddExtraHostContainerDecorator decorator = new AddExtraHostContainerDecorator(hosts);
 
     final HostConfig.Builder hostBuilder = HostConfig.builder();
