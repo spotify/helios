@@ -37,7 +37,6 @@ import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -46,6 +45,7 @@ import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerCertificateException;
+import com.spotify.docker.client.gcr.ContainerRegistryAuthSupplier;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.JobId;
@@ -357,7 +357,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     environment.lifecycle().manage(this);
   }
 
-  private DockerClient createDockerClient(final AgentConfig config) {
+  private DockerClient createDockerClient(final AgentConfig config) throws IOException {
     final DefaultDockerClient.Builder builder = DefaultDockerClient.builder()
             .uri(config.getDockerHost().uri());
 
@@ -377,6 +377,13 @@ public class AgentService extends AbstractIdleService implements Managed {
       builder.dockerCertificates(dockerCertificates);
     }
 
+    if (config.getGoogleCredentials() != null) {
+      builder.registryAuthSupplier(
+          ContainerRegistryAuthSupplier
+              .forCredentials(config.getGoogleCredentials())
+              .build()
+      );
+    }
     return new PollingDockerClient(builder);
   }
 
