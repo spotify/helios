@@ -621,8 +621,9 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
-    log.info("preparing to initiate rolling-update on deployment-group: name={}, jobId={}",
-        deploymentGroup.getName(), jobId);
+    log.info("preparing to initiate rolling-update on deployment-group: name={}, jobId={} "
+             + "with rolloutOptions={}",
+        deploymentGroup.getName(), jobId, options);
 
     final DeploymentGroup updated = deploymentGroup.toBuilder()
         .setJobId(jobId)

@@ -20,8 +20,9 @@
 
 package com.spotify.helios.rollingupdate;
 
-
+import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -176,5 +177,83 @@ public class RollingUpdatePlannerTest {
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"));
 
     assertEquals(expected, tasks);
+  }
+
+  @Test
+  public void testIgnoreFailure() throws Exception {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setRolloutOptions(RolloutOptions.newBuilder()
+            .setIgnoreFailures(true)
+            .setParallelism(1)
+            .build())
+        .build();
+
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(HOSTS);
+
+    assertThat(tasks, contains(
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent1"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent2"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent3"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent4")
+    ));
+  }
+
+  @Test
+  public void testIgnoreFailure_Parallelism() throws Exception {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setRolloutOptions(RolloutOptions.newBuilder()
+            .setIgnoreFailures(true)
+            .setParallelism(2)
+            .build())
+        .build();
+
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(HOSTS);
+
+    // ignoreFailures=true and parallelism > 1 has the same output as parallelism=1, since
+    // parallelism means to do the undeploy/deploy task at the same time on N hosts and
+    // then do AWAIT_RUNNING on each of those N. Without AWAIT_RUNNING, the output is the same
+    // as parallelism=1.
+
+    assertThat(tasks, contains(
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent1"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent2"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent3"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent4")
+    ));
+  }
+
+  @Test
+  public void testIgnoreFailure_Overlap() throws Exception {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setRolloutOptions(RolloutOptions.newBuilder()
+            .setIgnoreFailures(true)
+            .setOverlap(true)
+            .setParallelism(1)
+            .build())
+        .build();
+
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(HOSTS);
+
+    assertThat(tasks, contains(
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent1"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent2"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent3"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent4"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4")
+    ));
   }
 }

@@ -79,13 +79,13 @@ public class DeploymentGroup extends Descriptor {
   private final RollingUpdateReason reason;
 
   /**
-   * Create a Job.
+   * Create a DeploymentGroup.
    *
    * <p>Note that despite annotating jobId as @JsonProperty("job") in practice it's serialised as
    * "jobId" because we neglected to annotate the getter to match. The annotation has been left here
    * to ensure backwards compatibility.
    *
-   * @param name The docker name to use.
+   * @param name The deployment group name.
    * @param jobId The job ID for the deployment group.
    * @param hostSelectors The selectors that determine which agents are part of the deployment
    *                       group.
