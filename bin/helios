@@ -25,6 +25,7 @@ if [[ -n "$JDWPPORT" ]]; then
 fi
 
 exec java \
+    $JVM_ARGS \
     $DEBUG_ARGS \
     -Djava.net.preferIPv4Stack=true \
     -XX:+TieredCompilation -XX:TieredStopAtLevel=1 \
