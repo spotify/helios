@@ -77,7 +77,7 @@ us know if this is not true for you).  It contains things like the name of the p
 the port number itself, the domain in which to register and the hostname that we will advertise for
 the port.
 
-Based upon the information contained in the `Endpoint`s, the plugin does it's thing (whatever that
+Based upon the information contained in the `Endpoint`s, the plugin does its thing (whatever that
 may be), and returns a `com.spotify.helios.serviceregistration.ServiceRegistrationHandle`.  The
 handle interface is entirely empty, that is, as far as Helios is concerned, it's entirely opaque, so
 you can do whatever you need to do whatever bookkeeping is required.

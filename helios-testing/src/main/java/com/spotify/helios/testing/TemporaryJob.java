@@ -325,7 +325,7 @@ public class TemporaryJob {
     if (state == TaskStatus.State.FAILED
         || state == TaskStatus.State.EXITED
         || state == TaskStatus.State.STOPPED) {
-      // Throw exception which should stop the test dead in it's tracks
+      // Throw exception which should stop the test dead in its tracks
       String stateString = state.toString();
       if (status.getThrottled() != ThrottleState.NO) {
         stateString += format("(%s)", status.getThrottled());

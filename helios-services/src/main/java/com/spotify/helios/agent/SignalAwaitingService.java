@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * An InterruptingScheduledService which awaits on a CountDownLatch prior to
  * {@link #runOneIteration()}. This can be used to have the Service fully enter the RUNNING state
- * and schedule it's periodic task, but block the actual execution of the task until some condition
+ * and schedule its periodic task, but block the actual execution of the task until some condition
  * is met by another thread.
  * <p>
  * Implementation note: await() is called in the thread running the "periodic task" as it is
