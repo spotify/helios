@@ -58,8 +58,6 @@ import com.spotify.helios.master.http.PATCH;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -299,7 +297,7 @@ public class HostsResource {
   }
 
   /**
-   * Alters the current deployment of a deployed job identified by it's job id on the specified
+   * Alters the current deployment of a deployed job identified by its job id on the specified
    * host.
    * @param host The host.
    * @param jobId The ID of the job.

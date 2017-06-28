@@ -72,7 +72,7 @@ public class ZooKeeperAclProviders {
         // Agent has READ permission on all paths
         .rule(".*", READ, agentId)
         // The agent needs to create the /config/hosts/<host> path and nodes below it. It also needs
-        // DELETE permissions since agents will delete it's "own" subtree when re-registering itself
+        // DELETE permissions since agents will delete its "own" subtree when re-registering itself
         // (when a machine is reinstalled with the same name). Note that agent does however not have
         // any permissions, except read, to /config/hosts/<host>/jobs -- which means an agent can't
         // [typically] cause jobs to be deployed on other agents (this is not fool-proof -- if you

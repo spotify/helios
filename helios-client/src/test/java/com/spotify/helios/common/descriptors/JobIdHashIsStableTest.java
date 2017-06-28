@@ -49,7 +49,7 @@ import org.junit.Test;
  */
 public class JobIdHashIsStableTest {
 
-  // a job with all of it's fields (as of writing-time) set
+  // a job with all of its fields (as of writing-time) set
   // don't add new fields to this Job instance! If you are trying to add a new field to the Job
   // class, instead add a new test to this class
   private static final Job JOB = Job.newBuilder()

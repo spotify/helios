@@ -188,7 +188,7 @@ public final class HealthCheckerFactory {
       final String host;
       // Special case for running the agent inside helios-solo and DOCKER_HOST is a unix socket:
       // in this case we cannot reach the job's container with "localhost" at the external port
-      // since "localhost" will refer to the agent's container and it's network namespace.
+      // since "localhost" will refer to the agent's container and its network namespace.
       // The agent is only run in a container sibling to the job's container when in helios-solo.
       if (agentInContainer && dockerHost.host().startsWith("unix://")) {
         host = getBridgeAddress(containerId);

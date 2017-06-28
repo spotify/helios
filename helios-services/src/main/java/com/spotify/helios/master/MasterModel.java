@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The interface that describes the kinds of information the Helios master needs from it's
+ * The interface that describes the kinds of information the Helios master needs from its
  * configuration/coordination store.
  */
 public interface MasterModel {
