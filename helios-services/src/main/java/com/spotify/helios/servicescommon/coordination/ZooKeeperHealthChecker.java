@@ -36,7 +36,7 @@ public class ZooKeeperHealthChecker extends HealthCheck {
     if (client.isConnected()) {
       return Result.healthy();
     } else {
-      return Result.unhealthy("CuratorZookeeperClient reports that it is not conencted");
+      return Result.unhealthy("CuratorZookeeperClient reports that it is not connected");
     }
   }
 }
