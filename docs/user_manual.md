@@ -355,6 +355,27 @@ read-only volume, respectively.
 
 Format: `[container-path]:[rw|ro]:[host-path]`.
 
+### ramdisks
+Memory-backed (tmpfs) mounts. Optional.
+
+Format:
+```
+"ramdisks": {
+  "<mount-point>": "<mount-options>",
+  ...
+}
+```
+
+The mount point is the path where the ramdisk will be mounted in the container.
+The mount point must be an absolute path.
+
+Example:
+```
+"ramdisks": {
+  "/tmp": "rw,size=32m",
+  "/run": "rw,noexec,nosuid,size=65535k"
+}
+```
 
 ### Health Checks
 
