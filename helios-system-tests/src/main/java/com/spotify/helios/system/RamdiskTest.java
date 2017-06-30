@@ -61,7 +61,7 @@ public class RamdiskTest extends SystemTestBase {
         .setName(testJobName)
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
-        .addRamdisk("/much-volatile", "rw,noexec,nosuid,size=65536k")
+        .addRamdisk("/much-volatile", "rw,noexec,nosuid,size=1")
         .setCommand(asList("sh", "-c", "nc -p 4711 -lle sh -c \"df | grep much-volatile\""))
         .addPort("df", PortMapping.of(4711))
         .setCreatingUser(TEST_USER)
