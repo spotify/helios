@@ -184,6 +184,14 @@ public class JobValidator {
       errors.addAll(validateAddCapabilities(job));
     }
 
+    // Validate ramdisks
+    for (final String mountPoint : job.getRamdisks().keySet()) {
+      if (!mountPoint.startsWith("/")) {
+        errors.add("Ramdisk mount point is not absolute: " + mountPoint);
+        continue;
+      }
+    }
+
     return errors;
   }
 

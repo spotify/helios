@@ -287,6 +287,10 @@ public class TaskConfig {
         .securityOpt(securityOpt.toArray(new String[securityOpt.size()]))
         .networkMode(job.getNetworkMode());
 
+    if (!job.getRamdisks().isEmpty()) {
+      builder.tmpfs(job.getRamdisks());
+    }
+
     final Resources resources = job.getResources();
     if (resources != null) {
       builder.memory(resources.getMemory());
