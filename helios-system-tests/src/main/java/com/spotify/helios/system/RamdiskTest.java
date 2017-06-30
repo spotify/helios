@@ -100,9 +100,9 @@ public class RamdiskTest extends SystemTestBase {
 
     assert dfPort != null;
 
-    // Read "foo" from /volume/bar
-    final String foo = recvUtf8(dfPort, 5);
-    assertEquals("tmpfs", foo);
+    // If "/much-volatile" mount is present a line starting with tmpfs should be returned
+    final String dfOutput = recvUtf8(dfPort, 5);
+    assertEquals("tmpfs", dfOutput);
   }
 
   private String recvUtf8(final int port, final int numBytes) throws Exception {
