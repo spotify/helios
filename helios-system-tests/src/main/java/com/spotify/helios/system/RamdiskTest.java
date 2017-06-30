@@ -28,6 +28,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
@@ -43,12 +44,20 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.util.concurrent.Callable;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class RamdiskTest extends SystemTestBase {
 
   private HeliosClient client;
   private Job job;
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    // Doesn't work on CircleCI because they don't support creating tmpfs using docker.
+    // https://discuss.circleci.com/t/docker-tmpfs-support/10416
+    assumeFalse(isCircleCi());
+  }
 
   @Before
   public void setup() throws Exception {
