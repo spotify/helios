@@ -137,6 +137,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Set<String> EMPTY_CAPS = emptySet();
   public static final Map<String, String> EMPTY_LABELS = emptyMap();
   public static final Integer EMPTY_SECONDS_TO_WAIT = null;
+  public static final Map<String, String> EMPTY_RAMDISKS = emptyMap();
 
   private final JobId id;
   private final String image;
@@ -161,6 +162,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Set<String> dropCapabilities;
   private final Map<String, String> labels;
   private final Integer secondsToWaitBeforeKill;
+  private final Map<String, String> ramdisks;
 
   /**
    * Create a Job.
@@ -221,7 +223,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("addCapabilities") @Nullable final Set<String> addCapabilities,
       @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities,
       @JsonProperty("labels") @Nullable final Map<String, String> labels,
-      @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill) {
+      @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill,
+      @JsonProperty("ramdisks") @Nullable final Map<String, String> ramdisks) {
     this.id = id;
     this.image = image;
 
@@ -248,6 +251,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.dropCapabilities = firstNonNull(dropCapabilities, EMPTY_CAPS);
     this.labels = Optional.fromNullable(labels).or(EMPTY_LABELS);
     this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
+    this.ramdisks = firstNonNull(ramdisks, EMPTY_RAMDISKS);
   }
 
   private Job(final JobId id, final Builder.Parameters pm) {
@@ -276,6 +280,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.dropCapabilities = ImmutableSet.copyOf(pm.dropCapabilities);
     this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
     this.labels = ImmutableMap.copyOf(pm.labels);
+    this.ramdisks = ImmutableMap.copyOf(pm.ramdisks);
   }
 
   public JobId getId() {
@@ -370,6 +375,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     return secondsToWaitBeforeKill;
   }
 
+  public Map<String, String> getRamdisks() {
+    return ramdisks;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -412,7 +421,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            && Objects.equals(this.addCapabilities, that.addCapabilities)
            && Objects.equals(this.dropCapabilities, that.dropCapabilities)
            && Objects.equals(this.labels, that.labels)
-           && Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill);
+           && Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill)
+           && Objects.equals(this.ramdisks, that.ramdisks);
   }
 
   @Override
@@ -421,7 +431,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         id, image, hostname, expires, created, command, env, resources,
         ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
         token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
-        dropCapabilities, labels, secondsToWaitBeforeKill);
+        dropCapabilities, labels, secondsToWaitBeforeKill, ramdisks);
   }
 
   @Override
@@ -450,6 +460,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            + ", dropCapabilities=" + dropCapabilities
            + ", labels=" + labels
            + ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill
+           + ", ramdisks=" + ramdisks
            + '}';
   }
 
@@ -482,7 +493,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setAddCapabilities(addCapabilities)
         .setDropCapabilities(dropCapabilities)
         .setLabels(labels)
-        .setSecondsToWaitBeforeKill(secondsToWaitBeforeKill);
+        .setSecondsToWaitBeforeKill(secondsToWaitBeforeKill)
+        .setRamdisks(ramdisks);
   }
 
   public static class Builder implements Cloneable {
@@ -525,6 +537,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Set<String> dropCapabilities;
       public Map<String, String> labels;
       public Integer secondsToWaitBeforeKill;
+      public Map<String, String> ramdisks;
 
       private Parameters() {
         this.created = EMPTY_CREATED;
@@ -544,6 +557,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.addCapabilities = EMPTY_CAPS;
         this.dropCapabilities = EMPTY_CAPS;
         this.labels = EMPTY_LABELS;
+        this.ramdisks = Maps.newHashMap(EMPTY_RAMDISKS);
       }
 
       private Parameters(final Parameters pm) {
@@ -571,6 +585,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.dropCapabilities = pm.dropCapabilities;
         this.labels = pm.labels;
         this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
+        this.ramdisks = Maps.newHashMap(pm.ramdisks);
       }
 
       private Parameters withoutMetaParameters() {
@@ -742,6 +757,16 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setRamdisks(final Map<String, String> ramdisks) {
+      pm.ramdisks = Maps.newHashMap(ramdisks);
+      return this;
+    }
+
+    public Builder addRamdisk(final String mountPoint, final String mountOptions) {
+      pm.ramdisks.put(mountPoint, mountOptions);
+      return this;
+    }
+
     public String getName() {
       return pm.name;
     }
@@ -828,6 +853,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Integer secondsToWaitBeforeKill() {
       return pm.secondsToWaitBeforeKill;
+    }
+
+    public Map<String, String> getRamdisks() {
+      return ImmutableMap.copyOf(pm.ramdisks);
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
