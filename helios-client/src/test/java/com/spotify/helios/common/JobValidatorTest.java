@@ -20,7 +20,6 @@
 
 package com.spotify.helios.common;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.DEFAULT_NETWORK_MODE;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
@@ -43,7 +42,6 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_SECONDS_TO_WAIT;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_SECURITY_OPT;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
-import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -66,7 +64,6 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
@@ -363,10 +360,34 @@ public class JobValidatorTest {
   }
 
   @Test
-  public void testInvalidRamdiskMountPointFails() {
+  public void testInvalidRamdiskMountPointFail() {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
     assertEquals(newHashSet("Ramdisk mount point is not absolute: relative-path"),
         validator.validate(j.toBuilder().addRamdisk("relative-path", "derp").build()));
+  }
+
+  @Test
+  public void testConflictingVolumeAndRamdiskFail() {
+    final Job job = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .addRamdisk("/herp", "rw,size=1")
+        .addRamdisk("/a", "rw,size=1")
+        .addRamdisk("/derp", "rw,size=1")
+        .addVolume("/herp")
+        .addVolume("/a:ro", "/tmp")
+        .addVolume("/derp:rw")
+        .build();
+
+    assertEquals(
+        newHashSet(
+            "Ramdisk mount point used by volume: /herp",
+            "Ramdisk mount point used by volume: /a",
+            "Ramdisk mount point used by volume: /derp"
+        ),
+        validator.validate(job)
+    );
   }
 
   @Test

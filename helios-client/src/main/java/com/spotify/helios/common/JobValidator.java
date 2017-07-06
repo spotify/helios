@@ -192,6 +192,22 @@ public class JobValidator {
       }
     }
 
+    // Check that mount-points aren't reused between ramdisks and volumes.
+    // This will not caught all cases where docker will fail to create the container because of
+    // conflict. For example, a job with a ramdisk mounted at "/a/b" and a volume that binds "/a"
+    // in the container to "/tmp" on the host will fail.
+    final Set<String> volumeMountPoints = Sets.newHashSet();
+    for (String s : job.getVolumes().keySet()) {
+      volumeMountPoints.add(s.split(":", 2)[0]);
+    }
+
+    for (final String mountPoint : job.getRamdisks().keySet()) {
+      if (volumeMountPoints.contains(mountPoint)) {
+        errors.add(format("Ramdisk mount point used by volume: %s", mountPoint));
+      }
+    }
+
+
     return errors;
   }
 
