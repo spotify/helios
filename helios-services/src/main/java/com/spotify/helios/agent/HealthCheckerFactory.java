@@ -102,6 +102,8 @@ public final class HealthCheckerFactory {
         String output = "";
         try (LogStream stream = docker.execStart(execId)) {
           output = stream.readFully();
+        } catch (RuntimeException e) {
+          handleExecStartConnectionReset(e);
         }
 
         final int exitCode = docker.execInspect(execId).exitCode();
@@ -143,6 +145,19 @@ public final class HealthCheckerFactory {
       final int major = Integer.parseInt(Iterables.get(split, 0, "0"));
       final int minor = Integer.parseInt(Iterables.get(split, 1, "0"));
       return major == 1 && minor >= 18;
+    }
+
+    /**
+     * Gracefully handle a nonfatal issue: https://github.com/spotify/docker-client/issues/513
+     */
+    private static void handleExecStartConnectionReset(RuntimeException exception) {
+      Throwable rootCause = Throwables.getRootCause(exception);
+      if (rootCause instanceof IOException
+          && "Connection reset by peer".equals(rootCause.getMessage())) {
+        log.warn("Failed to read the output of exec start", exception);
+      } else {
+        throw exception;
+      }
     }
   }
 
