@@ -111,10 +111,7 @@ class HeliosSoloLogService extends AbstractScheduledService {
         }
       }
     } catch (Exception e) {
-      // Ignore TimeoutException as that is to be expected sometimes
-      if (!(Throwables.getRootCause(e) instanceof TimeoutException)) {
-        log.warn("Caught exception, will ignore", e);
-      }
+      log.debug("Caught exception, will ignore", e);
     }
   }
 
