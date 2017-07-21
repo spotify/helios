@@ -517,7 +517,7 @@ public class TemporaryJobs implements TestRule {
 
   static Builder builder(final String profile, final Map<String, String> env,
                          final HeliosClient.Builder clientBuilder) {
-    return new Builder(profile, HeliosConfig.loadConfig("helios-testing"), env, clientBuilder);
+    return new Builder(profile, HeliosConfig.loadConfig(), env, clientBuilder);
   }
 
   public static class Builder {

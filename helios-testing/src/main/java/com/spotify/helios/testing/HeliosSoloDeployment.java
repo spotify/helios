@@ -582,7 +582,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder(final String profile) {
-    return new Builder(profile, HeliosConfig.loadConfig("helios-solo"));
+    return new Builder(profile, HeliosConfig.loadConfig());
   }
 
   /**
