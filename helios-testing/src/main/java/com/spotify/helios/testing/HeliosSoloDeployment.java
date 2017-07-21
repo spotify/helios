@@ -28,7 +28,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -56,6 +55,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
+import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -131,8 +131,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
     this.agentName = this.namespace + HELIOS_NAME_SUFFIX;
-    this.env = containerEnv(builder.env);
-    this.binds = containerBinds();
+    this.env = buildContainerEnvironmentVariables(builder);
+    this.binds = buildContainerBinds(builder);
 
     final String heliosPort;
     try {
@@ -233,24 +233,47 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     return "moby".equals(dockerInfo.name());
   }
 
-  private List<String> containerEnv(final Set<String> builderEnv) {
-    final HashSet<String> env = new HashSet<>(builderEnv);
+  private List<String> buildContainerEnvironmentVariables(final Builder builder) {
+    final Set<String> env = new HashSet<>(builder.env);
     env.add("DOCKER_HOST=" + containerDockerHost.bindUri().toString());
+
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
     }
+
+    // if gcr credentials were specified in the config, pass them in as an argument to helios-agent
+    // note this only works inside the container if we also bind the volume containing the file
+    for (File gcrCredentials : builder.googleContainerRegistryCredentials.asSet()) {
+      final String arg = "--docker-gcp-account-credentials=" + gcrCredentials.getAbsolutePath();
+      env.add("HELIOS_AGENT_OPTS=" + arg);
+
+      log.info("set HELIOS_AGENT_OPTS inside the container to: {}", arg);
+    }
+
     return ImmutableList.copyOf(env);
   }
 
-  private List<String> containerBinds() {
-    final HashSet<String> binds = new HashSet<>();
+  private List<String> buildContainerBinds(final Builder builder) {
+    final Set<String> binds = new HashSet<>();
+
     if (containerDockerHost.bindUri().getScheme().equals("unix")) {
       final String path = containerDockerHost.bindUri().getPath();
       binds.add(path + ":" + path);
     }
+
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       binds.add(containerDockerHost.dockerCertPath() + ":/certs");
     }
+
+    // see note in buildContainerEnvironmentVariables about these credentials
+    for (File gcrCredentials : builder.googleContainerRegistryCredentials.asSet()) {
+      final String directory = gcrCredentials.getAbsoluteFile().getParent();
+      binds.add(directory + ":" + directory + ":ro");
+
+      log.info("automatically adding volume bind for directory containing "
+               + "Google Container Registry credentials at: {}", directory);
+    }
+
     return ImmutableList.copyOf(binds);
   }
 
@@ -376,7 +399,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .image(heliosSoloImage)
             .build();
 
-    log.info("starting container for helios-solo with image={}", heliosSoloImage);
+    log.info("starting container for helios-solo with containerConfig={}", containerConfig);
 
     final ContainerCreation creation;
     try {
@@ -629,9 +652,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = false;
     private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
+
     // Intentionally picking a publicly accessible class for this log output
     private LogStreamFollower logStreamFollower =
         LoggingLogStreamFollower.create(LoggerFactory.getLogger(TemporaryJob.class));
+
+    private Optional<File> googleContainerRegistryCredentials = Optional.absent();
 
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
@@ -659,6 +685,22 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         }
       }
 
+      if (config.hasPath("google-container-registry")) {
+        configureGoogleContainerRegistry(config.getConfig("google-container-registry"));
+      }
+    }
+
+    private void configureGoogleContainerRegistry(Config subConfig) {
+      if (subConfig.hasPath("credentials")) {
+        final String path = subConfig.getString("credentials");
+        final File credentialsFile = new File(path);
+
+        if (credentialsFile.exists()) {
+          this.googleContainerRegistryCredentials = Optional.of(credentialsFile);
+        } else {
+          log.info("Ignoring non-existent google-container-registry.credentials file: {}", path);
+        }
+      }
     }
 
     /**
@@ -798,6 +840,16 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      */
     public Builder env(final String key, final Object value) {
       this.env.add(key + "=" + value.toString());
+      return this;
+    }
+
+    /**
+     * Override the credentials used for Google Container Registry. If not set, then the builder
+     * will default to checking to see if an entry for "googleContainerRegistryCredentials" exists
+     * in the configuration profile.
+     */
+    public Builder googleContainerRegistryCredentials(File credentials) {
+      this.googleContainerRegistryCredentials = Optional.of(credentials);
       return this;
     }
 

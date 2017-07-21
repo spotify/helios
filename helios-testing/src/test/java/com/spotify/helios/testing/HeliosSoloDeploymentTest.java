@@ -21,7 +21,10 @@
 package com.spotify.helios.testing;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
@@ -60,17 +63,23 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 public class HeliosSoloDeploymentTest {
+
+  @Rule
+  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   private static final String CONTAINER_ID = "abc123";
   private static final String HOST1 = "host1";
@@ -179,7 +188,6 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testConfig() throws Exception {
-
     final String image = "helios-test";
     final String ns = "namespace";
     final String env = "stuff";
@@ -204,6 +212,69 @@ public class HeliosSoloDeploymentTest {
     }
     assertTrue("Could not find helios-solo container creation", foundSolo);
   }
+
+  @Test
+  public void testConfigHasGoogleContainerRegistryCredentials() throws Exception {
+    // generate a file that we will pretend contains GCR credentials, in order to verify that
+    // HeliosSoloDeployment sets up the expected environment variables and volume binds
+    // when this config value exists (and is a real file)
+    final File credentialsFile = temporaryFolder.newFile("fake-credentials");
+    final String credentialsPath = credentialsFile.getPath();
+
+    final String image = "helios-test";
+
+    final Config config = ConfigFactory.empty()
+        .withValue("helios.solo.profile", ConfigValueFactory.fromAnyRef("test"))
+        .withValue("helios.solo.profiles.test.image", ConfigValueFactory.fromAnyRef(image))
+        .withValue("helios.solo.profiles.test.google-container-registry.credentials",
+            ConfigValueFactory.fromAnyRef(credentialsPath)
+        );
+
+    buildHeliosSoloDeployment(new HeliosSoloDeployment.Builder(null, config));
+
+    ContainerConfig soloContainerConfig = null;
+    for (final ContainerConfig cc : containerConfig.getAllValues()) {
+      if (cc.image().contains(image)) {
+        soloContainerConfig = cc;
+      }
+    }
+
+    assertNotNull("Could not find helios-solo container creation", soloContainerConfig);
+
+    assertThat(soloContainerConfig.env(),
+        hasItem("HELIOS_AGENT_OPTS=--docker-gcp-account-credentials=" + credentialsPath));
+
+    final String credentialsParentPath = credentialsFile.getParent();
+    assertThat(soloContainerConfig.hostConfig().binds(),
+        hasItem(credentialsParentPath + ":" + credentialsParentPath + ":ro"));
+  }
+
+  @Test
+  public void testGoogleContainerRegistryCredentialsDoesntExist() throws Exception {
+    final String image = "helios-test";
+
+    final Config config = ConfigFactory.empty()
+        .withValue("helios.solo.profile", ConfigValueFactory.fromAnyRef("test"))
+        .withValue("helios.solo.profiles.test.image", ConfigValueFactory.fromAnyRef(image))
+        .withValue("helios.solo.profiles.test.google-container-registry.credentials",
+            ConfigValueFactory.fromAnyRef("/dev/null/foo/bar")
+        );
+
+    buildHeliosSoloDeployment(new HeliosSoloDeployment.Builder(null, config));
+
+    ContainerConfig soloContainerConfig = null;
+    for (final ContainerConfig cc : containerConfig.getAllValues()) {
+      if (cc.image().contains(image)) {
+        soloContainerConfig = cc;
+      }
+    }
+
+    assertNotNull("Could not find helios-solo container creation", soloContainerConfig);
+
+    assertThat(soloContainerConfig.env(), not(hasItem(startsWith("HELIOS_AGENT_OPTS="))));
+    assertThat(soloContainerConfig.hostConfig().binds(), not(hasItem(startsWith("/dev/null"))));
+  }
+
 
   @Test
   public void testDoesNotPullPresentProbeImage() throws Exception {
