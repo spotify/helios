@@ -35,19 +35,18 @@ public class HeliosConfig {
   public static final String APP_CONFIG_FILE = "helios.conf";
 
   /**
-   * @param component The name of the component we're loading config for
-   *                  (i.e. Temp jobs, Helios solo)
    * @return The root configuration loaded from the helios configuration files.
    */
-  static Config loadConfig(final String component) {
-    final ConfigResolveOptions resolveOptions =
-        ConfigResolveOptions.defaults().setAllowUnresolved(true);
+  static Config loadConfig() {
+    final ConfigResolveOptions resolveOptions = ConfigResolveOptions
+        .defaults()
+        .setAllowUnresolved(true);
 
-    final Config baseConfig = ConfigFactory.load(
-        BASE_CONFIG_FILE, ConfigParseOptions.defaults(), resolveOptions);
+    final ConfigParseOptions parseOptions = ConfigParseOptions.defaults();
 
-    final Config appConfig = ConfigFactory.load(
-        APP_CONFIG_FILE, ConfigParseOptions.defaults(), resolveOptions);
+    final Config baseConfig = ConfigFactory.load(BASE_CONFIG_FILE, parseOptions, resolveOptions);
+
+    final Config appConfig = ConfigFactory.load(APP_CONFIG_FILE, parseOptions, resolveOptions);
 
     return appConfig.withFallback(baseConfig);
   }
