@@ -698,7 +698,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         if (credentialsFile.exists()) {
           this.googleContainerRegistryCredentials = Optional.of(credentialsFile);
         } else {
-          log.info("Ignoring non-existent google-container-registry.credentials file: {}", path);
+          log.warn("Ignoring non-existent google-container-registry.credentials file: {}", path);
         }
       }
     }
