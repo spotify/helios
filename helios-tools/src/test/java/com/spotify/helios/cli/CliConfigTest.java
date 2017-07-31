@@ -74,9 +74,13 @@ public class CliConfigTest {
     final File file = temporaryFolder.newFile();
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
       final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3
-          + "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3
-          + "\"], \"srvName\":\"foo\"}");
+          "{"
+          + "\"masterEndpoints\":"
+          +     "[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3 + "\"],"
+          + "\"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 + "\"],"
+          + "\"srvName\":\"foo\","
+          + "\"accessTokenCommand\":[\"echo\", \"Hello World!\"]"
+          + "}");
       outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
       final CliConfig config = CliConfig.fromFile(file, environment);
 
@@ -96,10 +100,14 @@ public class CliConfigTest {
     expectedEx.expectMessage(Matchers.containsString("Expecting close brace } or a comma"));
 
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
-      outFile.write(Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3
-          + "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3
-          + "\"], \"srvName\":\"foo\"").array());
+      ByteBuffer byteBuffer = Charsets.UTF_8.encode(
+          "{"
+          + "\"masterEndpoints\":"
+          +     "[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3 + "\"],"
+          + "\"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 + "\"],"
+          + "\"srvName\":\"foo\","
+          + "\"accessTokenCommand\":[\"echo\", \"Hello World!\"]");
+      outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
       CliConfig.fromFile(file, environment);
     }
   }
