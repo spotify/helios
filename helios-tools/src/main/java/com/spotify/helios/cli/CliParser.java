@@ -26,14 +26,17 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.addAll;
 import static com.google.common.collect.Iterables.filter;
 import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.io.CharStreams;
 import com.spotify.helios.cli.command.CliCommand;
 import com.spotify.helios.cli.command.DeploymentGroupCreateCommand;
 import com.spotify.helios.cli.command.DeploymentGroupInspectCommand;
@@ -62,6 +65,7 @@ import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.common.Version;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -252,6 +256,23 @@ public class CliParser {
 
   public String getUsername() {
     return username;
+  }
+
+  public Optional<String> getAccessToken() throws RuntimeException {
+    List<String> cmd = cliConfig.getAccessTokenCommand();
+    if (cmd.isEmpty()) {
+      return Optional.absent();
+    }
+    try {
+      Process proc = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+      if (proc.waitFor() != 0) {
+        throw new RuntimeException(
+            "Failed to resolve access token: command exited " + proc.exitValue());
+      }
+      return Optional.of(CharStreams.toString(new InputStreamReader(proc.getInputStream(), UTF_8)));
+    } catch (IOException | InterruptedException e) {
+      throw new RuntimeException("Failed to resolve access token: " + e.getMessage());
+    }
   }
 
   public boolean getJson() {

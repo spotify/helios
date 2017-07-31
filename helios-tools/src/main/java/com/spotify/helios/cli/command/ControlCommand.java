@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 import static com.google.common.base.Strings.repeat;
 import static java.lang.String.format;
 
+import com.google.common.base.Optional;
 import com.spotify.helios.cli.Target;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
@@ -53,10 +54,16 @@ public abstract class ControlCommand implements CliCommand {
   }
 
   @Override
+  public boolean needsAuthorizaton() {
+    return false;
+  }
+
+  @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
-                 final PrintStream err, final String username, final boolean json,
-                 final BufferedReader stdin)
+                 final PrintStream err, final String username, final Optional<String> accessToken,
+                 final boolean json, final BufferedReader stdin)
       throws Exception {
+
     boolean allSuccessful = true;
 
     boolean isFirst = true;
@@ -86,7 +93,7 @@ public abstract class ControlCommand implements CliCommand {
         }
       }
 
-      final boolean successful = run(options, target, out, err, username, json, stdin);
+      final boolean successful = run(options, target, out, err, username, accessToken, json, stdin);
       if (shortCircuit && !successful) {
         return 1;
       }
@@ -111,12 +118,12 @@ public abstract class ControlCommand implements CliCommand {
   /**
    * Execute against a cluster at a specific endpoint.
    */
-  private boolean run(final Namespace options, final Target target, final PrintStream out,
-                      final PrintStream err, final String username, final boolean json,
-                      final BufferedReader stdin)
+  private boolean run(final Namespace options, final Target target,
+                      final PrintStream out, final PrintStream err,
+                      final String username, final Optional<String> accessToken,
+                      final boolean json, final BufferedReader stdin)
       throws Exception {
-
-    final HeliosClient client = Utils.getClient(target, err, username, options);
+    final HeliosClient client = Utils.getClient(target, err, username, accessToken, options);
     if (client == null) {
       return false;
     }

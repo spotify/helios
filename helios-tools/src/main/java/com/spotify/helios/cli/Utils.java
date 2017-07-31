@@ -23,6 +23,7 @@ package com.spotify.helios.cli;
 import static java.lang.String.format;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -60,7 +61,8 @@ public final class Utils {
   }
 
   public static HeliosClient getClient(final Target target, final PrintStream err,
-                                       final String username, final Namespace options) {
+                                       final String username, final Optional<String> accessToken,
+                                       final Namespace options) {
 
     List<URI> endpoints = Collections.emptyList();
     try {
@@ -88,6 +90,7 @@ public final class Utils {
         .setRetryTimeout(retryTimeout, TimeUnit.SECONDS)
         .setSslHostnameVerification(!options.getBoolean("insecure"))
         .setUser(username)
+        .setAccessToken(accessToken)
         .build();
   }
 
