@@ -23,17 +23,14 @@ package com.spotify.helios.agent;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.LogConfig;
 import com.spotify.helios.common.descriptors.Job;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Bind mounts /usr/lib/helios inside the container as /helios, and uses the syslog-redirector

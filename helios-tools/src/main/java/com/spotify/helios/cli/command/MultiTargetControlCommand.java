@@ -20,7 +20,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.spotify.helios.cli.Target;

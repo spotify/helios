@@ -31,7 +31,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;

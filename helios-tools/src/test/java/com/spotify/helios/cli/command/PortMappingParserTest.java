@@ -28,11 +28,9 @@ import static org.hamcrest.Matchers.equalTo;
 import com.google.common.collect.ImmutableList;
 import com.spotify.helios.cli.command.PortMappingParser.PortMappingWithName;
 import com.spotify.helios.common.descriptors.PortMapping;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

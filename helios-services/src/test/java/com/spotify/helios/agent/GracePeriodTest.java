@@ -64,7 +64,6 @@ import com.spotify.helios.serviceregistration.NopServiceRegistrationHandle;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

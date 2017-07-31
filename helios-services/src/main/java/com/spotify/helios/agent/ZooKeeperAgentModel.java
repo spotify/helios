@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.Json;

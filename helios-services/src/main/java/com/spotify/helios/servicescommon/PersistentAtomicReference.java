@@ -27,7 +27,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.google.common.base.Supplier;
-import com.google.common.base.Throwables;
 import com.spotify.helios.common.Json;
 import java.io.IOException;
 import java.io.InterruptedIOException;

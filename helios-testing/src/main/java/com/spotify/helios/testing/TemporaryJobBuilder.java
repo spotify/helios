@@ -30,7 +30,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;

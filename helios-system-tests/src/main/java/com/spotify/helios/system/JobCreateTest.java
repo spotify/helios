@@ -26,9 +26,7 @@ import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
-
 import java.util.Collections;
-
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;

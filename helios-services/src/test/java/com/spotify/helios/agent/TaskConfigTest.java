@@ -40,7 +40,6 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.serviceregistration.ServiceRegistration.EndpointHealthCheck;
-
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;

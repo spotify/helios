@@ -40,7 +40,6 @@ import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 import com.spotify.sshagenttls.CertKeyPaths;
 import com.spotify.sshagenttls.HttpsHandler;
-
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URI;

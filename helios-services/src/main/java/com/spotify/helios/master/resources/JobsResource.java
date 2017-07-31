@@ -48,7 +48,6 @@ import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.InjectParam;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;

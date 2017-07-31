@@ -27,7 +27,6 @@ import static org.junit.Assert.fail;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 import com.spotify.helios.client.HeliosClient;

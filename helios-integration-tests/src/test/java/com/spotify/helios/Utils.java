@@ -24,7 +24,6 @@ import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
 import static java.util.Arrays.asList;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;

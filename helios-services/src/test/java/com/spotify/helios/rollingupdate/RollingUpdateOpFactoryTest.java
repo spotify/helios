@@ -23,8 +23,6 @@ package com.spotify.helios.rollingupdate;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.HOSTS_CHANGED;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -49,13 +47,9 @@ import com.spotify.helios.servicescommon.coordination.SetData;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 import org.apache.zookeeper.data.Stat;
-import org.hamcrest.CustomTypeSafeMatcher;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
 public class RollingUpdateOpFactoryTest {
