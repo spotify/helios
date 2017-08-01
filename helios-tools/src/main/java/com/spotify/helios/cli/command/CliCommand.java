@@ -20,6 +20,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Optional;
 import com.spotify.helios.cli.Target;
 import java.io.BufferedReader;
 import java.io.PrintStream;
@@ -27,8 +28,12 @@ import java.util.List;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public interface CliCommand {
-  int run(final Namespace options, final List<Target> targets, final PrintStream out,
-          final PrintStream err, final String username, final boolean json,
+  boolean needsAuthorizaton();
+
+  int run(final Namespace options, final List<Target> targets,
+          final PrintStream out, final PrintStream err,
+          final String username, final Optional<String> accessToken,
+          final boolean json,
           final BufferedReader stdin)
       throws Exception;
 }

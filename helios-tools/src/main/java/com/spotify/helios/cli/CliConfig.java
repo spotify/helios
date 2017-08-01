@@ -46,6 +46,7 @@ public class CliConfig {
   private static final String MASTER_ENDPOINTS_KEY = "masterEndpoints";
   private static final String DOMAINS_KEY = "domains";
   private static final String SRV_NAME_KEY = "srvName";
+  private static final String ACCESS_TOKEN_COMMAND_KEY = "accessTokenCommand";
   private static final String CONFIG_DIR = ".helios";
   private static final String CONFIG_FILE = "config";
   private static final String CONFIG_PATH = CONFIG_DIR + File.separator + CONFIG_FILE;
@@ -55,12 +56,15 @@ public class CliConfig {
   private final List<String> domains;
   private final String srvName;
   private final List<URI> masterEndpoints;
+  private final List<String> accessTokenCommand;
 
-  public CliConfig(List<String> domains, String srvName, List<URI> masterEndpoints) {
+  public CliConfig(List<String> domains, String srvName, List<URI> masterEndpoints,
+                   List<String> accessTokenCommand) {
     this.username = System.getProperty("user.name");
     this.domains = checkNotNull(domains);
     this.srvName = checkNotNull(srvName);
     this.masterEndpoints = checkNotNull(masterEndpoints);
+    this.accessTokenCommand = checkNotNull(accessTokenCommand);
   }
 
   public String getUsername() {
@@ -81,6 +85,10 @@ public class CliConfig {
 
   public List<URI> getMasterEndpoints() {
     return masterEndpoints;
+  }
+
+  public List<String> getAccessTokenCommand() {
+    return accessTokenCommand;
   }
 
   public static String getConfigDirName() {
@@ -107,8 +115,7 @@ public class CliConfig {
   public static CliConfig fromUserConfig(final Map<String, String> environmentVariables)
       throws IOException, URISyntaxException {
     final String userHome = System.getProperty("user.home");
-    final String defaults = userHome + File.separator + CONFIG_PATH;
-    final File defaultsFile = new File(defaults);
+    final File defaultsFile = new File(userHome + File.separator + CONFIG_PATH);
     return fromFile(defaultsFile, environmentVariables);
   }
 
@@ -137,6 +144,16 @@ public class CliConfig {
     return fromEnvVar(config, environmentVariables);
   }
 
+
+  /**
+   * Return a CliConfig, possibly overwriting some values using keys from the environment.
+   * Presently, this only considers the HELIOS_MASTER variable.
+   *
+   * @param config               The initial configuration
+   * @param environmentVariables A mapping of environment variables
+   * @return                     The configuration
+   * @throws URISyntaxException  Thrown when error parsing master URI
+   */
   public static CliConfig fromEnvVar(final Config config,
                                      final Map<String, String> environmentVariables)
       throws URISyntaxException {
@@ -182,12 +199,18 @@ public class CliConfig {
     return fromConfig(configFromEnvVar);
   }
 
+  /**
+   * Return a CliConfig with default values.
+   * @param config The initial configuration
+   * @return       The configuration
+   */
   public static CliConfig fromConfig(final Config config) {
     checkNotNull(config);
     final Map<String, Object> defaultSettings = ImmutableMap.of(
         DOMAINS_KEY, EMPTY_STRING_LIST,
         SRV_NAME_KEY, "helios",
-        MASTER_ENDPOINTS_KEY, EMPTY_STRING_LIST
+        MASTER_ENDPOINTS_KEY, EMPTY_STRING_LIST,
+        ACCESS_TOKEN_COMMAND_KEY, EMPTY_STRING_LIST
     );
     final Config configWithDefaults = config.withFallback(ConfigFactory.parseMap(defaultSettings));
     final List<String> domains = configWithDefaults.getStringList(DOMAINS_KEY);
@@ -196,6 +219,8 @@ public class CliConfig {
     for (final String endpoint : configWithDefaults.getStringList(MASTER_ENDPOINTS_KEY)) {
       masterEndpoints.add(URI.create(endpoint));
     }
-    return new CliConfig(domains, srvName, masterEndpoints);
+    final List<String> accessTokenCommand =
+        configWithDefaults.getStringList(ACCESS_TOKEN_COMMAND_KEY);
+    return new CliConfig(domains, srvName, masterEndpoints, accessTokenCommand);
   }
 }

@@ -30,6 +30,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
@@ -50,7 +51,8 @@ import org.junit.Test;
 public class HeliosClientTest {
 
   private final RequestDispatcher dispatcher = mock(RequestDispatcher.class);
-  private final HeliosClient client = new HeliosClient("test", dispatcher);
+  private final HeliosClient client =
+      new HeliosClient("testclient", Optional.<String>absent(), dispatcher);
 
   @Test(expected = IllegalStateException.class)
   public void testBuildWithNoEndpoints() {

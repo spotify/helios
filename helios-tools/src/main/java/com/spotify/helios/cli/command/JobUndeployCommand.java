@@ -78,6 +78,11 @@ public class JobUndeployCommand extends WildcardJobCommand {
   }
 
   @Override
+  public boolean needsAuthorizaton() {
+    return true;
+  }
+
+  @Override
   protected int runWithJobId(final Namespace options, final HeliosClient client,
                              final PrintStream out, final boolean json, final JobId jobId,
                              final BufferedReader stdin)

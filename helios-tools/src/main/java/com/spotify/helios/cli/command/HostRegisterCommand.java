@@ -48,6 +48,11 @@ public class HostRegisterCommand extends ControlCommand {
   }
 
   @Override
+  public boolean needsAuthorizaton() {
+    return true;
+  }
+
+  @Override
   int run(final Namespace options, final HeliosClient client, PrintStream out, final boolean json,
           final BufferedReader stdin)
       throws ExecutionException, InterruptedException {

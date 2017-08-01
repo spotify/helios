@@ -20,6 +20,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.spotify.helios.cli.Target;
@@ -45,14 +46,19 @@ public abstract class MultiTargetControlCommand implements CliCommand {
   }
 
   @Override
+  public boolean needsAuthorizaton() {
+    return false;
+  }
+
+  @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
-                 final PrintStream err, final String username, final boolean json,
-                 final BufferedReader stdin)
+                 final PrintStream err, final String username, final Optional<String> accessToken,
+                 final boolean json, final BufferedReader stdin)
       throws Exception {
 
     final Builder<TargetAndClient> clientBuilder = ImmutableList.<TargetAndClient>builder();
     for (final Target target : targets) {
-      final HeliosClient client = Utils.getClient(target, err, username, options);
+      final HeliosClient client = Utils.getClient(target, err, username, accessToken, options);
       if (client == null) {
         return 1;
       }

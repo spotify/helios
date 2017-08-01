@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.io.File;
@@ -175,6 +176,32 @@ public class CliParserTest {
       final List<Target> expectedTargets = Target.from(
           SRV, ImmutableList.of(DOMAINS[0], DOMAINS[1], DOMAINS[2]));
       assertEquals(expectedTargets, targets);
+    }
+  }
+
+  @Test
+  public void testComputeAccessTokenFromConfig() throws Exception {
+    final String[] args = {SUBCOMMAND, SERVICE};
+
+    // Create a "~/.helios/config" file, which is the path CliConfig reads by default
+    final File configDir = temporaryFolder.newFolder(CliConfig.getConfigDirName());
+    final File configFile = new File(configDir.getAbsolutePath() + File.separator
+                                     + CliConfig.getConfigFileName());
+
+    // Write configuration to that file
+    try (final FileOutputStream outFile = new FileOutputStream(configFile)) {
+      final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
+          "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\"],"
+          + "\"accessTokenCommand\":[\"echo\", \"-n\", \"dummy-access-token-value\"]}");
+      outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
+
+      // Set user's home directory to this temporary folder
+      System.setProperty("user.home", temporaryFolder.getRoot().getAbsolutePath());
+
+      final CliParser cliParser = new CliParser(args);
+      final Optional<String> accessToken = cliParser.getAccessToken();
+
+      assertEquals(accessToken.get(), "dummy-access-token-value");
     }
   }
 

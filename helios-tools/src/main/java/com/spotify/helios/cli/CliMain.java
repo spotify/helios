@@ -30,6 +30,8 @@ import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.common.base.Optional;
+import com.spotify.helios.cli.command.CliCommand;
 import com.spotify.helios.common.LoggingConfig;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -71,8 +73,12 @@ public class CliMain {
   public int run() {
     try {
       final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-      return parser.getCommand().run(parser.getNamespace(), parser.getTargets(), out, err,
-          parser.getUsername(), parser.getJson(), stdin);
+      final CliCommand cmd = parser.getCommand();
+      final Optional<String> accessToken = cmd.needsAuthorizaton()
+                                           ? parser.getAccessToken() : Optional.<String>absent();
+
+      return cmd.run(parser.getNamespace(), parser.getTargets(), out, err,
+                     parser.getUsername(), accessToken, parser.getJson(), stdin);
     } catch (Exception e) {
       // print entire stack trace in verbose mode, otherwise just the exception message
       if (parser.getNamespace().getInt("verbose") > 0) {

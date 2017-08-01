@@ -68,6 +68,11 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
   }
 
   @Override
+  public boolean needsAuthorizaton() {
+    return true;
+  }
+
+  @Override
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
           final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {

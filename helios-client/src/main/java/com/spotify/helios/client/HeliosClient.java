@@ -118,14 +118,17 @@ public class HeliosClient implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
 
   private final String user;
+  private final Optional<String> accessToken;
   private final RequestDispatcher dispatcher;
   private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
 
   private final TypeReference<Map<JobId, Job>> jobIdMap = new TypeReference<Map<JobId, Job>>() {
   };
 
-  public HeliosClient(final String user, final RequestDispatcher dispatcher) {
+  public HeliosClient(final String user, final Optional<String> accessToken,
+                      final RequestDispatcher dispatcher) {
     this.user = checkNotNull(user);
+    this.accessToken = checkNotNull(accessToken);
     this.dispatcher = checkNotNull(dispatcher);
   }
 
@@ -186,6 +189,11 @@ public class HeliosClient implements Closeable {
     final byte[] entityBytes;
     headers.put(VersionCompatibility.HELIOS_VERSION_HEADER,
         Collections.singletonList(Version.POM_VERSION));
+
+    if (accessToken.isPresent()) {
+      headers.put("Authorization", Collections.singletonList("Bearer " + accessToken.get()));
+    }
+
     if (entity != null) {
       headers.put("Content-Type", singletonList("application/json"));
       headers.put("Charset", singletonList("utf-8"));
@@ -602,6 +610,7 @@ public class HeliosClient implements Closeable {
     private static final AtomicInteger clientCounter = new AtomicInteger(0);
 
     private String user;
+    private Optional<String> accessToken;
     private CertKeyPaths certKeyPaths;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
@@ -615,6 +624,11 @@ public class HeliosClient implements Closeable {
 
     public Builder setUser(final String user) {
       this.user = user;
+      return this;
+    }
+
+    public Builder setAccessToken(final Optional<String> accessToken) {
+      this.accessToken = accessToken;
       return this;
     }
 
@@ -690,7 +704,7 @@ public class HeliosClient implements Closeable {
     }
 
     public HeliosClient build() {
-      return new HeliosClient(user, createDispatcher());
+      return new HeliosClient(user, accessToken, createDispatcher());
     }
 
     private static ListeningScheduledExecutorService defaultExecutorService() {
