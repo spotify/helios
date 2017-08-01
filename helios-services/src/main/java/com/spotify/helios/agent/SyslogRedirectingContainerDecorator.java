@@ -81,9 +81,9 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
         .or("/helios/syslog-redirector");
 
     final List<String> entrypoint = Lists.newArrayList(syslogRedirectorPath,
-                                                       "-h", syslogHostPort,
-                                                       "-n", job.getId().toString(),
-                                                       "--");
+        "-h", syslogHostPort,
+        "-n", job.getId().toString(),
+        "--");
     if (imageConfig.entrypoint() != null) {
       entrypoint.addAll(imageConfig.entrypoint());
     }

@@ -85,11 +85,11 @@ public class DeploymentGroup extends Descriptor {
    * "jobId" because we neglected to annotate the getter to match. The annotation has been left here
    * to ensure backwards compatibility.
    *
-   * @param name The docker name to use.
-   * @param jobId The job ID for the deployment group.
+   * @param name          The docker name to use.
+   * @param jobId         The job ID for the deployment group.
    * @param hostSelectors The selectors that determine which agents are part of the deployment
-   *                       group.
-   * @param reason The reason the most recent rolling update (if any) occurred.
+   *                      group.
+   * @param reason        The reason the most recent rolling update (if any) occurred.
    */
   public DeploymentGroup(
       @JsonProperty("name") final String name,
@@ -143,7 +143,7 @@ public class DeploymentGroup extends Descriptor {
       return false;
     }
     if (hostSelectors != null ? !hostSelectors.equals(that.hostSelectors)
-                               : that.hostSelectors != null) {
+                              : that.hostSelectors != null) {
       return false;
     }
     if (name != null ? !name.equals(that.name) : that.name != null) {

@@ -128,11 +128,12 @@ public class AgentService extends AbstractIdleService implements Managed {
   /**
    * Create a new agent instance.
    *
-   * @param config The service configuration.
+   * @param config      The service configuration.
    * @param environment The DropWizard environment.
+   *
    * @throws ConfigurationException If an error occurs with the DropWizard configuration.
-   * @throws InterruptedException If the thread is interrupted.
-   * @throws IOException IOException
+   * @throws InterruptedException   If the thread is interrupted.
+   * @throws IOException            IOException
    */
   public AgentService(final AgentConfig config, final Environment environment)
       throws ConfigurationException, InterruptedException, IOException {
@@ -192,7 +193,7 @@ public class AgentService extends AbstractIdleService implements Managed {
 
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
         environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
-                                                                 metricsRegistry));
+            metricsRegistry));
       }
 
       final FastForwardConfig ffwdConfig = config.getFfwdConfig();
@@ -255,20 +256,20 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     // Set up service registrar
     this.serviceRegistrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),
-                                                   config.getServiceRegistryAddress(),
-                                                   config.getDomain());
+        config.getServiceRegistryAddress(),
+        config.getDomain());
 
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
     this.hostInfoReporter =
         new HostInfoReporter((OperatingSystemMXBean) getOperatingSystemMXBean(), nodeUpdaterFactory,
-                             config.getName(), dockerClient, config.getDockerHost(),
-                             1, TimeUnit.MINUTES, zkRegistrationSignal);
+            config.getName(), dockerClient, config.getDockerHost(),
+            1, TimeUnit.MINUTES, zkRegistrationSignal);
 
     this.agentInfoReporter =
         new AgentInfoReporter(getRuntimeMXBean(), nodeUpdaterFactory, config.getName(),
-                              1, TimeUnit.MINUTES, zkRegistrationSignal);
+            1, TimeUnit.MINUTES, zkRegistrationSignal);
 
     this.environmentVariableReporter = new EnvironmentVariableReporter(
         config.getName(), config.getEnvVars(), nodeUpdaterFactory, zkRegistrationSignal);
@@ -306,20 +307,20 @@ public class AgentService extends AbstractIdleService implements Managed {
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     final PortAllocator portAllocator = new PortAllocator(config.getPortRangeStart(),
-                                                          config.getPortRangeEnd());
+        config.getPortRangeEnd());
 
     final PersistentAtomicReference<Map<JobId, Execution>> executions;
     try {
       executions = PersistentAtomicReference.create(stateDirectory.resolve("executions.json"),
-                                                    JOBID_EXECUTIONS_MAP,
-                                                    Suppliers.ofInstance(EMPTY_EXECUTIONS));
+          JOBID_EXECUTIONS_MAP,
+          Suppliers.ofInstance(EMPTY_EXECUTIONS));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
 
     final Reaper reaper = new Reaper(dockerClient, namespace);
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator,
-                           reaper);
+        reaper);
 
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient);
     final DockerDaemonHealthChecker dockerDaemonHealthChecker =
@@ -334,7 +335,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       // Report each individual healthcheck as a gauge metric
       environment.healthChecks().getNames().forEach(
           name -> environment.metrics().register(
-            "helios." + name + ".ok", new HealthCheckGauge(environment.healthChecks(), name)));
+              "helios." + name + ".ok", new HealthCheckGauge(environment.healthChecks(), name)));
 
       // and add one gauge for the overall health, similar to what HealthCheckServlet does - if
       // any healthcheck fails, then report overall health of false.
@@ -348,8 +349,8 @@ public class AgentService extends AbstractIdleService implements Managed {
       environment.lifecycle().manage(this);
 
       this.server = ServiceUtil.createServerFactory(config.getHttpEndpoint(),
-                                                    config.getAdminEndpoint(),
-                                                    config.getNoHttp())
+          config.getAdminEndpoint(),
+          config.getNoHttp())
           .build(environment);
     } else {
       this.server = null;
@@ -359,7 +360,7 @@ public class AgentService extends AbstractIdleService implements Managed {
 
   private DockerClient createDockerClient(final AgentConfig config) throws IOException {
     final DefaultDockerClient.Builder builder = DefaultDockerClient.builder()
-            .uri(config.getDockerHost().uri());
+        .uri(config.getDockerHost().uri());
 
     if (config.getConnectionPoolSize() != -1) {
       builder.connectionPoolSize(config.getConnectionPoolSize());
@@ -391,6 +392,7 @@ public class AgentService extends AbstractIdleService implements Managed {
    * Create a Zookeeper client and create the control and state nodes if needed.
    *
    * @param config The service configuration.
+   *
    * @return A zookeeper client.
    */
   private ZooKeeperClient setupZookeeperClient(final AgentConfig config, final String id,
@@ -439,7 +441,7 @@ public class AgentService extends AbstractIdleService implements Managed {
         authorization);
 
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator,
-                                                              config.getZooKeeperClusterId());
+        config.getZooKeeperClusterId());
     client.start();
 
     // Register the agent

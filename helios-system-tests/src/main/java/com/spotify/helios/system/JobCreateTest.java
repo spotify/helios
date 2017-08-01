@@ -45,11 +45,11 @@ public class JobCreateTest extends SystemTestBase {
 
     // Create job
     final String output = createJobRawOutput(Job.newBuilder()
-                                                 .setName(testJobName)
-                                                 .setVersion(testJobVersion)
-                                                 .setImage(BUSYBOX)
-                                                 .setHostname("$%^&")
-                                                 .build());
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(BUSYBOX)
+        .setHostname("$%^&")
+        .build());
     assertThat(output, Matchers.containsString("Invalid hostname "));
   }
 

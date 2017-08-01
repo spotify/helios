@@ -55,7 +55,7 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
   public void testZooKeeperClient() throws Exception {
     // Create the cluster ID node
     zk().curatorWithSuperAuth().newNamespaceAwareEnsurePath(Paths.configId(zkClusterId))
-          .ensure(zk().curatorWithSuperAuth().getZookeeperClient());
+        .ensure(zk().curatorWithSuperAuth().getZookeeperClient());
 
     // We need to create a new curator because ZooKeeperClient will try to start it,
     // and zk().curator() has already been started.
@@ -129,11 +129,11 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
       final List<Container> containers = docker.listContainers();
       final CustomTypeSafeMatcher<Container> containerIdMatcher =
           new CustomTypeSafeMatcher<Container>("Container with id " + containerId) {
-        @Override
-        protected boolean matchesSafely(Container container) {
-          return container.id().equals(containerId);
-        }
-      };
+            @Override
+            protected boolean matchesSafely(Container container) {
+              return container.id().equals(containerId);
+            }
+          };
 
       assertContainersMatch(containers, containerIdMatcher);
     }
@@ -141,8 +141,8 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
 
   @SuppressWarnings("unchecked")
   private void assertContainersMatch(final List<Container> containers,
-      final CustomTypeSafeMatcher<Container> containerIdMatcher) {
-    assertThat(containers, hasItems(new CustomTypeSafeMatcher[]{containerIdMatcher}));
+                                     final CustomTypeSafeMatcher<Container> containerIdMatcher) {
+    assertThat(containers, hasItems(new CustomTypeSafeMatcher[]{ containerIdMatcher }));
   }
 
 }

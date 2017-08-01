@@ -109,7 +109,7 @@ public class ZooKeeperRegistrarServiceUtilTest {
     // Verify that /status/hosts/<host>/jobs exists and is EMPTY
     assertNotNull(zkClient.exists(Paths.statusHostJobs(HOSTNAME)));
     assertThat(zkClient.listRecursive(Paths.statusHostJobs(HOSTNAME)),
-               contains(Paths.statusHostJobs(HOSTNAME)));
+        contains(Paths.statusHostJobs(HOSTNAME)));
     // Verify that re-registering didn't change the nodes in /config/hosts/<host>/jobs
     assertEquals(
         jobConfigStat,

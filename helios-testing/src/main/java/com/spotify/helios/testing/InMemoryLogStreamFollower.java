@@ -52,6 +52,7 @@ public class InMemoryLogStreamFollower implements LogStreamFollower {
    * Get all the stdout that has been emitted by a container.
    *
    * @param jobId The {@link JobId} for the container in question.
+   *
    * @return A byte array of everything written to stdout.
    */
   public byte[] getStdout(final JobId jobId) {
@@ -62,6 +63,7 @@ public class InMemoryLogStreamFollower implements LogStreamFollower {
    * Get all the stderr that has been emitted by a container.
    *
    * @param jobId The {@link JobId} for the container in question.
+   *
    * @return A byte array of everything written to stderr.
    */
   public byte[] getStderr(final JobId jobId) {

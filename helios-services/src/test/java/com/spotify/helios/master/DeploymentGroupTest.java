@@ -196,7 +196,7 @@ public class DeploymentGroupTest {
             .build()
     );
     assertThat(opCaptor.getValue(),
-               hasItems(setDeploymentGroupHostChanged, setDeploymentGroupTasks));
+        hasItems(setDeploymentGroupHostChanged, setDeploymentGroupTasks));
   }
 
   // A test that ensures deployment groups that failed during a rolling update triggered by
@@ -313,9 +313,9 @@ public class DeploymentGroupTest {
   //   race condition
   @Theory
   public void testStopDeploymentGroup(
-      @TestedOn(ints = {0, 1}) final int dgExistsInt,
-      @TestedOn(ints = {0, 1}) final int tasksExistInt,
-      @TestedOn(ints = {0, 1}) final int tasksExistWhenCommittingInt
+      @TestedOn(ints = { 0, 1 }) final int dgExistsInt,
+      @TestedOn(ints = { 0, 1 }) final int tasksExistInt,
+      @TestedOn(ints = { 0, 1 }) final int tasksExistWhenCommittingInt
   ) throws Exception {
     final boolean dgExists = dgExistsInt != 0;
     final boolean tasksExist = tasksExistInt != 0;

@@ -30,7 +30,7 @@ import javax.ws.rs.HttpMethod;
  * So we can do @PATCH, like we do @GET or @POST.
  */
 @SuppressWarnings("AbbreviationAsWordInName")
-@Target({ElementType.METHOD})
+@Target({ ElementType.METHOD })
 @Retention(RetentionPolicy.RUNTIME)
 @HttpMethod("PATCH")
 public @interface PATCH {

@@ -49,9 +49,9 @@ public class JobRemoveCommand extends WildcardJobCommand {
     parser.help("remove a job");
 
     tokenArg = parser.addArgument("--token")
-            .nargs("?")
-            .setDefault("")
-            .help("Insecure access token");
+        .nargs("?")
+        .setDefault("")
+        .help("Insecure access token");
 
     yesArg = parser.addArgument("--yes")
         .action(Arguments.storeTrue())

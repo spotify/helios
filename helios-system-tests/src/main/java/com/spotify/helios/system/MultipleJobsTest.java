@@ -42,7 +42,7 @@ public class MultipleJobsTest extends SystemTestBase {
     awaitHostRegistered(testHost(), LONG_WAIT_SECONDS, SECONDS);
 
     final HeliosClient client = defaultClient();
-    
+
     final Job job = Job.newBuilder()
         .setName(testJobName)
         .setVersion(testJobVersion)
@@ -52,7 +52,7 @@ public class MultipleJobsTest extends SystemTestBase {
         .build();
     final JobId jobId = job.getId();
     client.createJob(job).get();
-   
+
     final Job job2 = Job.newBuilder()
         .setName(testJobName + "2")
         .setVersion(testJobVersion)
@@ -62,14 +62,14 @@ public class MultipleJobsTest extends SystemTestBase {
         .build();
     final JobId job2Id = job2.getId();
     client.createJob(job2).get();
-    
+
     final Deployment deployment = Deployment.of(jobId, START, TEST_USER);
     final Deployment deployment2 = Deployment.of(job2Id, START, TEST_USER);
 
     client.deploy(deployment, testHost()).get();
     awaitJobState(client, testHost(), jobId, RUNNING,
         LONG_WAIT_SECONDS, SECONDS);
-    
+
     client.deploy(deployment2, testHost()).get();
     awaitJobState(client, testHost(), job2Id, RUNNING,
         LONG_WAIT_SECONDS, SECONDS);

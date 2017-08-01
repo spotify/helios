@@ -88,13 +88,13 @@ public class TaskStatus extends Descriptor {
   private final String containerError;
 
   /**
-   * @param job The job the task is running.
-   * @param goal The desired state of the task.
-   * @param state The state of the task.
-   * @param containerId The containerId, if the task has one (yet).
-   * @param throttled The throttle state of the task.
-   * @param ports The ports actually assigned to the task.
-   * @param env The environment passed to the container.
+   * @param job            The job the task is running.
+   * @param goal           The desired state of the task.
+   * @param state          The state of the task.
+   * @param containerId    The containerId, if the task has one (yet).
+   * @param throttled      The throttle state of the task.
+   * @param ports          The ports actually assigned to the task.
+   * @param env            The environment passed to the container.
    * @param containerError The last Docker error encountered while starting the container.
    */
   public TaskStatus(@JsonProperty("job") final Job job,
@@ -119,14 +119,14 @@ public class TaskStatus extends Descriptor {
 
   public Builder asBuilder() {
     return newBuilder()
-            .setJob(job)
-            .setGoal(goal)
-            .setState(state)
-            .setContainerId(containerId)
-            .setThrottled(throttled)
-            .setPorts(ports)
-            .setEnv(env)
-            .setContainerError(containerError);
+        .setJob(job)
+        .setGoal(goal)
+        .setState(state)
+        .setContainerId(containerId)
+        .setThrottled(throttled)
+        .setPorts(ports)
+        .setEnv(env)
+        .setContainerError(containerError);
   }
 
   private TaskStatus(final Builder builder) {
@@ -222,7 +222,7 @@ public class TaskStatus extends Descriptor {
       return false;
     }
     if (containerError != null ? !containerError.equals(that.containerError) :
-            that.containerError != null) {
+        that.containerError != null) {
       return false;
     }
 

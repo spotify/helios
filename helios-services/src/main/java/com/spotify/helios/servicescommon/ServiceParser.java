@@ -228,9 +228,9 @@ public class ServiceParser {
 
   public LoggingConfig getLoggingConfig() {
     return new LoggingConfig(options.getInt(verboseArg.getDest()),
-                             options.getBoolean(syslogArg.getDest()),
-                             (File) options.get(logconfigArg.getDest()),
-                             options.getBoolean(noLogSetupArg.getDest()));
+        options.getBoolean(syslogArg.getDest()),
+        (File) options.get(logconfigArg.getDest()),
+        options.getBoolean(noLogSetupArg.getDest()));
   }
 
   public String getDomain() {

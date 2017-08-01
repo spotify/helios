@@ -1,5 +1,5 @@
 {
-  "ports" : {
+  "ports": {
     "http": {
       "externalPort": 80,
       "internalPort": 80,

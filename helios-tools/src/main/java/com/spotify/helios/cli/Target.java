@@ -147,7 +147,9 @@ public abstract class Target {
 
   /**
    * Create a target from an explicit endpoint
+   *
    * @param endpoint The endpoint.
+   *
    * @return The target.
    */
   public static Target from(final URI endpoint) {
@@ -156,8 +158,10 @@ public abstract class Target {
 
   /**
    * Create targets for a list of domains
+   *
    * @param srvName The SRV name.
    * @param domains A list of domains.
+   *
    * @return A list of targets.
    */
   public static List<Target> from(final String srvName, final Iterable<String> domains) {

@@ -113,33 +113,33 @@ public class ZooKeeperAclProvidersTest {
 
     // Agents need limited permissions in the /config/hosts subtree
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configHosts())),
-                 CREATE | READ | DELETE);
+        CREATE | READ | DELETE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configHost("host"))),
-                 CREATE | READ | DELETE);
+        CREATE | READ | DELETE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configHostId("host"))),
-                 CREATE | READ | DELETE);
+        CREATE | READ | DELETE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configHostPorts("host"))),
-                 CREATE | READ | DELETE);
+        CREATE | READ | DELETE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configHostPort("host", 123))),
-                 READ);
+        READ);
 
     // Agents need elevated permissions in the /status/hosts subtree
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHosts())),
-                 CREATE | READ | DELETE);
+        CREATE | READ | DELETE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHost("host"))),
-                 CREATE | READ | DELETE);
+        CREATE | READ | DELETE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHostJobs("host"))),
-                 CREATE | READ | DELETE);
+        CREATE | READ | DELETE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHostJob("host", "job"))),
-                 READ | WRITE);
+        READ | WRITE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHostAgentInfo("host"))),
-                 READ | WRITE);
+        READ | WRITE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHostLabels("host"))),
-                 READ | WRITE);
+        READ | WRITE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHostEnvVars("host"))),
-                 READ | WRITE);
+        READ | WRITE);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusHostUp("host"))),
-                 READ | WRITE);
+        READ | WRITE);
   }
 
   private static int agentPerms(final List<ACL> acls) {

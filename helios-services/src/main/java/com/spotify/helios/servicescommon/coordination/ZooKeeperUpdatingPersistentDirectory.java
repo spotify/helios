@@ -125,7 +125,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
     this.provider = provider;
     this.path = path;
     this.entries = PersistentAtomicReference.create(stateFile, ENTRIES_TYPE,
-                                                    Suppliers.ofInstance(EMPTY_ENTRIES));
+        Suppliers.ofInstance(EMPTY_ENTRIES));
     this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL_MILLIS);
   }
 
@@ -246,7 +246,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
 
     private void incrementalUpdate() throws KeeperException {
       final MapDifference<String, byte[]> difference = Maps.difference(entries.get(), remote,
-                                                                       BYTE_ARRAY_EQUIVALENCE);
+          BYTE_ARRAY_EQUIVALENCE);
       if (difference.areEqual()) {
         return;
       }

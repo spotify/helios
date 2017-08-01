@@ -161,14 +161,14 @@ public class JobCreateCommand extends ControlCommand {
         .help("Container image");
 
     hostnameArg = parser.addArgument("--hostname")
-         .nargs("?")
-         .help("Container hostname");
+        .nargs("?")
+        .help("Container hostname");
 
     tokenArg = parser.addArgument("--token")
-         .nargs("?")
-         .setDefault(EMPTY_TOKEN)
-         .help("Insecure access token meant to prevent accidental changes to your job "
-               + "(e.g. undeploys).");
+        .nargs("?")
+        .setDefault(EMPTY_TOKEN)
+        .help("Insecure access token meant to prevent accidental changes to your job "
+              + "(e.g. undeploys).");
 
     envArg = parser.addArgument("--env")
         .action(append())
@@ -272,10 +272,10 @@ public class JobCreateCommand extends ControlCommand {
               + "Defaults to nothing.");
 
     labelsArg = parser.addArgument("--labels")
-            .action(append())
-            .setDefault(new ArrayList<String>())
-            .help("Labels (key-value pairs) to apply onto the container. "
-                    + "Defaults to nothing.");
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Labels (key-value pairs) to apply onto the container. "
+              + "Defaults to nothing.");
 
     this.envVarSupplier = envVarSupplier;
   }
@@ -344,7 +344,6 @@ public class JobCreateCommand extends ControlCommand {
       }
       builder = Job.newBuilder();
     }
-
 
     // Merge job configuration options from command line arguments
 

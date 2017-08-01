@@ -54,8 +54,8 @@ public class EndpointIteratorTest {
   private static final InetAddress IP_C = InetAddresses.forString("3.4.5.6");
   private static final InetAddress IP_D = InetAddresses.forString("4.5.6.7");
 
-  private static final InetAddress[] IPS_1 = new InetAddress[] {IP_A, IP_B};
-  private static final InetAddress[] IPS_2 = new InetAddress[] {IP_C, IP_D};
+  private static final InetAddress[] IPS_1 = new InetAddress[]{ IP_A, IP_B };
+  private static final InetAddress[] IPS_2 = new InetAddress[]{ IP_C, IP_D };
 
   private static URI uri1;
   private static URI uri2;

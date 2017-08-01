@@ -104,8 +104,10 @@ public class TemporaryJob {
   /**
    * Returns the port that a job can be reached at given the host and name of registered port.
    * This is useful to discover the value of a dynamically allocated port.
+   *
    * @param host the host where the job is deployed
    * @param port the name of the registered port
+   *
    * @return the port where the job can be reached, or null if the host or port name is not found
    */
   public Integer port(final String host, final String port) {
@@ -128,9 +130,12 @@ public class TemporaryJob {
    * when the job has been deployed to a single host. If the job has been deployed to multiple
    * hosts an AssertionError will be thrown indicating that the {@link #addresses(String)} method
    * should must  called instead.
+   *
    * @param port the name of the registered port
+   *
    * @return a HostAndPort describing where the registered port can be reached. Null if
    *         no ports have been registered.
+   *
    * @throws java.lang.AssertionError if the job has been deployed to more than one host
    */
   public HostAndPort address(final String port) {
@@ -148,7 +153,9 @@ public class TemporaryJob {
    * Returns a {@link com.google.common.net.HostAndPort} object for a registered port, for each
    * host the job has been deployed to. This is useful for discovering the value of dynamically
    * allocated ports.
+   *
    * @param port the name of the registered port
+   *
    * @return a HostAndPort describing where the registered port can be reached. Null if
    *         no ports have been registered.
    */
@@ -173,7 +180,7 @@ public class TemporaryJob {
       final CreateJobResponse createResponse = get(client.createJob(job));
       if (createResponse.getStatus() != CreateJobResponse.Status.OK) {
         fail(format("Failed to create job %s - %s", job.getId(),
-                    createResponse.toString()));
+            createResponse.toString()));
       }
 
       createJob.markSuccess();
@@ -203,7 +210,7 @@ public class TemporaryJob {
         final JobDeployResponse deployResponse = get(client.deploy(deployment, host));
         if (deployResponse.getStatus() != JobDeployResponse.Status.OK) {
           fail(format("Failed to deploy job %s %s - %s",
-                      job.getId(), job.toString(), deployResponse));
+              job.getId(), job.toString(), deployResponse));
         }
       }
 
@@ -239,7 +246,7 @@ public class TemporaryJob {
 
     if (errors.size() > 0) {
       fail(format("Failed to undeploy job %s - %s",
-                  getJobDescription(job), errors.get(0)));
+          getJobDescription(job), errors.get(0)));
     }
   }
 
@@ -366,7 +373,9 @@ public class TemporaryJob {
   /**
    * Returns the ip address mapped to the given hostname. If no mapping exists, the hostname is
    * returned.
+   *
    * @param host the hostname to look up
+   *
    * @return The host's ip address if one exists, otherwise the hostname which was passed in.
    */
   private String endpointFromHost(String host) {
@@ -384,7 +393,7 @@ public class TemporaryJob {
         .put("image", job.getImage())
         .put("containerId", containerId)
         .build()
-        );
+    );
     log.info("{}", subst.replace(jobDeployedMessageFormat));
   }
 }

@@ -99,26 +99,26 @@ public class HostsResourceTest {
     assertThat(resource.list(null, ImmutableList.of("site!=foo")), empty());
 
     assertThat(resource.list(null, ImmutableList.of("index in (1,2)")),
-               contains("host1.foo.example.com", "host2.foo.example.com"));
+        contains("host1.foo.example.com", "host2.foo.example.com"));
 
     assertThat(resource.list(null, ImmutableList.of("site=foo", "index in (1,2)")),
-               contains("host1.foo.example.com", "host2.foo.example.com"));
+        contains("host1.foo.example.com", "host2.foo.example.com"));
   }
 
   @Test
   public void listHostsSelectorFilterMissingStatus() {
     when(model.getHostLabels(hosts.get(0))).thenReturn(emptyMap());
     assertThat(resource.list(null, ImmutableList.of("site=foo")),
-               equalTo(hosts.subList(1, hosts.size())));
+        equalTo(hosts.subList(1, hosts.size())));
 
     assertThat(resource.list(null, ImmutableList.of("site=bar")), empty());
     assertThat(resource.list(null, ImmutableList.of("site!=foo")), empty());
 
     assertThat(resource.list(null, ImmutableList.of("index in (1,2)")),
-               contains("host2.foo.example.com"));
+        contains("host2.foo.example.com"));
 
     assertThat(resource.list(null, ImmutableList.of("site=foo", "index in (1,2)")),
-               contains("host2.foo.example.com"));
+        contains("host2.foo.example.com"));
   }
 
   // Test behavior when both a name pattern and selector list is specified.
@@ -131,7 +131,7 @@ public class HostsResourceTest {
     assertThat(resource.list("host3", ImmutableList.of("index =2")), empty());
 
     assertThat(resource.list("host3", ImmutableList.of("index!=2")),
-               contains("host3.foo.example.com"));
+        contains("host3.foo.example.com"));
   }
 
   @Test

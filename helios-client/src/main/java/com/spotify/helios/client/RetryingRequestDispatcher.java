@@ -57,10 +57,10 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   private final long delayMillis;
 
   private RetryingRequestDispatcher(final RequestDispatcher delegate,
-                            final ListeningScheduledExecutorService executorService,
-                            final Clock clock,
-                            final long retryTimeoutMillis,
-                            final long delayMillis) {
+                                    final ListeningScheduledExecutorService executorService,
+                                    final Clock clock,
+                                    final long retryTimeoutMillis,
+                                    final long delayMillis) {
     this.delegate = delegate;
     this.executorService = executorService;
     this.clock = clock;
@@ -101,7 +101,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
       codeFuture = code.get();
     } catch (Exception e) {
       log.debug("Failed to connect to {}, retrying in {} seconds.",
-                uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis));
+          uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis));
       log.debug("Specific reason for connection failure follows", e);
       handleFailure(future, code, deadline, delayMillis, e, uri);
       return;
@@ -116,8 +116,8 @@ class RetryingRequestDispatcher implements RequestDispatcher {
       @Override
       public void onFailure(@NotNull Throwable th) {
         log.warn("Failed to connect to {}, retrying in {} seconds. Exception chain was: {} ",
-                 uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis),
-                 getChainAsString(th));
+            uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis),
+            getChainAsString(th));
         log.debug("Specific reason for connection failure follows", th);
         handleFailure(future, code, deadline, delayMillis, th, uri);
       }

@@ -110,11 +110,11 @@ public class AgentTest {
       .setName("foo")
       .setVersion("17")
       .setPorts(ImmutableMap.of("p1", PortMapping.of(4711),
-                                "p2", PortMapping.of(4712, 12345)))
+          "p2", PortMapping.of(4712, 12345)))
       .build();
 
   private static final Map<String, Integer> FOO_PORT_ALLOCATION = ImmutableMap.of("p1", 30000,
-                                                                                  "p2", 12345);
+      "p2", 12345);
   private static final Set<Integer> FOO_PORT_SET =
       ImmutableSet.copyOf(FOO_PORT_ALLOCATION.values());
 
@@ -133,19 +133,19 @@ public class AgentTest {
   public void setup() throws Exception {
     final Path executionsFile = Files.createTempFile("helios-agent-executions", ".json");
     executions = PersistentAtomicReference.create(executionsFile,
-                                                  new TypeReference<Map<JobId, Execution>>() {},
-                                                  Suppliers.ofInstance(EMPTY_EXECUTIONS));
+        new TypeReference<Map<JobId, Execution>>() {},
+        Suppliers.ofInstance(EMPTY_EXECUTIONS));
     when(portAllocator.allocate(eq(FOO_JOB.getPorts()), anySet()))
         .thenReturn(FOO_PORT_ALLOCATION);
     when(portAllocator.allocate(eq(BAR_JOB.getPorts()), anySet()))
         .thenReturn(BAR_PORT_ALLOCATION);
     when(supervisorFactory.create(eq(FOO_JOB), anyString(),
-                                  anyMapOf(String.class, Integer.class),
-                                  any(Supervisor.Listener.class)))
+        anyMapOf(String.class, Integer.class),
+        any(Supervisor.Listener.class)))
         .thenReturn(fooSupervisor);
     when(supervisorFactory.create(eq(BAR_JOB), anyString(),
-                                  anyMapOf(String.class, Integer.class),
-                                  any(Supervisor.Listener.class)))
+        anyMapOf(String.class, Integer.class),
+        any(Supervisor.Listener.class)))
         .thenReturn(barSupervisor);
     mockService(reactor);
     when(reactorFactory.create(anyString(), callbackCaptor.capture(), timeoutCaptor.capture()))
@@ -178,7 +178,7 @@ public class AgentTest {
 
   private void configure(final Job job, final Goal goal) {
     final Task task = new Task(job, goal, Task.EMPTY_DEPLOYER_USER, Task.EMPTY_DEPLOYER_MASTER,
-                               Task.EMPTY_DEPOYMENT_GROUP_NAME);
+        Task.EMPTY_DEPOYMENT_GROUP_NAME);
     jobs.put(job.getId(), task);
   }
 
@@ -241,12 +241,12 @@ public class AgentTest {
     verify(portAllocator, never()).allocate(anyMap(), anySet());
 
     verify(supervisorFactory).create(eq(BAR_JOB), eq(barContainerId),
-                                     eq(EMPTY_PORT_ALLOCATION),
-                                     any(Supervisor.Listener.class));
+        eq(EMPTY_PORT_ALLOCATION),
+        any(Supervisor.Listener.class));
 
     verify(supervisorFactory).create(eq(FOO_JOB), eq(fooContainerId),
-                                     eq(EMPTY_PORT_ALLOCATION),
-                                     any(Supervisor.Listener.class));
+        eq(EMPTY_PORT_ALLOCATION),
+        any(Supervisor.Listener.class));
     callback.run(false);
 
     verify(fooSupervisor).setGoal(START);
@@ -285,7 +285,7 @@ public class AgentTest {
     // Verify that the undesired supervisor was created
     verify(portAllocator, never()).allocate(anyMap(), anySet());
     verify(supervisorFactory).create(eq(FOO_JOB), anyString(),
-                                     eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
+        eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
 
     // ... and then stopped
     callback.run(false);
@@ -307,8 +307,8 @@ public class AgentTest {
     start(FOO_JOB);
     verify(portAllocator).allocate(FOO_JOB.getPorts(), EMPTY_PORT_SET);
     verify(supervisorFactory).create(eq(FOO_JOB), anyString(),
-                                     eq(FOO_PORT_ALLOCATION),
-                                     any(Supervisor.Listener.class));
+        eq(FOO_PORT_ALLOCATION),
+        any(Supervisor.Listener.class));
 
     verify(fooSupervisor).setGoal(START);
     when(fooSupervisor.isStarting()).thenReturn(true);
@@ -316,8 +316,8 @@ public class AgentTest {
     start(BAR_JOB);
     verify(portAllocator).allocate(BAR_JOB.getPorts(), FOO_PORT_SET);
     verify(supervisorFactory).create(eq(BAR_JOB), anyString(),
-                                     eq(EMPTY_PORT_ALLOCATION),
-                                     any(Supervisor.Listener.class));
+        eq(EMPTY_PORT_ALLOCATION),
+        any(Supervisor.Listener.class));
     verify(barSupervisor).setGoal(START);
     when(barSupervisor.isStarting()).thenReturn(true);
 
@@ -356,8 +356,8 @@ public class AgentTest {
     start(FOO_JOB);
     verify(portAllocator, times(2)).allocate(FOO_JOB.getPorts(), EMPTY_PORT_SET);
     verify(supervisorFactory, times(2)).create(eq(FOO_JOB), anyString(),
-                                               eq(FOO_PORT_ALLOCATION),
-                                               any(Supervisor.Listener.class));
+        eq(FOO_PORT_ALLOCATION),
+        any(Supervisor.Listener.class));
     verify(fooSupervisor, atLeast(2)).setGoal(START);
   }
 

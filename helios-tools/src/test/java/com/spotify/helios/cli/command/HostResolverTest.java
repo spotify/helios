@@ -28,8 +28,8 @@ import org.xbill.DNS.Name;
 
 public class HostResolverTest {
 
-  private static final Name[] SEARCH_PATH = new Name[]{Name.fromConstantString("bar.com"),
-                                                       Name.fromConstantString("foo.com")};
+  private static final Name[] SEARCH_PATH = new Name[]{ Name.fromConstantString("bar.com"),
+                                                        Name.fromConstantString("foo.com") };
   private static final ImmutableSet<String> ALL_HOSTS = ImmutableSet.of(
       "host1.bar.com", "host1.foo.com");
 

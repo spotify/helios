@@ -1,24 +1,28 @@
 {
-  "my_group" : [ {
-    "action" : null,
-    "deploymentGroup" : {
-      "hostSelectors" : [ {
-        "label" : "foo",
-        "operand" : "bar",
-        "operator" : "EQUALS"
-      } ],
-      "name" : "my_group",
-      "rolloutOptions" : {
-        "migrate" : true,
-        "parallelism" : 1,
-        "timeout" : 300
+  "my_group": [
+    {
+      "action": null,
+      "deploymentGroup": {
+        "hostSelectors": [
+          {
+            "label": "foo",
+            "operand": "bar",
+            "operator": "EQUALS"
+          }
+        ],
+        "name": "my_group",
+        "rolloutOptions": {
+          "migrate": true,
+          "parallelism": 1,
+          "timeout": 300
+        },
+        "jobId": "job_test_c91ff698:v9980bb70:084ce7789f046296c639b8a85cb782e639b53870"
       },
-      "jobId" : "job_test_c91ff698:v9980bb70:084ce7789f046296c639b8a85cb782e639b53870"
-    },
-    "deploymentGroupState" : "ROLLING_OUT",
-    "rolloutTaskStatus" : null,
-    "target" : null,
-    "timestamp" : 1437420186023,
-    "jobId" : null
-  } ]
+      "deploymentGroupState": "ROLLING_OUT",
+      "rolloutTaskStatus": null,
+      "target": null,
+      "timestamp": 1437420186023,
+      "jobId": null
+    }
+  ]
 }

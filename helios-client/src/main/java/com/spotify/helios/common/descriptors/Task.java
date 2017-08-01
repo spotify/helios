@@ -101,7 +101,7 @@ public class Task extends Descriptor {
     }
     return !(deployerMaster != null ? !deployerMaster
         .equals(task.deployerMaster)
-                                           : task.deployerMaster != null);
+                                    : task.deployerMaster != null);
 
   }
 

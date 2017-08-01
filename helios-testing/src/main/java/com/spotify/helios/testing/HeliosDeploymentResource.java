@@ -142,7 +142,7 @@ public class HeliosDeploymentResource extends ExternalResource {
   }
 
   /**
-   * @return A Helios client connected to the Helios deployment supplied when instantiating the
+   * @return a Helios client connected to the Helios deployment supplied when instantiating the
    *         HeliosDeploymentResource.
    */
   public HeliosClient client() {

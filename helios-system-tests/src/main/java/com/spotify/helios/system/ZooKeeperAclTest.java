@@ -37,7 +37,7 @@ import org.junit.Test;
 public class ZooKeeperAclTest extends SystemTestBase {
 
   private final ACLProvider aclProvider = heliosAclProvider(MASTER_USER, MASTER_DIGEST,
-                                                            AGENT_USER, AGENT_DIGEST);
+      AGENT_USER, AGENT_DIGEST);
 
   /**
    * Verify that the master sets the correct ACLs on the root node on start-up.

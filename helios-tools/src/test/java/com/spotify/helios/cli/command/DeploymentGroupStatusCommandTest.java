@@ -121,7 +121,7 @@ public class DeploymentGroupStatusCommandTest {
                + "host1. X %s RUNNING"
                + "host2. X %s PULLING_IMAGE"
                + "host3. - -",
-               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
+            GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -164,7 +164,7 @@ public class DeploymentGroupStatusCommandTest {
                + "host1. - -"
                + "host2. - -"
                + "host3. - -",
-               GROUP_NAME).replace(" ", "");
+            GROUP_NAME).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -202,7 +202,7 @@ public class DeploymentGroupStatusCommandTest {
                + "host1. X %s RUNNING"
                + "host2. X %s PULLING_IMAGE"
                + "host3. - -",
-               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
+            GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }

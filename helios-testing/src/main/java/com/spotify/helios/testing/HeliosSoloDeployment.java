@@ -282,23 +282,23 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * This method also gets the gateway IP address for this HeliosSoloDeployment.
    *
    * @return The gateway IP address of the gateway probe container.
+   *
    * @throws HeliosDeploymentException if we can't deploy the probe container or can't reach
-   *         Docker daemon's API from inside the container.
+   *                                   Docker daemon's API from inside the container.
    */
   private String checkDockerAndGetGateway() throws HeliosDeploymentException {
     log.info("checking that docker can be reached from within a container");
 
     final String probeName = randomString();
     final HostConfig hostConfig = HostConfig.builder()
-            .binds(binds)
-            .build();
+        .binds(binds)
+        .build();
     final ContainerConfig containerConfig = ContainerConfig.builder()
-            .env(env)
-            .hostConfig(hostConfig)
-            .image(PROBE_IMAGE)
-            .cmd(probeCommand(probeName))
-            .build();
-
+        .env(env)
+        .hostConfig(hostConfig)
+        .image(PROBE_IMAGE)
+        .cmd(probeCommand(probeName))
+        .build();
 
     final ContainerCreation creation;
     try {
@@ -324,13 +324,13 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     if (exit.statusCode() != 0) {
       throw new HeliosDeploymentException(String.format(
-              "Docker was not reachable (curl exit status %d) using DOCKER_HOST=%s and "
-                      + "DOCKER_CERT_PATH=%s from within a container. Please ensure that "
-                      + "DOCKER_HOST contains a full hostname or IP address, not localhost, "
-                      + "127.0.0.1, etc.",
-              exit.statusCode(),
-              containerDockerHost.bindUri(),
-              containerDockerHost.dockerCertPath()));
+          "Docker was not reachable (curl exit status %d) using DOCKER_HOST=%s and "
+          + "DOCKER_CERT_PATH=%s from within a container. Please ensure that "
+          + "DOCKER_HOST contains a full hostname or IP address, not localhost, "
+          + "127.0.0.1, etc.",
+          exit.statusCode(),
+          containerDockerHost.bindUri(),
+          containerDockerHost.dockerCertPath()));
     }
 
     return gateway;
@@ -356,15 +356,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         // https://github.com/docker/docker/pull/27640. The hostname we use does not matter since
         // curl is establishing a connection to the unix socket anyway.
         cmd.addAll(ImmutableList.of(
-                "--unix-socket", containerDockerHost.uri().getSchemeSpecificPart(),
-                "http://docker/containers/" + probeName + "/json"));
+            "--unix-socket", containerDockerHost.uri().getSchemeSpecificPart(),
+            "http://docker/containers/" + probeName + "/json"));
         break;
       case "https":
         cmd.addAll(ImmutableList.of(
-                "--insecure",
-                "--cert", "/certs/cert.pem",
-                "--key", "/certs/key.pem",
-                containerDockerHost.uri() + "/containers/" + probeName + "/json"));
+            "--insecure",
+            "--cert", "/certs/cert.pem",
+            "--key", "/certs/key.pem",
+            containerDockerHost.uri() + "/containers/" + probeName + "/json"));
         break;
       default:
         cmd.add(containerDockerHost.uri() + "/containers/" + probeName + "/json");
@@ -376,7 +376,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   /**
    * @param heliosHost The address at which the Helios agent should expect to find the Helios
    *                   master.
+   *
    * @return The container ID of the Helios Solo container.
+   *
    * @throws HeliosDeploymentException if Helios Solo could not be deployed.
    */
   private String deploySolo(final String heliosHost) throws HeliosDeploymentException {
@@ -388,16 +390,16 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     final String heliosPort = String.format("%d/tcp", HELIOS_MASTER_PORT);
     final Map<String, List<PortBinding>> portBindings = ImmutableMap.of(
-            heliosPort, singletonList(PortBinding.of("0.0.0.0", "")));
+        heliosPort, singletonList(PortBinding.of("0.0.0.0", "")));
     final HostConfig hostConfig = HostConfig.builder()
-            .portBindings(portBindings)
-            .binds(binds)
-            .build();
+        .portBindings(portBindings)
+        .binds(binds)
+        .build();
     final ContainerConfig containerConfig = ContainerConfig.builder()
-            .env(ImmutableList.copyOf(env))
-            .hostConfig(hostConfig)
-            .image(heliosSoloImage)
-            .build();
+        .env(ImmutableList.copyOf(env))
+        .hostConfig(hostConfig)
+        .image(heliosSoloImage)
+        .build();
 
     log.info("starting container for helios-solo with containerConfig={}", containerConfig);
 
@@ -445,13 +447,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   /**
    * Return the first host port bound to the requested container port.
    *
-   * @param containerId The container in which to find the requested port.
+   * @param containerId   The container in which to find the requested port.
    * @param containerPort The container port to resolve to a host port.
+   *
    * @return The first host port bound to the requested container port.
+   *
    * @throws HeliosDeploymentException when no host port is found.
    */
   private String getHostPort(final String containerId, final int containerPort)
-          throws HeliosDeploymentException {
+      throws HeliosDeploymentException {
     final String heliosPort = String.format("%d/tcp", containerPort);
     try {
       final NetworkSettings settings = dockerClient.inspectContainer(containerId).networkSettings();
@@ -462,15 +466,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       }
     } catch (DockerException | InterruptedException e) {
       throw new HeliosDeploymentException(String.format(
-              "unable to find port binding for %s in container %s.",
-              heliosPort,
-              containerId),
-              e);
+          "unable to find port binding for %s in container %s.",
+          heliosPort,
+          containerId),
+          e);
     }
     throw new HeliosDeploymentException(String.format(
-            "unable to find port binding for %s in container %s.",
-            heliosPort,
-            containerId));
+        "unable to find port binding for %s in container %s.",
+        heliosPort,
+        containerId));
   }
 
   private String randomString() {
@@ -503,10 +507,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     if (removeHeliosSoloContainerOnExit) {
       removeContainer(heliosContainerId);
       log.info("Stopped and removed HeliosSolo on host={} containerId={}",
-               containerDockerHost, heliosContainerId);
+          containerDockerHost, heliosContainerId);
     } else {
       log.info("Stopped (but did not remove) HeliosSolo on host={} containerId={}",
-               containerDockerHost, heliosContainerId);
+          containerDockerHost, heliosContainerId);
     }
 
     if (logService != null) {
@@ -538,7 +542,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
           final Goal goal = status.getValue().getGoal();
           if (goal != Goal.UNDEPLOY) {
             log.info("Job {} is still set to {} on host {}. Undeploying it now.",
-                     jobId, goal, host);
+                jobId, goal, host);
             final JobUndeployResponse undeployResponse = heliosClient.undeploy(jobId, host).get();
             log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
 
@@ -602,6 +606,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   /**
    * @param profile A configuration profile used to populate builder options.
+   *
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder(final String profile) {
@@ -609,7 +614,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
-   * @return A Builder with its Docker Client configured automatically using the
+   * @return a Builder with its Docker Client configured automatically using the
    *         <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
    *         sensible defaults if they are absent.
    */
@@ -619,11 +624,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   /**
    * @param profile A configuration profile used to populate builder options.
-   * @return A Builder with its Docker Client configured automatically using the
+   *
+   * @return a Builder with its Docker Client configured automatically using the
    *         <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
    *         sensible defaults if they are absent.
    */
-  public static Builder fromEnv(final String profile)  {
+  public static Builder fromEnv(final String profile) {
     try {
       return builder(profile).dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException ex) {
@@ -738,6 +744,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * necessary in order to deploy Helios Solo.
      *
      * @param dockerClient A client connected to the Docker instance in which to deploy Helios Solo.
+     *
      * @return This Builder, with its Docker client configured.
      */
     public Builder dockerClient(final DockerClient dockerClient) {
@@ -752,6 +759,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * present sensible defaults will be used.
      *
      * @param dockerHost Docker socket and certificate settings for the host OS.
+     *
      * @return This Builder, with its Docker host configured.
      */
     public Builder dockerHost(final DockerHost dockerHost) {
@@ -767,6 +775,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      *
      * @param containerDockerHost Docker socket and certificate settings as seen from inside
      *                            the Helios container.
+     *
      * @return This Builder, with its container Docker host configured.
      */
     public Builder containerDockerHost(final DockerHost containerDockerHost) {
@@ -778,6 +787,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * Optionally specify a {@link HeliosClient}. Used for unit tests.
      *
      * @param heliosClient HeliosClient
+     *
      * @return This Builder, with its HeliosClient configured.
      */
     public Builder heliosClient(final HeliosClient heliosClient) {
@@ -799,6 +809,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * If unset a random string will be used.
      *
      * @param namespace A unique namespace for the Helios solo agent and Docker container.
+     *
      * @return This Builder, with its namespace configured.
      */
     public Builder namespace(final String namespace) {
@@ -812,6 +823,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * used.
      *
      * @param username The Helios user to identify as.
+     *
      * @return This Builder, with its Helios username configured.
      */
     public Builder heliosUsername(final String username) {
@@ -825,6 +837,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * disabled.
      *
      * @param logStreamFollower The provider to use.
+     *
      * @return This Builder, with its log stream provider configured.
      */
     public Builder logStreamProvider(final LogStreamFollower logStreamFollower) {
@@ -834,8 +847,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     /**
      * Optionally specify an environment variable to be set inside the Helios solo container.
-     * @param key Environment variable to set.
+     *
+     * @param key   Environment variable to set.
      * @param value Environment variable value.
+     *
      * @return This Builder, with the environment variable configured.
      */
     public Builder env(final String key, final Object value) {

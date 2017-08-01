@@ -46,7 +46,7 @@ public class VersionCommand extends ControlCommand {
       out.println(Json.asPrettyStringUnchecked(response));
     } else {
       out.println(String.format("Client Version: %s%nMaster Version: %s",
-                                response.getClientVersion(), response.getMasterVersion()));
+          response.getClientVersion(), response.getMasterVersion()));
     }
     return 0;
   }

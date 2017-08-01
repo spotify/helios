@@ -132,14 +132,14 @@ public class TaskConfigTest {
   @Test
   public void testContainerConfig() throws Exception {
     final TaskConfig taskConfig = TaskConfig.builder()
-            .namespace("test")
-            .host(HOST)
-            .job(JOB)
-            .build();
+        .namespace("test")
+        .host(HOST)
+        .job(JOB)
+        .build();
 
     final ImageInfo imageInfo = mock(ImageInfo.class);
     final ContainerConfig containerConfig = taskConfig.containerConfig(
-            imageInfo, Optional.absent());
+        imageInfo, Optional.absent());
     assertThat(ImmutableMap.copyOf(containerConfig.labels()), equalTo(LABELS));
   }
 }

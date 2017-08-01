@@ -80,7 +80,7 @@ public class JobDeployCommand extends WildcardJobCommand {
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
     final Deployment job = Deployment.of(jobId,
-                                         options.getBoolean(noStartArg.getDest()) ? STOP : START);
+        options.getBoolean(noStartArg.getDest()) ? STOP : START);
 
     if (!json) {
       out.printf("Deploying %s on %s%n", job, hosts);
@@ -117,7 +117,7 @@ public class JobDeployCommand extends WildcardJobCommand {
 
     if (code == 0 && options.getBoolean(watchArg.getDest())) {
       JobWatchCommand.watchJobsOnHosts(out, true, resolvedHosts, ImmutableList.of(jobId),
-                                       options.getInt(intervalArg.getDest()), client);
+          options.getInt(intervalArg.getDest()), client);
     }
     return code;
   }

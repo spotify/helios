@@ -47,9 +47,9 @@ public class TaskStatusEvent extends Descriptor {
   /**
    * Constructor.
    *
-   * @param status  The status of the task at the point of the event.
+   * @param status    The status of the task at the point of the event.
    * @param timestamp The timestamp of the event.
-   * @param host The host on which the event occurred.
+   * @param host      The host on which the event occurred.
    */
   public TaskStatusEvent(@JsonProperty("status") final TaskStatus status,
                          @JsonProperty("timestamp") final long timestamp,

@@ -70,7 +70,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
                                      final EndpointIterator endpointIterator,
                                      final DefaultHttpConnector delegate) {
     this(user, agentProxyOpt, clientCertificatePath, endpointIterator,
-         delegate, getSshIdentities(agentProxyOpt));
+        delegate, getSshIdentities(agentProxyOpt));
   }
 
   @VisibleForTesting

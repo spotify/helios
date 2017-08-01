@@ -131,7 +131,7 @@ public class JobStatusCommand extends ControlCommand {
       }
       out.printf("There are no jobs deployed to hosts with the host pattern '%s'%n"
                  + "Run 'helios %s hosts %s' to check your host exists and is up.%n",
-                 hostPattern, domainsSwitchString, hostPattern);
+          hostPattern, domainsSwitchString, hostPattern);
       return 1;
     }
 
@@ -141,7 +141,7 @@ public class JobStatusCommand extends ControlCommand {
   }
 
   private void showJsonStatuses(PrintStream out, final String hostPattern, final Set<JobId> jobIds,
-      final Map<JobId, JobStatus> statuses) {
+                                final Map<JobId, JobStatus> statuses) {
     if (Strings.isNullOrEmpty(hostPattern)) {
       out.println(Json.asPrettyStringUnchecked(statuses));
       return;
@@ -167,7 +167,7 @@ public class JobStatusCommand extends ControlCommand {
   }
 
   private JobStatus filterJobStatus(final JobStatus jobStatus,
-      final Iterable<String> matchingHosts) {
+                                    final Iterable<String> matchingHosts) {
     final Map<String, TaskStatus> taskStatuses = Maps.newHashMap(jobStatus.getTaskStatuses());
     final Set<String> matchingHostSet = Sets.newHashSet(matchingHosts);
 
@@ -191,7 +191,8 @@ public class JobStatusCommand extends ControlCommand {
   }
 
   private boolean showStatusesForHosts(final String hostPattern, final Set<JobId> jobIds,
-      final Map<JobId, JobStatus> statuses, final HostStatusDisplayer statusDisplayer) {
+                                       final Map<JobId, JobStatus> statuses,
+                                       final HostStatusDisplayer statusDisplayer) {
     boolean noHostMatchedEver = true;
 
     for (final JobId jobId : Ordering.natural().sortedCopy(jobIds)) {
@@ -232,8 +233,8 @@ public class JobStatusCommand extends ControlCommand {
   }
 
   private void displayTask(final boolean full, final JobStatusTable table, final JobId jobId,
-      final JobStatus jobStatus, final Map<String, TaskStatus> taskStatuses,
-      final Iterable<String> matchingHosts) {
+                           final JobStatus jobStatus, final Map<String, TaskStatus> taskStatuses,
+                           final Iterable<String> matchingHosts) {
     for (final String host : matchingHosts) {
       final Map<String, Deployment> deployments = jobStatus.getDeployments();
       final TaskStatus ts = taskStatuses.get(host);

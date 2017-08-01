@@ -62,12 +62,12 @@ public class AgentStateDirConflictTest {
 
   private AgentMain makeAgent(String name) throws ArgumentParserException {
     return new AgentMain("-vvvv",
-                        "--no-log-setup",
-                        "--no-http",
-                        "--name=" + name,
-                        "--zk=" + zk.connectString(),
-                        "--state-dir", stateDir.toString(),
-                        "--domain", "");
+        "--no-log-setup",
+        "--no-http",
+        "--name=" + name,
+        "--zk=" + zk.connectString(),
+        "--state-dir", stateDir.toString(),
+        "--domain", "");
   }
 
   @After

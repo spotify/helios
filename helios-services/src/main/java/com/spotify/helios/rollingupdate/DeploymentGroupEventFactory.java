@@ -49,7 +49,7 @@ public class DeploymentGroupEventFactory {
                                                      final String error,
                                                      final RollingUpdateError errorCode) {
     return rollingUpdateTaskFailed(deploymentGroup, task, error, errorCode,
-                                   Collections.<String, Object>emptyMap());
+        Collections.<String, Object>emptyMap());
   }
 
   public Map<String, Object> rollingUpdateTaskFailed(final DeploymentGroup deploymentGroup,

@@ -76,26 +76,26 @@ public class MultiplePortJobTest extends SystemTestBase {
       // foo is a mapping of 4711 -> A port dynamically allocated by the agent's PortAllocator
       // bar is a mapping of 4712 -> A static port randomly selected by temporaryPorts
       final Map<String, PortMapping> ports1 = ImmutableMap.of("foo", PortMapping.of(4711),
-                                                              "bar", staticMapping1);
+          "bar", staticMapping1);
 
       // foo is a mapping of 4711 -> A port dynamically allocated by the agent's PortAllocator
       // bar is a mapping of 4712 -> A static port randomly selected by temporaryPorts
       final Map<String, PortMapping> ports2 = ImmutableMap.of("foo", PortMapping.of(4711),
-                                                              "bar", staticMapping2);
+          "bar", staticMapping2);
 
       final JobId jobId1 = createJob(testJobName + 1, testJobVersion, BUSYBOX, IDLE_COMMAND,
-                                     EMPTY_ENV, ports1);
+          EMPTY_ENV, ports1);
       assertNotNull(jobId1);
       deployJob(jobId1, testHost());
       final TaskStatus firstTaskStatus1 = awaitJobState(client, testHost(), jobId1, RUNNING,
-                                                        LONG_WAIT_SECONDS, SECONDS);
+          LONG_WAIT_SECONDS, SECONDS);
 
       final JobId jobId2 = createJob(testJobName + 2, testJobVersion, BUSYBOX, IDLE_COMMAND,
-                                     EMPTY_ENV, ports2);
+          EMPTY_ENV, ports2);
       assertNotNull(jobId2);
       deployJob(jobId2, testHost());
       final TaskStatus firstTaskStatus2 = awaitJobState(client, testHost(), jobId2, RUNNING,
-                                                        LONG_WAIT_SECONDS, SECONDS);
+          LONG_WAIT_SECONDS, SECONDS);
 
       // Verify we allocated dynamic ports from within the specified range.
       assertTrue(portRange.contains(firstTaskStatus1.getPorts().get("foo").getExternalPort()));
@@ -107,7 +107,7 @@ public class MultiplePortJobTest extends SystemTestBase {
 
       // Verify we didn't allocate the same dynamic port to both jobs.
       assertNotEquals(firstTaskStatus1.getPorts().get("foo"),
-                      firstTaskStatus2.getPorts().get("foo"));
+          firstTaskStatus2.getPorts().get("foo"));
 
       // TODO (dano): the supervisor should report the allocated ports at all times
 
@@ -166,7 +166,7 @@ public class MultiplePortJobTest extends SystemTestBase {
 
       final String log;
       try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(),
-                                                    stdout(), stderr())) {
+          stdout(), stderr())) {
         log = logs.readFully();
       }
       assertEquals(testHost() + ":" + externalPort1, log.trim());

@@ -62,10 +62,10 @@ public class RollingUpdateService extends AbstractIdleService {
     checkNotNull(reactorFactory, "reactorFactory");
 
     this.hostUpdateReactor = reactorFactory.create("hostUpdate",
-                                                   new UpdateDeploymentGroupHosts(),
-                                                   HOST_UPDATE_INTERVAL);
+        new UpdateDeploymentGroupHosts(),
+        HOST_UPDATE_INTERVAL);
     this.rollingUpdateReactor = reactorFactory.create("rollingUpdate", new RollingUpdate(),
-                                                      UPDATE_INTERVAL);
+        UPDATE_INTERVAL);
   }
 
   @Override

@@ -105,7 +105,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   public void setup() throws Exception {
     final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = CuratorFrameworkFactory.newClient(zk.connectString(),
-                                                                       retryPolicy);
+        retryPolicy);
     curator.start();
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
 
@@ -191,7 +191,7 @@ public class ZooKeeperMasterModelIntegrationTest {
     model.registerHost(HOST, "foo");
 
     model.deployJob(HOST,
-                    Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
+        Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
     try {
       model.removeJob(JOB_ID);
       fail("should have thrown an exception");
@@ -209,10 +209,10 @@ public class ZooKeeperMasterModelIntegrationTest {
   public void testDeploy() throws Exception {
     try {
       model.deployJob(HOST,
-                      Deployment.newBuilder()
-                          .setGoal(Goal.START)
-                          .setJobId(JOB_ID)
-                          .build());
+          Deployment.newBuilder()
+              .setGoal(Goal.START)
+              .setJobId(JOB_ID)
+              .build());
       fail("should throw");
     } catch (JobDoesNotExistException | HostNotFoundException e) {
       assertTrue(true);
@@ -221,7 +221,7 @@ public class ZooKeeperMasterModelIntegrationTest {
     model.addJob(JOB);
     try {
       model.deployJob(HOST,
-                      Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
+          Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
       fail("should throw");
     } catch (HostNotFoundException e) {
       assertTrue(true);
@@ -230,14 +230,14 @@ public class ZooKeeperMasterModelIntegrationTest {
     model.registerHost(HOST, "foo");
 
     model.deployJob(HOST,
-                    Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
+        Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
 
     model.undeployJob(HOST, JOB_ID);
     model.removeJob(JOB_ID);
 
     try {
       model.deployJob(HOST,
-                      Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
+          Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
       fail("should throw");
     } catch (JobDoesNotExistException e) {
       assertTrue(true);

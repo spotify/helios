@@ -221,7 +221,7 @@ public class GracePeriodTest {
 
     final SettableFuture<ContainerCreation> createFuture = SettableFuture.create();
     when(docker.createContainer(any(ContainerConfig.class),
-                                any(String.class))).thenAnswer(futureAnswer(createFuture));
+        any(String.class))).thenAnswer(futureAnswer(createFuture));
 
     final SettableFuture<Void> startFuture = SettableFuture.create();
     doAnswer(futureAnswer(startFuture))
@@ -238,28 +238,28 @@ public class GracePeriodTest {
 
     // Verify that the pulling state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(PULLING_IMAGE)
-                                                       .setPorts(PORTS)
-                                                       .setContainerId(null)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(PULLING_IMAGE)
+            .setPorts(PORTS)
+            .setContainerId(null)
+            .setEnv(ENV)
+            .build())
     );
 
     // Verify that the container is created
     verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
-                                                   containerNameCaptor.capture());
+        containerNameCaptor.capture());
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(CREATING)
-                                                       .setPorts(PORTS)
-                                                       .setContainerId(null)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(CREATING)
+            .setPorts(PORTS)
+            .setContainerId(null)
+            .setEnv(ENV)
+            .build())
     );
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
@@ -272,28 +272,28 @@ public class GracePeriodTest {
     // Verify that the container is started
     verify(docker, timeout(30000)).startContainer(eq(containerId));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(STARTING)
-                                                       .setPorts(PORTS)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(STARTING)
+            .setPorts(PORTS)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
     when(docker.inspectContainer(eq(containerId))).thenReturn(runningResponse);
     startFuture.set(null);
 
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(RUNNING)
-                                                       .setPorts(PORTS)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(RUNNING)
+            .setPorts(PORTS)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
 
     // Stop the job
@@ -321,26 +321,26 @@ public class GracePeriodTest {
 
     // Verify that the stopping state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(STOP)
-                                                       .setState(STOPPING)
-                                                       .setPorts(PORTS)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(STOP)
+            .setState(STOPPING)
+            .setPorts(PORTS)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
 
     // Verify that the stopped state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(STOP)
-                                                       .setState(STOPPED)
-                                                       .setPorts(PORTS)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(STOP)
+            .setState(STOPPED)
+            .setPorts(PORTS)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
   }
 

@@ -58,10 +58,10 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
 
     final Map<String, Object> configuration = ImmutableMap.of("id", name + ":" + version,
-                                                              "image", image,
-                                                              "ports", ports,
-                                                              "registration", registration,
-                                                              "env", env);
+        "image", image,
+        "ports", ports,
+        "registration", registration,
+        "env", env);
 
     final Path file = temporaryFolder.newFile().toPath();
     Files.write(file, Json.asBytes(configuration));

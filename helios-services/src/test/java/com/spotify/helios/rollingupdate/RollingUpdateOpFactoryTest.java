@@ -240,10 +240,10 @@ public class RollingUpdateOpFactoryTest {
     // A nextTask op with no ZK operations should result advancing the task index
     assertEquals(1, op.operations().size());
     assertEquals(new SetData("/status/deployment-group-tasks/my_group",
-                             deploymentGroupTasks.toBuilder()
-                                 .setTaskIndex(1)
-                                 .build()
-                                 .toJsonBytes()), op.operations().get(0));
+        deploymentGroupTasks.toBuilder()
+            .setTaskIndex(1)
+            .build()
+            .toJsonBytes()), op.operations().get(0));
 
     // No events should be generated
     assertEquals(0, op.events().size());
@@ -271,10 +271,10 @@ public class RollingUpdateOpFactoryTest {
         ImmutableSet.of(
             mockOp,
             new SetData("/status/deployment-group-tasks/my_group",
-                        deploymentGroupTasks.toBuilder()
-                            .setTaskIndex(1)
-                            .build()
-                            .toJsonBytes())),
+                deploymentGroupTasks.toBuilder()
+                    .setTaskIndex(1)
+                    .build()
+                    .toJsonBytes())),
         ImmutableSet.copyOf(op.operations()));
 
     // This is not a no-op -> an event should be emitted

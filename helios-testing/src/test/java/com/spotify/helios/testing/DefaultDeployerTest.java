@@ -55,7 +55,7 @@ public class DefaultDeployerTest {
       makeDummyStatusBuilder().setStatus(UP).build());
   private static final List<String> HOSTS = ImmutableList.of(HOSTA, HOSTB);
   private static final long TIMEOUT = MINUTES.toMillis(5);
-  
+
   // Pick the first host in the list
   private static final HostPickingStrategy PICK_FIRST = new HostPickingStrategy() {
     @Override
@@ -77,15 +77,15 @@ public class DefaultDeployerTest {
     // hosta is down, hostb is up.
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
     when(client.hostStatus(HOSTB)).thenReturn(UP_STATUS);
-    
+
     assertEquals(HOSTB, deployer.pickHost(HOSTS));
   }
 
   @Test
   public void testFailsOnAllDown() throws Exception {
     final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "",
-                                                    TIMEOUT);
-    
+        TIMEOUT);
+
     // hosta is down, hostb is down too. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
     when(client.hostStatus(HOSTB)).thenReturn(DOWN_STATUS);

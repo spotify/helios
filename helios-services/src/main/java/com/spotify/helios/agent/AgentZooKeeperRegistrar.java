@@ -112,7 +112,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
           log.info("Another agent has already registered as '{}', but its ID node was last "
                    + "updated more than {} milliseconds ago. I\'m deregistering the agent with the"
                    + "old ID of {} and replacing it with this new agent with ID '{}'.",
-                   name, zooKeeperRegistrationTtlMillis, existingId.trim(), id.trim());
+              name, zooKeeperRegistrationTtlMillis, existingId.trim(), id.trim());
         } else {
           log.info("Another agent has registered as '{}', but it never updated '{}' in ZooKeeper. "
                    + "I'll assume it's dead and deregister it.", name, hostInfoPath);

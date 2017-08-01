@@ -386,8 +386,8 @@ public class HeliosSoloDeploymentTest {
   public void testLogService() throws Exception {
     final InMemoryLogStreamFollower logStreamProvider = InMemoryLogStreamFollower.create();
     final HeliosSoloLogService logService = new HeliosSoloLogService(heliosClient,
-                                                                     dockerClient,
-                                                                     logStreamProvider);
+        dockerClient,
+        logStreamProvider);
 
     final ListenableFuture<List<String>> hostsFuture = Futures.<List<String>>immediateFuture(
         ImmutableList.of(HOST1));
@@ -406,6 +406,6 @@ public class HeliosSoloDeploymentTest {
     logService.runOneIteration();
 
     verify(dockerClient, timeout(5000)).logs(eq(CONTAINER_ID),
-                                             Matchers.<DockerClient.LogsParam>anyVararg());
+        Matchers.<DockerClient.LogsParam>anyVararg());
   }
 }

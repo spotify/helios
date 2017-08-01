@@ -39,8 +39,8 @@ import org.apache.zookeeper.data.Id;
  * <p>The permissions for all rules that match a path apply. For example if there
  * are two rules:
  * <ol>
- *   <li>"/foo.*", DELETE, usr1</li>
- *   <li>"/foo/bar", CREATE, user1</li>
+ * <li>"/foo.*", DELETE, usr1</li>
+ * <li>"/foo/bar", CREATE, user1</li>
  * </ol>
  *
  * <p>Then ACLs will be set so that user1 can create and delete nodes on the /foo/bar node, but he

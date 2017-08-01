@@ -41,6 +41,7 @@ public class VersionResource {
 
   /**
    * Returns the server version string.
+   *
    * @return The server version.
    */
   @GET
@@ -55,7 +56,9 @@ public class VersionResource {
   /**
    * Given the client version, returns the version status, i.e. whether or not they should be
    * compatible or not.
+   *
    * @param client The client version.
+   *
    * @return The VersionCheckResponse object.
    */
   @GET
@@ -70,7 +73,7 @@ public class VersionResource {
 
     if (isNullOrEmpty(client)) {
       return new VersionCheckResponse(VersionCompatibility.Status.MISSING,
-                                      serverVersion, Version.RECOMMENDED_VERSION);
+          serverVersion, Version.RECOMMENDED_VERSION);
     }
 
     final PomVersion clientVersion = PomVersion.parse(client);

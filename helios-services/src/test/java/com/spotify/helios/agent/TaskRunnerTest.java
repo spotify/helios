@@ -85,11 +85,11 @@ public class TaskRunnerTest {
     final TaskRunner tr = TaskRunner.builder()
         .delayMillis(0)
         .config(TaskConfig.builder()
-                    .namespace("test")
-                    .host(HOST)
-                    .job(JOB)
-                    .containerDecorators(ImmutableList.of(containerDecorator))
-                    .build())
+            .namespace("test")
+            .host(HOST)
+            .job(JOB)
+            .containerDecorators(ImmutableList.of(containerDecorator))
+            .build())
         .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
         .build();
@@ -108,13 +108,13 @@ public class TaskRunnerTest {
   @Test
   public void testPullsAreSerializedWithOldDocker() throws Throwable {
     assertFalse("concurrent calls to docker.pull with a version where it causes issues",
-                arePullsConcurrent("1.6.2"));
+        arePullsConcurrent("1.6.2"));
   }
 
   @Test
   public void testPullsAreConcurrentWithNewerDocker() throws Throwable {
     assertTrue("calls to docker.pull were unnecessarily serialized",
-               arePullsConcurrent("1.9.0-rc1"));
+        arePullsConcurrent("1.9.0-rc1"));
   }
 
   private boolean arePullsConcurrent(final String dockerVersion)
@@ -146,11 +146,11 @@ public class TaskRunnerTest {
     final TaskRunner tr = TaskRunner.builder()
         .delayMillis(0)
         .config(TaskConfig.builder()
-                    .namespace("test")
-                    .host(HOST)
-                    .job(JOB)
-                    .containerDecorators(ImmutableList.of(containerDecorator))
-                    .build())
+            .namespace("test")
+            .host(HOST)
+            .job(JOB)
+            .containerDecorators(ImmutableList.of(containerDecorator))
+            .build())
         .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
         .build();
@@ -158,11 +158,11 @@ public class TaskRunnerTest {
     final TaskRunner tr2 = TaskRunner.builder()
         .delayMillis(0)
         .config(TaskConfig.builder()
-                    .namespace("test")
-                    .host(HOST)
-                    .job(JOB)
-                    .containerDecorators(ImmutableList.of(containerDecorator))
-                    .build())
+            .namespace("test")
+            .host(HOST)
+            .job(JOB)
+            .containerDecorators(ImmutableList.of(containerDecorator))
+            .build())
         .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
         .build();
@@ -198,11 +198,11 @@ public class TaskRunnerTest {
     final TaskRunner tr = TaskRunner.builder()
         .delayMillis(0)
         .config(TaskConfig.builder()
-                    .namespace("test")
-                    .host(HOST)
-                    .job(JOB)
-                    .containerDecorators(ImmutableList.of(containerDecorator))
-                    .build())
+            .namespace("test")
+            .host(HOST)
+            .job(JOB)
+            .containerDecorators(ImmutableList.of(containerDecorator))
+            .build())
         .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
         .build();
@@ -235,21 +235,21 @@ public class TaskRunnerTest {
     when(mockDocker.inspectContainer(anyString())).thenReturn(stopped);
     when(mockDocker.inspectImage(IMAGE)).thenReturn(mockImageInfo);
     when(mockDocker.createContainer(any(ContainerConfig.class), anyString()))
-            .thenReturn(mockCreation);
+        .thenReturn(mockCreation);
     when(mockHealthChecker.check(anyString())).thenReturn(false);
 
     final TaskRunner tr = TaskRunner.builder()
-            .delayMillis(0)
-            .config(TaskConfig.builder()
-                    .namespace("test")
-                    .host(HOST)
-                    .job(JOB)
-                    .containerDecorators(ImmutableList.of(containerDecorator))
-                    .build())
-            .docker(mockDocker)
-            .listener(mockListener)
-            .healthChecker(mockHealthChecker)
-            .build();
+        .delayMillis(0)
+        .config(TaskConfig.builder()
+            .namespace("test")
+            .host(HOST)
+            .job(JOB)
+            .containerDecorators(ImmutableList.of(containerDecorator))
+            .build())
+        .docker(mockDocker)
+        .listener(mockListener)
+        .healthChecker(mockHealthChecker)
+        .build();
 
     tr.run();
 

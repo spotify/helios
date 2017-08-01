@@ -81,7 +81,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for the job to run
     final TaskStatus firstTaskStatus = awaitJobState(client, testHost(), jobId, RUNNING,
-                                                     LONG_WAIT_SECONDS, SECONDS);
+        LONG_WAIT_SECONDS, SECONDS);
     assertJobEquals(job, firstTaskStatus.getJob());
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
@@ -153,7 +153,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
         final JobStatus jobStatus = client.jobStatus(jobId).get();
         final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(testHost());
         return taskStatus != null && Objects.equals(taskStatus.getContainerId(),
-                                                    secondRestartedContainerId)
+            secondRestartedContainerId)
                ? taskStatus : null;
       }
     });

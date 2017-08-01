@@ -50,7 +50,7 @@ public class RolloutTask extends Descriptor {
   }
 
   private RolloutTask(@JsonProperty("action") final Action action,
-                     @JsonProperty("target") final String target) {
+                      @JsonProperty("target") final String target) {
     this.action = checkNotNull(action, "action");
     this.target = checkNotNull(target, "target");
   }

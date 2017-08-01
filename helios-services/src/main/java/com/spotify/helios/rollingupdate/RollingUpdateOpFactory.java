@@ -126,7 +126,7 @@ public class RollingUpdateOpFactory {
       // We are done -> delete tasks & update status
       ops.add(delete(Paths.statusDeploymentGroupTasks(deploymentGroup.getName())));
       ops.add(set(Paths.statusDeploymentGroup(deploymentGroup.getName()),
-                  status));
+          status));
 
       // Emit an event signalling that we're DONE!
       events.add(eventFactory.rollingUpdateDone(deploymentGroup));
@@ -149,12 +149,13 @@ public class RollingUpdateOpFactory {
   /**
    * Don't advance to the next task -- yield and have the current task be executed again in the
    * next iteration.
+   *
    * @return {@link RollingUpdateOp}
    */
   public RollingUpdateOp yield() {
     // Do nothing
     return new RollingUpdateOp(ImmutableList.<ZooKeeperOperation>of(),
-                               ImmutableList.<Map<String, Object>>of());
+        ImmutableList.<Map<String, Object>>of());
   }
 
   private boolean isIgnoreFailures() {
@@ -196,7 +197,7 @@ public class RollingUpdateOpFactory {
     events.add(eventFactory.rollingUpdateFailed(deploymentGroup, taskEv));
 
     return new RollingUpdateOp(ImmutableList.copyOf(operations),
-                               ImmutableList.copyOf(events));
+        ImmutableList.copyOf(events));
   }
 
   public RollingUpdateOp error(final String msg, final String host,

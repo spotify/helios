@@ -87,6 +87,7 @@ public class JobsResource {
    * parameter {@code q} is specified it will only return jobs whose job id contains the string.
    *
    * @param query The query string.
+   *
    * @return A map of Job IDs to Jobs.
    */
   @GET
@@ -134,6 +135,7 @@ public class JobsResource {
    * Returns the {@link Job} with the given id.
    *
    * @param id The job ID.
+   *
    * @return The job.
    */
   @Path("{id}")
@@ -151,8 +153,9 @@ public class JobsResource {
   /**
    * Create a job given the definition in {@code job}.
    *
-   * @param job The job to create.
+   * @param job      The job to create.
    * @param username The user creating the job.
+   *
    * @return The response.
    */
   @POST
@@ -187,8 +190,9 @@ public class JobsResource {
   /**
    * Deletes the job specified by the given id.
    *
-   * @param id The id of the job to delete.
+   * @param id    The id of the job to delete.
    * @param token The optional authorization token.
+   *
    * @return The response.
    */
   @Path("{id}")
@@ -218,6 +222,7 @@ public class JobsResource {
    * deployed, and the status of the jobs where it's deployed, etc.
    *
    * @param id The job ID.
+   *
    * @return The job status.
    */
   @Path("{id}/status")
@@ -231,7 +236,7 @@ public class JobsResource {
     }
     return Optional.fromNullable(model.getJobStatus(id));
   }
-  
+
   @Path("/statuses")
   @POST
   @Produces(APPLICATION_JSON)

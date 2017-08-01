@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  * Tests that commands which do search matching tell you that you didn't match anything if you
  * provided something to match against.  Specifically, if you do something like
- *     helios -s foo hosts list
+ * helios -s foo hosts list
  * and no host starts with 'list', it'll at least tell you that no hosts matched that, rather than
  * just returning an empty display, unless option -q (quiet) is used.
  *

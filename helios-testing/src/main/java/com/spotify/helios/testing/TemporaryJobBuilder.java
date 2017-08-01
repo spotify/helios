@@ -212,7 +212,9 @@ public class TemporaryJobBuilder {
    * already been removed. If not set, jobs will be removed after 30 minutes. This is for the
    * case when a TemporaryJob is not cleaned up properly, perhaps because the process terminated
    * prematurely.
+   *
    * @param expires the Date when the job should be removed
+   *
    * @return the TemporaryJobBuilder
    */
   public TemporaryJobBuilder expires(final Date expires) {
@@ -222,7 +224,9 @@ public class TemporaryJobBuilder {
 
   /**
    * This will override the default prober provided by {@link TemporaryJobs} to the constructor.
+   *
    * @param prober the prober to use for this job
+   *
    * @return the TemporaryJobBuilder
    */
   public TemporaryJobBuilder prober(final Prober prober) {
@@ -257,6 +261,7 @@ public class TemporaryJobBuilder {
    *
    * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is
    *              empty.
+   *
    * @return a TemporaryJob representing the deployed job
    */
   public TemporaryJob deploy(final String... hosts) {
@@ -270,6 +275,7 @@ public class TemporaryJobBuilder {
    *
    * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is
    *              empty.
+   *
    * @return a TemporaryJob representing the deployed job
    */
   public TemporaryJob deploy(final List<String> hosts) {

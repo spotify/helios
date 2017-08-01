@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Represents an event that will be collected for logging purposes.
  */
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
-@JsonPropertyOrder({"step", "timestamp", "duration", "success", "testClassName", "testName"})
+@JsonPropertyOrder({ "step", "timestamp", "duration", "success", "testClassName", "testName" })
 public class TemporaryJobEvent {
   private final double timestamp;
   private final double duration;

@@ -36,7 +36,7 @@ public interface ZooKeeperMetrics {
   /**
    * Call this to update the appropriate timer with an event duration.
    *
-   * @param name Durations with the same name get recorded under the same timer.
+   * @param name     Durations with the same name get recorded under the same timer.
    * @param duration Duration of the event.
    * @param timeUnit Time unit of the duration.
    */

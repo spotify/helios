@@ -61,6 +61,7 @@ public class PortAllocator {
    * @param ports A map of port mappings for a container, both with statically configured
    *              external ports and dynamic unconfigured external ports.
    * @param used  A set of used ports. The ports allocated will not clash with these ports.
+   *
    * @return The allocated ports.
    */
   public Map<String, Integer> allocate(final Map<String, PortMapping> ports,
@@ -93,9 +94,9 @@ public class PortAllocator {
   }
 
   private boolean allocateStatic(final ImmutableMap.Builder<String, Integer> allocation,
-                              final Set<Integer> used,
-                              final String name,
-                              final Integer port) {
+                                 final Set<Integer> used,
+                                 final String name,
+                                 final Integer port) {
     // Verify that this port is not in use
     if (used.contains(port)) {
       return false;
@@ -107,8 +108,8 @@ public class PortAllocator {
   }
 
   private boolean allocateDynamic(final ImmutableMap.Builder<String, Integer> allocation,
-                               final Set<Integer> used,
-                               final String name) {
+                                  final Set<Integer> used,
+                                  final String name) {
     for (int i = 0; i < this.potentialPorts.size(); i++) {
       final Integer port = nextPotentialPort();
       if (!used.contains(port) && portAvailable(port)) {
@@ -133,7 +134,9 @@ public class PortAllocator {
 
   /**
    * Check if the port is available on the host. This is racy but it's better than nothing.
+   *
    * @param port Port number to check.
+   *
    * @return True if port is available. False otherwise.
    */
   private boolean portAvailable(final int port) {

@@ -60,8 +60,7 @@ public class AlphaNumericComparator implements Comparator<CharSequence> {
    * Creates a comparator that will use locale-sensitive sorting of the non-numerical parts of the
    * compared strings.
    *
-   * @param locale
-   *         the locale to use
+   * @param locale the locale to use
    */
   public AlphaNumericComparator(final Locale locale) {
     this(Collator.getInstance(requireNonNull(locale)));
@@ -71,8 +70,7 @@ public class AlphaNumericComparator implements Comparator<CharSequence> {
    * Creates a comparator that will use the given collator to sort the non-numerical parts of the
    * compared strings.
    *
-   * @param collator
-   *         the collator to use
+   * @param collator the collator to use
    */
   public AlphaNumericComparator(final Collator collator) {
     this.collator = requireNonNull(collator);

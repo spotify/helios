@@ -52,9 +52,9 @@ public class JobWatchExactTest extends SystemTestBase {
     // deploy
     deployJob(jobId, testHost());
 
-    final String[] commands = new String[]{"watch", "--exact", "-z", masterEndpoint(),
-                                           "--no-log-setup", jobId.toString(), testHost(),
-                                           "FAKE_TEST_AGENT"};
+    final String[] commands = new String[]{ "watch", "--exact", "-z", masterEndpoint(),
+                                            "--no-log-setup", jobId.toString(), testHost(),
+                                            "FAKE_TEST_AGENT" };
 
     final AtomicBoolean success = new AtomicBoolean(false);
     final List<String> outputLines = Lists.newArrayList();
@@ -105,7 +105,7 @@ public class JobWatchExactTest extends SystemTestBase {
       }
     };
     final CliMain main = new CliMain(new PrintStream(out),
-                                     new PrintStream(new ByteArrayOutputStream()), commands);
+        new PrintStream(new ByteArrayOutputStream()), commands);
     main.run();
     assertTrue("Should have stopped the stream due to success: got\n"
                + Joiner.on("").join(outputLines), success.get());

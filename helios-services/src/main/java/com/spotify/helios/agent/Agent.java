@@ -107,7 +107,7 @@ public class Agent extends AbstractIdleService {
     this.executions = checkNotNull(executions, "executions");
     this.portAllocator = checkNotNull(portAllocator, "portAllocator");
     this.reactor = checkNotNull(reactorFactory.create("agent", new Update(), UPDATE_INTERVAL),
-                                "reactor");
+        "reactor");
     this.reaper = checkNotNull(reaper, "reaper");
   }
 
@@ -144,7 +144,7 @@ public class Agent extends AbstractIdleService {
     final TaskStatus taskStatus = model.getTaskStatus(job.getId());
     final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
     final Supervisor supervisor = supervisorFactory.create(job, containerId, portAllocation,
-                                                           supervisorListener);
+        supervisorListener);
     supervisors.put(job.getId(), supervisor);
     return supervisor;
   }
@@ -218,7 +218,7 @@ public class Agent extends AbstractIdleService {
             final Execution execution = existing.withGoal(task.getGoal());
             newExecutions.put(jobId, execution);
           }
-        } else  {
+        } else {
           newExecutions.put(jobId, Execution.of(task.getJob()).withGoal(task.getGoal()));
         }
       }
@@ -249,7 +249,7 @@ public class Agent extends AbstractIdleService {
           final Execution execution = entry.getValue();
           final Job job = execution.getJob();
           final Map<String, Integer> ports = portAllocator.allocate(job.getPorts(),
-                                                                    usedPorts.build());
+              usedPorts.build());
           log.debug("Allocated ports for job {}: {}", jobId, ports);
           if (ports != null) {
             newExecutions.put(jobId, execution.withPorts(ports));
@@ -315,7 +315,7 @@ public class Agent extends AbstractIdleService {
       // Persist executions
       if (!reapedTasks.isEmpty()) {
         final Map<JobId, Execution> survivors = Maps.filterKeys(executions.get(),
-                                                                not(in(reapedTasks)));
+            not(in(reapedTasks)));
         executions.setUnchecked(ImmutableMap.copyOf(survivors));
       }
     }

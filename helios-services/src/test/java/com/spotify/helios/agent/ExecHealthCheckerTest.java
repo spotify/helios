@@ -74,7 +74,7 @@ public class ExecHealthCheckerTest {
     when(docker.info()).thenReturn(info);
     when(docker.version()).thenReturn(version);
     when(docker.execCreate(eq(CONTAINER_ID), any(String[].class),
-                           (DockerClient.ExecCreateParam) anyVararg()))
+        (DockerClient.ExecCreateParam) anyVararg()))
         .thenReturn(ExecCreation.create(EXEC_ID, emptyList()));
     when(docker.execStart(eq(EXEC_ID), (ExecStartParameter) anyVararg())).thenReturn(log);
     when(docker.execInspect(EXEC_ID)).thenReturn(execState);

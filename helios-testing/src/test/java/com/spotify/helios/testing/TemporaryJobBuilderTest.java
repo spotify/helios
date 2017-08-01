@@ -120,7 +120,7 @@ public class TemporaryJobBuilderTest {
 
     final ImmutableSet<String> expectedWaitPorts = ImmutableSet.of("http");
     verify(deployer).deploy(any(Job.class), eq(hosts), eq(expectedWaitPorts),
-                            eq(prober), eq(reportWriter));
+        eq(prober), eq(reportWriter));
   }
 
   @Test

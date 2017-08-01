@@ -118,7 +118,6 @@ public class AgentParser extends ServiceParser {
       throw new IllegalArgumentException("Bad port range: " + portRangeString);
     }
 
-
     String agentPassword = System.getenv(ZK_AGENT_PASSWORD_ENVVAR);
     if (agentPassword == null) {
       agentPassword = options.getString(zkAclAgentPassword.getDest());
@@ -224,7 +223,7 @@ public class AgentParser extends ServiceParser {
    */
   @VisibleForTesting
   protected static <T> List<T> validateArgument(List<T> list, Predicate<T> predicate,
-                                              Function<T, String> msgFn) {
+                                                Function<T, String> msgFn) {
 
     final Optional<T> firstInvalid = list.stream()
         .filter(predicate.negate())
@@ -321,8 +320,8 @@ public class AgentParser extends ServiceParser {
         .help("If specified, the agent won't write job histories to ZooKeeper.");
 
     connectionPoolSize = parser.addArgument("--docker-connection-pool-size")
-            .type(Integer.class)
-            .help("Size of the Docker socket connection pool.");
+        .type(Integer.class)
+        .help("Size of the Docker socket connection pool.");
 
     googleCloudCredentialsFile = parser.addArgument("--docker-gcp-account-credentials")
         .type(fileType().verifyExists().verifyCanRead())
@@ -334,8 +333,8 @@ public class AgentParser extends ServiceParser {
         parser.addArgument("--docker-use-gcp-application-default-credentials")
             .action(storeTrue())
             .help("When set, helios-agent will configure the docker-client to use the Google Cloud "
-                + "Application Default Credentials for pulling images from "
-                + "Google Container Registry.");
+                  + "Application Default Credentials for pulling images from "
+                  + "Google Container Registry.");
   }
 
   public AgentConfig getAgentConfig() {

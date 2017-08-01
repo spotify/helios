@@ -101,7 +101,7 @@ public class RestartPolicy {
 
     public RestartPolicy build() {
       return new RestartPolicy(restartIntervalMillis, flappingThrottleMillis, retryIntervalMillis,
-        imageMissingThrottleMillis);
+          imageMissingThrottleMillis);
     }
   }
 }

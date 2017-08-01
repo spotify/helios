@@ -107,11 +107,11 @@ public class HeliosSoloIT {
         .image(ALPINE)
         .port("nc", 4711, ports.localPort("nc"))
         .command("sh", "-c",
-                 "apk add --update bind-tools "
-                 + "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) "
-                 + "&& export HOST=$(echo $SRV | cut -d' ' -f4) "
-                 + "&& export PORT=$(echo $SRV | cut -d' ' -f3) "
-                 + "&& nc -lk -p 4711 -e curl http://$HOST:$PORT"
+            "apk add --update bind-tools "
+            + "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) "
+            + "&& export HOST=$(echo $SRV | cut -d' ' -f4) "
+            + "&& export PORT=$(echo $SRV | cut -d' ' -f3) "
+            + "&& nc -lk -p 4711 -e curl http://$HOST:$PORT"
         )
         .deploy();
 
@@ -131,21 +131,21 @@ public class HeliosSoloIT {
 
     // also throw in a check to make sure log streaming is working
     assertThat(new String(logStreamProvider.getStderr(nginx.job().getId())),
-               containsString("nginx"));
+        containsString("nginx"));
   }
 
   @Test
   public void testWhitelistCaps() throws Exception {
     jobs.job()
-      .image("nginx:1.9.9")
-      .addCapabilities(asList("IPC_LOCK", "SYSLOG"))
-      .deploy();
+        .image("nginx:1.9.9")
+        .addCapabilities(asList("IPC_LOCK", "SYSLOG"))
+        .deploy();
 
     // NET_RAW is not whitelisted so creating this job should fail
     expected.expect(AssertionError.class);
     jobs.job()
-      .image("nginx:1.9.9")
-      .addCapabilities(singletonList("NET_RAW"))
-      .deploy();
+        .image("nginx:1.9.9")
+        .addCapabilities(singletonList("NET_RAW"))
+        .deploy();
   }
 }

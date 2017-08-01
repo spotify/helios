@@ -57,9 +57,9 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   /**
    * Create a fully qualified job id with name, version and hash.
    *
-   * @param name The name of the job.
+   * @param name    The name of the job.
    * @param version The version of the job.
-   * @param hash The hash of the job.
+   * @param hash    The hash of the job.
    */
   public JobId(final String name,
                final String version,
@@ -72,7 +72,7 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   /**
    * Create a new job id with a specific name and version.
    *
-   * @param name The name of the job.
+   * @param name    The name of the job.
    * @param version the version of the job.
    */
   public JobId(final String name,
@@ -115,10 +115,12 @@ public class JobId extends Descriptor implements Comparable<JobId> {
    *
    * <p>This parsing method can be used when input is trusted, i.e. failing to parse it indicates
    * programming error and not bad input.
-   * @see #parse(String)
    *
    * @param id A string representation of the job ID.
+   *
    * @return The JobId object.
+   *
+   * @see #parse(String)
    */
   public static JobId fromString(final String id) {
     try {
@@ -134,11 +136,13 @@ public class JobId extends Descriptor implements Comparable<JobId> {
    * <p>This parsing method can be used when input is not know to be correct. I.e. when parsing a
    * job id supplied by the user in the cli or when parsing a request in the master rest
    * interface.
-   * @see #fromString(String)
    *
    * @param id A string representation of the job ID.
+   *
    * @return The JobId object.
+   *
    * @throws JobIdParseException If the ID cannot be parsed.
+   * @see #fromString(String)
    */
   public static JobId parse(final String id) throws JobIdParseException {
     final String[] parts = id.split(":");

@@ -84,9 +84,9 @@ public class DeadAgentReaperTest {
       when(masterModel.isHostUp(datapoint.host))
           .thenReturn(HostStatus.Status.UP == datapoint.status);
       when(masterModel.getAgentInfo(datapoint.host)).thenReturn(AgentInfo.newBuilder()
-                                .setStartTime(datapoint.startTime)
-                                .setUptime(datapoint.uptime)
-                                .build());
+          .setStartTime(datapoint.startTime)
+          .setUptime(datapoint.uptime)
+          .build());
     }
 
     final DeadAgentReaper reaper = new DeadAgentReaper(masterModel, TIMEOUT_HOURS, clock, 100, 0);

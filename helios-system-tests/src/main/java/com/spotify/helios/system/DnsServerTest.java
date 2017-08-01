@@ -47,7 +47,7 @@ public class DnsServerTest extends SystemTestBase {
     awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX,
-                                  asList("cat", "/etc/resolv.conf"));
+        asList("cat", "/etc/resolv.conf"));
 
     deployJob(jobId, testHost());
 
@@ -68,7 +68,7 @@ public class DnsServerTest extends SystemTestBase {
     awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX,
-                                  asList("cat", "/etc/resolv.conf"));
+        asList("cat", "/etc/resolv.conf"));
 
     deployJob(jobId, testHost());
 

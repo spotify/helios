@@ -54,7 +54,7 @@ public class JobHistoryCommand extends ControlCommand {
     parser.help("see the run history of a job");
 
     jobIdArg = parser.addArgument("jobid")
-         .help("Job id");
+        .help("Job id");
   }
 
   @Override

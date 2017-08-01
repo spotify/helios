@@ -53,7 +53,7 @@ public class MultipleHostsTest extends SystemTestBase {
     awaitHostStatus(bHost, UP, LONG_WAIT_SECONDS, SECONDS);
 
     final Map<String, HostStatus> cliStatuses = new ObjectMapper().readValue(cli("hosts", "--json"),
-        new TypeReference<Map<String, HostStatus>>(){});
+        new TypeReference<Map<String, HostStatus>>() {});
     assertTrue("status must contain key for " + aHost, cliStatuses.containsKey(aHost));
     assertTrue("status must contain key for " + bHost, cliStatuses.containsKey(bHost));
 
@@ -109,7 +109,7 @@ public class MultipleHostsTest extends SystemTestBase {
 
     final Map<JobId, JobStatus> cliStatuses = new ObjectMapper().readValue(
         cli("status", "--job", "I_WANT_THIS_ONE", "--host", aHost, "--json"),
-        new TypeReference<Map<JobId, JobStatus>>(){});
+        new TypeReference<Map<JobId, JobStatus>>() {});
     assertEquals("status should only have one job", 1, cliStatuses.size());
     assertTrue(cliStatuses.containsKey(jobId));
     final JobStatus status = cliStatuses.get(jobId);

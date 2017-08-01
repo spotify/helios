@@ -103,7 +103,7 @@ public class DeploymentGroupRemoveCommandTest {
     assertEquals(1, ret);
 
     final String expected = format("Failed to remove deployment-group %s, status: %s\n", GROUP_NAME,
-                                   Status.DEPLOYMENT_GROUP_NOT_FOUND);
+        Status.DEPLOYMENT_GROUP_NOT_FOUND);
 
     assertEquals(expected, output);
   }

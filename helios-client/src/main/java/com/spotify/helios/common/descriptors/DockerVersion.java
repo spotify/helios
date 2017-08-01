@@ -52,13 +52,13 @@ public class DockerVersion {
   private final String version;
 
   /**
-   * @param apiVersion  The Docker api version supported.
-   * @param arch The architecture of the machine.
-   * @param gitCommit The git commit from which Docker was built.
-   * @param goVersion The version of the Go compiler used to build Docker.
+   * @param apiVersion    The Docker api version supported.
+   * @param arch          The architecture of the machine.
+   * @param gitCommit     The git commit from which Docker was built.
+   * @param goVersion     The version of the Go compiler used to build Docker.
    * @param kernelVersion The kernel version of the Agent.
-   * @param os The operating system of the Agent.
-   * @param version The Docker version.
+   * @param os            The operating system of the Agent.
+   * @param version       The Docker version.
    */
   public DockerVersion(@JsonProperty("apiVersion") final String apiVersion,
                        @JsonProperty("arch") final String arch,

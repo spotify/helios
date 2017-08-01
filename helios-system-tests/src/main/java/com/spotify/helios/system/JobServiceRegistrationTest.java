@@ -91,7 +91,7 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
         ServiceEndpoint.of("bar_service", "bar_proto"), ServicePorts.of("bar_port"));
 
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND,
-                                  EMPTY_ENV, portMapping, registration);
+        EMPTY_ENV, portMapping, registration);
 
     deployJob(jobId, testHost());
     awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);

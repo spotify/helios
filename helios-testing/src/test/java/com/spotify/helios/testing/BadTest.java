@@ -35,7 +35,7 @@ public class BadTest extends TemporaryJobsTestBase {
   @Test
   public void verifyJobFailsWhenCalledBeforeTestRun() throws Exception {
     assertThat(testResult(BadTestImpl.class),
-               hasFailureContaining("deploy() must be called in a @Before or in the test method"));
+        hasFailureContaining("deploy() must be called in a @Before or in the test method"));
   }
 
   public static class BadTestImpl {

@@ -87,7 +87,7 @@ public class Supervisor {
     this.statusUpdater = checkNotNull(builder.statusUpdater, "statusUpdater");
     this.monitor = checkNotNull(builder.monitor, "monitor");
     this.reactor = new DefaultReactor("supervisor-" + job.getId(), new Update(),
-                                      SECONDS.toMillis(30));
+        SECONDS.toMillis(30));
     this.reactor.startAsync();
     statusUpdater.setContainerId(containerId);
     this.sleeper = builder.sleeper;
@@ -142,6 +142,7 @@ public class Supervisor {
 
   /**
    * Check if the current command is start.
+   *
    * @return True if current command is start, otherwise false.
    */
   public boolean isStarting() {
@@ -150,6 +151,7 @@ public class Supervisor {
 
   /**
    * Check if the current command is stop.
+   *
    * @return True if current command is stop, otherwise false.
    */
   public boolean isStopping() {
@@ -158,6 +160,7 @@ public class Supervisor {
 
   /**
    * Check whether the last start/stop command is done.
+   *
    * @return True if last start/stop command is done, otherwise false.
    */
   public boolean isDone() {
@@ -166,6 +169,7 @@ public class Supervisor {
 
   /**
    * Get the current container id
+   *
    * @return The container id.
    */
   public String containerId() {
@@ -179,7 +183,7 @@ public class Supervisor {
       final Command command = currentCommand;
       final boolean done = performedCommand == command;
       log.debug("Supervisor {}: update: performedCommand={}, command={}, done={}",
-                job.getId(), performedCommand, command, done);
+          job.getId(), performedCommand, command, done);
       command.perform(done);
       if (!done) {
         performedCommand = command;
@@ -287,7 +291,9 @@ public class Supervisor {
      * Perform the command. Although this is declared to throw InterruptedException, this will only
      * happen when the supervisor is being shut down. During normal operations, the operation will
      * be allowed to run until it's done.
+     *
      * @param done Flag indicating if operation is done.
+     *
      * @throws InterruptedException If thread is interrupted.
      */
     void perform(final boolean done) throws InterruptedException;
@@ -385,7 +391,6 @@ public class Supervisor {
           .setMinIntervalMillis(SECONDS.toMillis(1))
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
-
 
       // TODO(negz): Use Docker stop instead of kill?
       // I assume this loop is intended to handle the case where the above runner.stop() fails to

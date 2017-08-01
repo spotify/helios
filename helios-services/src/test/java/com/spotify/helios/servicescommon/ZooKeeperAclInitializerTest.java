@@ -85,8 +85,8 @@ public class ZooKeeperAclInitializerTest {
 
     // initialize ACL's
     ZooKeeperAclInitializer.initializeAcl(zk.connectString(), CLUSTER_ID,
-                                          MASTER_USER, MASTER_PASSWORD,
-                                          AGENT_USER, AGENT_PASSWORD);
+        MASTER_USER, MASTER_PASSWORD,
+        AGENT_USER, AGENT_PASSWORD);
 
     for (final String path : zkClient.listRecursive("/")) {
       final List<ACL> expected = aclProvider.getAclForPath(path);

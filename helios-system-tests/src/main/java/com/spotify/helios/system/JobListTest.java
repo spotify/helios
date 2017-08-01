@@ -40,7 +40,7 @@ import org.junit.Test;
 
 public class JobListTest extends SystemTestBase {
   private static final TypeReference<Map<String, Object>> MAP_TYPE =
-      new TypeReference<Map<String, Object>>(){};
+      new TypeReference<Map<String, Object>>() {};
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Test

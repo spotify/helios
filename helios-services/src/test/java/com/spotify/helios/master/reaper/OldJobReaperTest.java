@@ -135,10 +135,10 @@ public class OldJobReaperTest {
     final List<Datapoint> datapoints = Lists.newArrayList(
         // A job not deployed, with history, and last used too long ago should BE reaped
         new Datapoint("job1", emptyMap(),
-                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), true),
+            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), true),
         // A job not deployed, with history, and last used recently should NOT BE reaped
         new Datapoint("job2", emptyMap(),
-                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false),
+            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false),
         // A job not deployed, without history, and without a creation date should BE reaped
         new Datapoint("job3", emptyMap(), emptyList(), true),
         // A job not deployed, without history, and created before retention time should BE reaped
@@ -149,10 +149,10 @@ public class OldJobReaperTest {
         new Datapoint("job6", deployments(JobId.fromString("job6"), 2), emptyList(), false),
         // A job deployed, with history, and last used too long ago should NOT BE reaped
         new Datapoint("job7", deployments(JobId.fromString("job7"), 3),
-                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), false),
+            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), false),
         // A job deployed, with history, and last used recently should NOT BE reaped
         new Datapoint("job8", deployments(JobId.fromString("job8"), 3),
-                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false)
+            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false)
     );
 
     when(masterModel.getJobs()).thenReturn(

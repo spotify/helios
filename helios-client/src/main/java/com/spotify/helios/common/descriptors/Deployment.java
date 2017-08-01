@@ -56,10 +56,11 @@ public class Deployment extends Descriptor {
 
   /**
    * Constructor
-   * @param jobId The id of the job.
-   * @param goal The desired state (i.e. goal) of the task/deployment.
-   * @param deployerUser The user doing the deployment.
-   * @param deployerMaster The master that created this deployment.
+   *
+   * @param jobId               The id of the job.
+   * @param goal                The desired state (i.e. goal) of the task/deployment.
+   * @param deployerUser        The user doing the deployment.
+   * @param deployerMaster      The master that created this deployment.
    * @param deploymentGroupName The deployment group this deployment is created by.
    */
   public Deployment(
@@ -68,7 +69,7 @@ public class Deployment extends Descriptor {
       @JsonProperty("deployerUser") @Nullable final String deployerUser,
       @JsonProperty("deployerMaster") @Nullable final String deployerMaster,
       @JsonProperty("deploymentGroupName") @Nullable final String deploymentGroupName) {
-    this.jobId  = jobId;
+    this.jobId = jobId;
     this.goal = goal;
     this.deployerUser = deployerUser;
     this.deploymentGroupName = deploymentGroupName;
@@ -159,7 +160,7 @@ public class Deployment extends Descriptor {
     }
     return !(deployerMaster != null ? !deployerMaster
         .equals(that.deployerMaster)
-                                           : that.deployerMaster != null);
+                                    : that.deployerMaster != null);
 
   }
 

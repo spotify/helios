@@ -21,36 +21,36 @@
 
 <configuration>
 
-  <!-- Note: This logging configuration is ignored by system tests when -DlogToFile=true -->
+    <!-- Note: This logging configuration is ignored by system tests when -DlogToFile=true -->
 
-  <appender name="EXTERNAL_STDERR" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n</pattern>
-    </encoder>
-    <target>System.err</target>
-  </appender>
+    <appender name="EXTERNAL_STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n</pattern>
+        </encoder>
+        <target>System.err</target>
+    </appender>
 
-  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%n</pattern>
-    </encoder>
-    <target>System.err</target>
-  </appender>
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%n</pattern>
+        </encoder>
+        <target>System.err</target>
+    </appender>
 
-  <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}">
-    <appender-ref ref="EXTERNAL_STDERR"/>
-  </logger>
-  <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}">
-    <appender-ref ref="EXTERNAL_STDERR"/>
-  </logger>
-  <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}">
-    <appender-ref ref="EXTERNAL_STDERR"/>
-  </logger>
+    <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}">
+        <appender-ref ref="EXTERNAL_STDERR"/>
+    </logger>
+    <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}">
+        <appender-ref ref="EXTERNAL_STDERR"/>
+    </logger>
+    <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}">
+        <appender-ref ref="EXTERNAL_STDERR"/>
+    </logger>
 
-  <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>
+    <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>
 
-  <root level="${rootLoggingLevel:-DEBUG}">
-    <appender-ref ref="STDERR"/>
-  </root>
+    <root level="${rootLoggingLevel:-DEBUG}">
+        <appender-ref ref="STDERR"/>
+    </root>
 
 </configuration>

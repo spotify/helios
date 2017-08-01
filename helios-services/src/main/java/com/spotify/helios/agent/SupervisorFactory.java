@@ -72,7 +72,7 @@ public class SupervisorFactory {
     this.host = host;
     this.metrics = supervisorMetrics;
     this.defaultRegistrationDomain = checkNotNull(defaultRegistrationDomain,
-                                                  "defaultRegistrationDomain");
+        "defaultRegistrationDomain");
     this.dns = checkNotNull(dns, "dns");
     this.agentRunningInContainer = checkIfAgentRunningInContainer();
   }
@@ -83,10 +83,12 @@ public class SupervisorFactory {
 
   /**
    * Create a new application container.
-   * @param job The job definition.
+   *
+   * @param job                 The job definition.
    * @param existingContainerId ID of existing container.
-   * @param ports The ports.
-   * @param listener The listener.
+   * @param ports               The ports.
+   * @param listener            The listener.
+   *
    * @return A new container.
    */
   public Supervisor create(final Job job, final String existingContainerId,

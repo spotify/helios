@@ -83,7 +83,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Wait for the job to run
     final TaskStatus firstTaskStatus = awaitJobState(client, testHost(), jobId, RUNNING,
-                                                     LONG_WAIT_SECONDS, SECONDS);
+        LONG_WAIT_SECONDS, SECONDS);
     assertJobEquals(job, firstTaskStatus.getJob());
     assertEquals(1, listContainers(dockerClient, testTag).size());
     assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state().running());
@@ -191,7 +191,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Start the job
     final SetGoalResponse started = client.setGoal(Deployment.of(jobId, START),
-                                                   testHost()).get();
+        testHost()).get();
     assertEquals(SetGoalResponse.Status.OK, started.getStatus());
 
     // Start the agent again

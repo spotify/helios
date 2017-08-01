@@ -49,14 +49,14 @@ public class JobWatchTest extends SystemTestBase {
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND,
-                                  ImmutableMap.of("FOO", "4711",
-                                                  "BAR", "deadbeef"));
+        ImmutableMap.of("FOO", "4711",
+            "BAR", "deadbeef"));
 
     // deploy
     deployJob(jobId, testHost());
 
-    final String[] commands = new String[]{"watch", "-z", masterEndpoint(),
-                                           "--no-log-setup", jobId.toString()};
+    final String[] commands = new String[]{ "watch", "-z", masterEndpoint(),
+                                            "--no-log-setup", jobId.toString() };
 
     final AtomicBoolean success = new AtomicBoolean(false);
     final List<String> outputLines = Lists.newArrayList();
@@ -99,7 +99,7 @@ public class JobWatchTest extends SystemTestBase {
       }
     };
     final CliMain main = new CliMain(new PrintStream(out),
-                                     new PrintStream(new ByteArrayOutputStream()), commands);
+        new PrintStream(new ByteArrayOutputStream()), commands);
     main.run();
     assertTrue("Should have stopped the stream due to success: got\n"
                + Joiner.on("").join(outputLines), success.get());

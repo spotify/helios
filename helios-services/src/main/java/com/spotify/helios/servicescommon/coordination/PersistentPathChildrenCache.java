@@ -98,7 +98,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
     this.valueType = valueType;
 
     final MapType mapType = Json.typeFactory().constructMapType(HashMap.class,
-                                                                Json.type(String.class), valueType);
+        Json.type(String.class), valueType);
     final Supplier<Map<String, T>> empty = Suppliers.ofInstance(Collections.<String, T>emptyMap());
 
     this.snapshot = PersistentAtomicReference.create(snapshotFile, mapType, empty);
@@ -270,9 +270,9 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
 
     while (true) {
       final List<String> possibleChildren = curator.getChildren()
-              .storingStatIn(childrenStat)
-              .usingWatcher(childrenWatcher)
-              .forPath(path);
+          .storingStatIn(childrenStat)
+          .usingWatcher(childrenWatcher)
+          .forPath(path);
 
       if (clusterId == null) {
         // Do not do any checks if the clusterId is not specified on the command line.
@@ -281,9 +281,9 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
 
       try {
         curator.inTransaction()
-              .check().forPath(Paths.configId(clusterId)).and()
-              .check().withVersion(childrenStat.getVersion()).forPath(path).and()
-              .commit();
+            .check().forPath(Paths.configId(clusterId)).and()
+            .check().withVersion(childrenStat.getVersion()).forPath(path).and()
+            .commit();
       } catch (KeeperException.BadVersionException e) {
         // Jobs have somehow changed while we were creating the transaction, retry.
         continue;

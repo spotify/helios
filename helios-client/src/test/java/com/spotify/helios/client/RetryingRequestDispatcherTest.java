@@ -68,41 +68,41 @@ public class RetryingRequestDispatcherTest {
   @Test
   public void testSuccess() throws Exception {
     when(delegate.request(any(URI.class), anyString(), any(byte[].class),
-                          Matchers.<Map<String, List<String>>>any()))
+        Matchers.<Map<String, List<String>>>any()))
         .thenReturn(Futures.<Response>immediateFuture(null));
 
     when(clock.now()).thenReturn(new Instant(0));
 
     dispatcher.request(new URI("http://example.com"), "GET", null,
-                       Collections.<String, List<String>>emptyMap());
+        Collections.<String, List<String>>emptyMap());
 
     // Verify the delegate was only called once if it returns successfully on the first try
     verify(delegate, times(1)).request(any(URI.class), anyString(), any(byte[].class),
-                                       Matchers.<Map<String, List<String>>>any());
+        Matchers.<Map<String, List<String>>>any());
   }
 
   @Test
   public void testSuccessOnRetry() throws Exception {
     when(delegate.request(any(URI.class), anyString(), any(byte[].class),
-                          Matchers.<Map<String, List<String>>>any()))
+        Matchers.<Map<String, List<String>>>any()))
         .thenReturn(Futures.<Response>immediateFailedFuture(new IOException()))
         .thenReturn(Futures.<Response>immediateFuture(null));
 
     when(clock.now()).thenReturn(new Instant(0));
 
     dispatcher.request(new URI("http://example.com"), "GET", null,
-                       Collections.<String, List<String>>emptyMap());
+        Collections.<String, List<String>>emptyMap());
 
     // Verify the delegate was called twice if it returns successfully on the second try before the
     // deadline
     verify(delegate, times(2)).request(any(URI.class), anyString(), any(byte[].class),
-                                       Matchers.<Map<String, List<String>>>any());
+        Matchers.<Map<String, List<String>>>any());
   }
 
   @Test
   public void testFailureOnTimeout() throws Exception {
     when(delegate.request(any(URI.class), anyString(), any(byte[].class),
-                          Matchers.<Map<String, List<String>>>any()))
+        Matchers.<Map<String, List<String>>>any()))
         .thenReturn(Futures.<Response>immediateFailedFuture(new IOException()))
         .thenReturn(Futures.<Response>immediateFuture(null));
 
@@ -114,7 +114,7 @@ public class RetryingRequestDispatcherTest {
     // Verify the delegate was only called once if it failed on the first try and the deadline
     // has passed before the second try was attempted.
     verify(delegate, times(1)).request(any(URI.class), anyString(), any(byte[].class),
-                                       Matchers.<Map<String, List<String>>>any());
+        Matchers.<Map<String, List<String>>>any());
     exception.expect(ExecutionException.class);
     exception.expectCause(CoreMatchers.any(IOException.class));
     future.get();

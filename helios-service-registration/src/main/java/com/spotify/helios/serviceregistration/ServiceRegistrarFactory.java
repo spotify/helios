@@ -33,6 +33,7 @@ public interface ServiceRegistrarFactory {
    * and semantics are implementation dependent.
    *
    * @param address The address of the registry the registrar should connect to.
+   *
    * @return A registrar.
    */
   ServiceRegistrar create(String address);
@@ -43,6 +44,7 @@ public interface ServiceRegistrarFactory {
    * registry in turn is resolved using some service discovery mechanism, e.g. DNS SRV queries.
    *
    * @param domain The domain that the registry should be managing.
+   *
    * @return A registrar.
    */
   ServiceRegistrar createForDomain(String domain);

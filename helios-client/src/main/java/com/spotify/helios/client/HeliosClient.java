@@ -185,7 +185,7 @@ public class HeliosClient implements Closeable {
     final Map<String, List<String>> headers = Maps.newHashMap();
     final byte[] entityBytes;
     headers.put(VersionCompatibility.HELIOS_VERSION_HEADER,
-                Collections.singletonList(Version.POM_VERSION));
+        Collections.singletonList(Version.POM_VERSION));
     if (entity != null) {
       headers.put("Content-Type", singletonList("application/json"));
       headers.put("Charset", singletonList("utf-8"));
@@ -252,13 +252,13 @@ public class HeliosClient implements Closeable {
   public ListenableFuture<JobDeployResponse> deploy(final Deployment job, final String host,
                                                     final String token) {
     final Set<Integer> deserializeReturnCodes = ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
-                                                                HTTP_BAD_METHOD,
-                                                                HTTP_BAD_REQUEST,
-                                                                HTTP_FORBIDDEN);
+        HTTP_BAD_METHOD,
+        HTTP_BAD_REQUEST,
+        HTTP_FORBIDDEN);
     return transformAsync(request(uri(path("/hosts/%s/jobs/%s", host, job.getJobId()),
-                                 ImmutableMap.of("token", token)),
-                             "PUT", job),
-                     ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
+        ImmutableMap.of("token", token)),
+        "PUT", job),
+        ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
   }
 
   public ListenableFuture<SetGoalResponse> setGoal(final Deployment job, final String host) {
@@ -268,11 +268,11 @@ public class HeliosClient implements Closeable {
   public ListenableFuture<SetGoalResponse> setGoal(final Deployment job, final String host,
                                                    final String token) {
     return transformAsync(request(uri(path("/hosts/%s/jobs/%s", host, job.getJobId()),
-                                 ImmutableMap.of("token", token)),
-                             "PATCH", job),
-                     ConvertResponseToPojo.create(SetGoalResponse.class,
-                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
-                                                                  HTTP_FORBIDDEN)));
+        ImmutableMap.of("token", token)),
+        "PATCH", job),
+        ConvertResponseToPojo.create(SetGoalResponse.class,
+            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
+                HTTP_FORBIDDEN)));
   }
 
   private ListenableFuture<Integer> status(final ListenableFuture<Response> req) {
@@ -323,12 +323,12 @@ public class HeliosClient implements Closeable {
 
   public ListenableFuture<JobDeleteResponse> deleteJob(final JobId id, final String token) {
     return transformAsync(request(uri(path("/jobs/%s", id),
-                                 ImmutableMap.of("token", token)),
-                             "DELETE"),
-                     ConvertResponseToPojo.create(JobDeleteResponse.class,
-                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
-                                                                  HTTP_BAD_REQUEST,
-                                                                  HTTP_FORBIDDEN)));
+        ImmutableMap.of("token", token)),
+        "DELETE"),
+        ConvertResponseToPojo.create(JobDeleteResponse.class,
+            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
+                HTTP_BAD_REQUEST,
+                HTTP_FORBIDDEN)));
   }
 
   public ListenableFuture<JobUndeployResponse> undeploy(final JobId jobId, final String host) {
@@ -338,18 +338,18 @@ public class HeliosClient implements Closeable {
   public ListenableFuture<JobUndeployResponse> undeploy(final JobId jobId, final String host,
                                                         final String token) {
     return transformAsync(request(uri(path("/hosts/%s/jobs/%s", host, jobId),
-                                 ImmutableMap.of("token", token)),
-                             "DELETE"),
-                     ConvertResponseToPojo.create(JobUndeployResponse.class,
-                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
-                                                                  HTTP_BAD_REQUEST,
-                                                                  HTTP_FORBIDDEN)));
+        ImmutableMap.of("token", token)),
+        "DELETE"),
+        ConvertResponseToPojo.create(JobUndeployResponse.class,
+            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
+                HTTP_BAD_REQUEST,
+                HTTP_FORBIDDEN)));
   }
 
   public ListenableFuture<HostDeregisterResponse> deregisterHost(final String host) {
     return transformAsync(request(uri(path("/hosts/%s", host)), "DELETE"),
-                     ConvertResponseToPojo.create(HostDeregisterResponse.class,
-                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+        ConvertResponseToPojo.create(HostDeregisterResponse.class,
+            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
   /**
@@ -439,8 +439,8 @@ public class HeliosClient implements Closeable {
 
   public ListenableFuture<CreateJobResponse> createJob(final Job descriptor) {
     return transformAsync(request(uri("/jobs/"), "POST", descriptor),
-                          ConvertResponseToPojo.create(CreateJobResponse.class,
-                                                       ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+        ConvertResponseToPojo.create(CreateJobResponse.class,
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
   /**
@@ -482,7 +482,7 @@ public class HeliosClient implements Closeable {
     return transformAsync(
         request(uri(path("/history/jobs/%s", jobId.toString())), "GET"),
         ConvertResponseToPojo.create(TaskStatusEvents.class,
-                                     ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
   public ListenableFuture<JobStatus> jobStatus(final JobId jobId) {
@@ -509,29 +509,29 @@ public class HeliosClient implements Closeable {
 
   public ListenableFuture<DeploymentGroupStatusResponse> deploymentGroupStatus(final String name) {
     return get(uri(path("/deployment-group/%s/status", name)),
-               new TypeReference<DeploymentGroupStatusResponse>() {});
+        new TypeReference<DeploymentGroupStatusResponse>() {});
   }
 
   public ListenableFuture<CreateDeploymentGroupResponse> createDeploymentGroup(
       final DeploymentGroup descriptor) {
     return transformAsync(request(uri("/deployment-group/"), "POST", descriptor),
-                          ConvertResponseToPojo.create(CreateDeploymentGroupResponse.class,
-                                                       ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+        ConvertResponseToPojo.create(CreateDeploymentGroupResponse.class,
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
   public ListenableFuture<RemoveDeploymentGroupResponse> removeDeploymentGroup(final String name) {
     return transformAsync(request(uri("/deployment-group/" + name), "DELETE"),
-                          ConvertResponseToPojo.create(RemoveDeploymentGroupResponse.class,
-                                                       ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+        ConvertResponseToPojo.create(RemoveDeploymentGroupResponse.class,
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
   public ListenableFuture<RollingUpdateResponse> rollingUpdate(
       final String deploymentGroupName, final JobId job, final RolloutOptions options) {
     return transformAsync(
         request(uri(path("/deployment-group/%s/rolling-update", deploymentGroupName)),
-                "POST", new RollingUpdateRequest(job, options)),
+            "POST", new RollingUpdateRequest(job, options)),
         ConvertResponseToPojo.create(RollingUpdateResponse.class,
-                                     ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
   public ListenableFuture<Integer> stopDeploymentGroup(final String deploymentGroupName) {
@@ -774,6 +774,7 @@ public class HeliosClient implements Closeable {
    *
    * @param domain The target domain.
    * @param user   The user to identify as.
+   *
    * @return A helios client.
    */
   public static HeliosClient create(final String domain, final String user) {

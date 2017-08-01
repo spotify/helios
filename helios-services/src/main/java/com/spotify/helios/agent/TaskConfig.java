@@ -86,6 +86,7 @@ public class TaskConfig {
 
   /**
    * Generate a random container name.
+   *
    * @return The random container name.
    */
   public String containerName() {
@@ -97,11 +98,13 @@ public class TaskConfig {
 
   /**
    * Create docker container configuration for a job.
+   *
    * @param imageInfo The ImageInfo object.
+   *
    * @return The ContainerConfig object.
    */
   public ContainerConfig containerConfig(final ImageInfo imageInfo,
-      final Optional<String> dockerVersion) {
+                                         final Optional<String> dockerVersion) {
     final ContainerConfig.Builder builder = ContainerConfig.builder();
 
     builder.image(job.getImage());
@@ -121,6 +124,7 @@ public class TaskConfig {
 
   /**
    * Get final port mappings using allocated ports.
+   *
    * @return The port mapping.
    */
   public Map<String, PortMapping> ports() {
@@ -136,6 +140,7 @@ public class TaskConfig {
 
   /**
    * Get environment variables for the container.
+   *
    * @return The environment variables.
    */
   public Map<String, String> containerEnv() {
@@ -191,7 +196,9 @@ public class TaskConfig {
 
   /**
    * Get endpoint health check for a given port.
+   *
    * @param portName The port name
+   *
    * @return An EndpointHealthCheck or null if no check exists
    */
   private ServiceRegistration.EndpointHealthCheck endpointHealthCheck(String portName) {
@@ -215,6 +222,7 @@ public class TaskConfig {
   /**
    * Given the registration domain in the job, and the default registration domain for the agent,
    * figure out what domain we should actually register the job in.
+   *
    * @return The full registration domain.
    */
   private String fullyQualifiedRegistrationDomain() {
@@ -229,6 +237,7 @@ public class TaskConfig {
 
   /**
    * Create container port exposure configuration for a job.
+   *
    * @return The exposed ports.
    */
   private Set<String> containerExposedPorts() {
@@ -242,6 +251,7 @@ public class TaskConfig {
 
   /**
    * Compute docker container environment variables.
+   *
    * @return The container environment variables.
    */
   private List<String> containerEnvStrings() {
@@ -255,6 +265,7 @@ public class TaskConfig {
 
   /**
    * Create a port binding configuration for the job.
+   *
    * @return The port bindings.
    */
   private Map<String, List<PortBinding>> portBindings() {
@@ -276,6 +287,7 @@ public class TaskConfig {
 
   /**
    * Create a container host configuration for the job.
+   *
    * @return The host configuration.
    */
   public HostConfig hostConfig(final Optional<String> dockerVersion) {
@@ -311,6 +323,7 @@ public class TaskConfig {
 
   /**
    * Get container volumes.
+   *
    * @return A set of container volumes.
    */
   private Set<String> volumes() {
@@ -327,6 +340,7 @@ public class TaskConfig {
 
   /**
    * Get container bind mount volumes.
+   *
    * @return A list of container bind mount volumes.
    */
   private List<String> binds() {
@@ -344,8 +358,10 @@ public class TaskConfig {
 
   /**
    * Create a docker port exposure/mapping entry.
-   * @param port The port.
+   *
+   * @param port     The port.
    * @param protocol The protocol.
+   *
    * @return A string representing the port and protocol.
    */
   private String containerPort(final int port, final String protocol) {

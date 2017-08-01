@@ -20,12 +20,12 @@
   -->
 
 <configuration>
-  <!--Uncomment below to enable jersey access logging-->
-  <!--<appender name="ACCESS_STDERR" class="ch.qos.logback.core.ConsoleAppender">-->
+    <!--Uncomment below to enable jersey access logging-->
+    <!--<appender name="ACCESS_STDERR" class="ch.qos.logback.core.ConsoleAppender">-->
     <!--<encoder>-->
-      <!--<pattern>%t{HH:mm:ss.SSS} - %h %l %u %user %date "%r" %s %b</pattern>-->
+    <!--<pattern>%t{HH:mm:ss.SSS} - %h %l %u %user %date "%r" %s %b</pattern>-->
     <!--</encoder>-->
     <!--<target>System.err</target>-->
-  <!--</appender>-->
-  <!--<appender-ref ref="ACCESS_STDERR"/>-->
+    <!--</appender>-->
+    <!--<appender-ref ref="ACCESS_STDERR"/>-->
 </configuration>

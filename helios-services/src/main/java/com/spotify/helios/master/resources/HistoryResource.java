@@ -54,8 +54,11 @@ public class HistoryResource {
 
   /**
    * Returns the {@link TaskStatusEvents} for the specified job.
+   *
    * @param jobId The ID of the job.
+   *
    * @return The history of the jobs.
+   *
    * @throws HeliosException If an unexpected error occurs.
    */
   @GET

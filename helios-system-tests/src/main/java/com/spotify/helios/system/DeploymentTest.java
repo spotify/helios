@@ -100,7 +100,7 @@ public class DeploymentTest extends SystemTestBase {
     final Set<String> containerIds = Sets.newHashSetWithExpectedSize(numberOfJobs);
     for (final JobId jobId : jobIds) {
       final TaskStatus taskStatus = awaitJobState(client, testHost(), jobId, RUNNING,
-                                                  LONG_WAIT_SECONDS, SECONDS);
+          LONG_WAIT_SECONDS, SECONDS);
       containerIds.add(taskStatus.getContainerId());
     }
 
@@ -188,7 +188,7 @@ public class DeploymentTest extends SystemTestBase {
     assertEquals(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, deployed2.getStatus());
 
     final JobDeployResponse deployed3 = client.deploy(Deployment.of(BOGUS_JOB, START),
-                                                      testHost()).get();
+        testHost()).get();
     assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, deployed3.getStatus());
 
     final JobDeployResponse deployed4 = client.deploy(deployment, BOGUS_HOST).get();

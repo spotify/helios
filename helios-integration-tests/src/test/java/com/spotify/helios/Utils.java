@@ -66,26 +66,26 @@ public class Utils {
     final ByteArrayOutputStream out = new ByteArrayOutputStream();
     final ByteArrayOutputStream err = new ByteArrayOutputStream();
     final CliMain main = new CliMain(new PrintStream(out), new PrintStream(err),
-                                     args.toArray(new String[args.size()]));
+        args.toArray(new String[args.size()]));
     main.run();
     return out;
   }
 
   public static String masterImage() {
     final String path = System.getProperty("masterImage",
-                                           DEFAULT_IMAGE_INFO_PATH + "master-image.json");
+        DEFAULT_IMAGE_INFO_PATH + "master-image.json");
     return imageInfo(path);
   }
 
   public static String agentImage() {
     final String path = System.getProperty("agentImage",
-                                           DEFAULT_IMAGE_INFO_PATH + "agent-image.json");
+        DEFAULT_IMAGE_INFO_PATH + "agent-image.json");
     return imageInfo(path);
   }
 
   public static String soloImage() {
     final String path = System.getProperty("soloImage",
-                                           DEFAULT_IMAGE_INFO_PATH + "solo-image.json");
+        DEFAULT_IMAGE_INFO_PATH + "solo-image.json");
     return imageInfo(path);
   }
 

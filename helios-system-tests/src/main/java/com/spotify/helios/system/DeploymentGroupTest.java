@@ -103,7 +103,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "group1", "foo=bar");
     final String output = cli("list-deployment-groups", "--json");
     final List<String> deploymentGroups = OBJECT_MAPPER.readValue(
-        output, new TypeReference<List<String>>() { });
+        output, new TypeReference<List<String>>() {});
     assertEquals(Arrays.asList("group1", "group2"), deploymentGroups);
   }
 
@@ -177,7 +177,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar");
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
-    cli("rolling-update", "--async",  testJobNameAndVersion, TEST_GROUP);
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
 
     awaitTaskState(jobId, testHost(), TaskStatus.State.RUNNING);
 
@@ -234,7 +234,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar");
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
-    cli("rolling-update", "--async",  testJobNameAndVersion, TEST_GROUP);
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
 
     awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
     awaitTaskState(jobId, deregisterHost, TaskStatus.State.RUNNING);
@@ -297,17 +297,17 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
     assertEquals(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async", "my_job:2",
-                                             "oops"),
-                                         RollingUpdateResponse.class).getStatus());
+        OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async", "my_job:2",
+            "oops"),
+            RollingUpdateResponse.class).getStatus());
   }
 
   @Test
   public void testStatusNoRollingUpdate() throws Exception {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     assertEquals(DeploymentGroupStatusResponse.Status.IDLE,
-                 OBJECT_MAPPER.readValue(cli("deployment-group-status", "--json", TEST_GROUP),
-                                         DeploymentGroupStatusResponse.class).getStatus());
+        OBJECT_MAPPER.readValue(cli("deployment-group-status", "--json", TEST_GROUP),
+            DeploymentGroupStatusResponse.class).getStatus());
   }
 
   @Test
@@ -422,7 +422,7 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     // rolling-update should succeed & job should be running
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
-                               DeploymentGroupStatus.State.DONE);
+        DeploymentGroupStatus.State.DONE);
     awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
 
     final String jobDeploymentGroup = Polling.await(
@@ -452,7 +452,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
     assertThat(cli("stop-deployment-group", TEST_GROUP),
-               containsString("Deployment-group my_group stopped"));
+        containsString("Deployment-group my_group stopped"));
     final DeploymentGroupStatusResponse status = Json.read(
         cli("deployment-group-status", "--json", TEST_GROUP), DeploymentGroupStatusResponse.class);
     assertEquals(DeploymentGroupStatusResponse.Status.FAILED, status.getStatus());
@@ -463,7 +463,7 @@ public class DeploymentGroupTest extends SystemTestBase {
   @Test
   public void testStopDeploymentGroupGroupNotFound() throws Exception {
     assertThat(cli("stop-deployment-group", TEST_GROUP),
-               containsString("Deployment-group my_group not found"));
+        containsString("Deployment-group my_group not found"));
   }
 
   @Test
@@ -657,10 +657,10 @@ public class DeploymentGroupTest extends SystemTestBase {
         defaultClient().hostStatus(hosts.get(0)).get().getJobs().get(jobId);
     assertEquals(TEST_GROUP, deployment.getDeploymentGroupName());
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
-                               DeploymentGroupStatus.State.DONE);
+        DeploymentGroupStatus.State.DONE);
 
     System.out.printf("1 active / 0 inactive: Time to roll out: %.2f s\n",
-                      (System.currentTimeMillis() - t0) / 1000.0);
+        (System.currentTimeMillis() - t0) / 1000.0);
   }
 
   @Test

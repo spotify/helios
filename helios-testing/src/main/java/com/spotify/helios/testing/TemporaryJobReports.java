@@ -76,7 +76,7 @@ public abstract class TemporaryJobReports {
     }
 
     public void finish() {
-      final long durationMillis = System.currentTimeMillis() -  timestampMillis;
+      final long durationMillis = System.currentTimeMillis() - timestampMillis;
       final double timestamp = timestampMillis / 1000.;
       final double duration = durationMillis / 1000.;
 
