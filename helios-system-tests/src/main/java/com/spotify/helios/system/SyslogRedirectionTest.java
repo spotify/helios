@@ -147,7 +147,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
 
       final List<String> command = Lists.newArrayList();
       final JobId jobId = createJob(testJobName, testJobVersion, testImage, command,
-                                    ImmutableMap.of("SYSLOG_REDIRECTOR", "/syslog-redirector"));
+          ImmutableMap.of("SYSLOG_REDIRECTOR", "/syslog-redirector"));
       deployJob(jobId, testHost());
 
       final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);

@@ -69,7 +69,7 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
 
       // verify health check was set correctly in job
       assertThat(job.job().getHealthCheck(),
-                 equalTo((HealthCheck) TcpHealthCheck.of(HEALTH_CHECK_PORT)));
+          equalTo((HealthCheck) TcpHealthCheck.of(HEALTH_CHECK_PORT)));
 
       // verify we can actually connect to the port
       // noinspection EmptyTryBlock
@@ -92,11 +92,11 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
 
       // verify health check was set correctly in job
       assertThat(job.job().getHealthCheck(),
-                 equalTo((HealthCheck) HttpHealthCheck.of(HEALTH_CHECK_PORT, "/")));
+          equalTo((HealthCheck) HttpHealthCheck.of(HEALTH_CHECK_PORT, "/")));
 
       // verify we can actually make http requests
       final URL url = new URL("http", DOCKER_HOST.address(),
-                              job.address(QUERY_PORT).getPort(), "/");
+          job.address(QUERY_PORT).getPort(), "/");
       final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
       assertThat(connection.getResponseCode(), equalTo(200));
     }

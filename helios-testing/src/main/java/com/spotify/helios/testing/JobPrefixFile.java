@@ -56,6 +56,7 @@ class JobPrefixFile implements AutoCloseable {
 
   /**
    * Creates a JobPrefixFile using a randomly generated filename in the specified directory.
+   *
    * @return a new JobPrefixFile
    */
   public static JobPrefixFile create(Path directory) throws IOException {
@@ -64,8 +65,10 @@ class JobPrefixFile implements AutoCloseable {
 
   /**
    * Creates a JobPrefixFile using the specified prefix and directory.
-   * @param prefix the job prefix, which will be the name of the file
+   *
+   * @param prefix    the job prefix, which will be the name of the file
    * @param directory the directory where the file will be created
+   *
    * @return a new JobPrefixFile
    */
   public static JobPrefixFile create(final String prefix, final Path directory)
@@ -78,7 +81,9 @@ class JobPrefixFile implements AutoCloseable {
    * instance will be returned if a lock can be obtained for the file. Null will be returned if the
    * lock is already held by either this process or another. For all other cases, an exception will
    * be thrown.
+   *
    * @param file the path to the file
+   *
    * @return a new JobPrefixFile if a file lock can be obtained. Null if a lock for the file is
    *         already held by either this process or another.
    */
@@ -119,9 +124,9 @@ class JobPrefixFile implements AutoCloseable {
   private JobPrefixFile(final String prefix, final Path directory) throws IOException {
     Preconditions.checkNotNull(directory);
     this.prefix = prefix == null
-                     ? "tmp-" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "-"
-                       + toHexString(ThreadLocalRandom.current().nextInt())
-                     : prefix;
+                  ? "tmp-" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "-"
+                    + toHexString(ThreadLocalRandom.current().nextInt())
+                  : prefix;
 
     // Make sure directory exists, then create prefix file
     Files.createDirectories(directory);
@@ -161,6 +166,7 @@ class JobPrefixFile implements AutoCloseable {
 
   /**
    * Helper method to delete file if it exists. This will not thrown an exception.
+   *
    * @param file the file to delete
    */
   private void deleteIfExists(Path file) {
@@ -177,6 +183,7 @@ class JobPrefixFile implements AutoCloseable {
 
   /**
    * Return the job prefix which is the same as the file name.
+   *
    * @return the job prefix
    */
   public String prefix() {
@@ -208,6 +215,7 @@ class JobPrefixFile implements AutoCloseable {
   /**
    * Helper method for closing any object which implements {@link java.lang.AutoCloseable}.
    * Exceptions are swallowed, and nulls ignored.
+   *
    * @param closeable the object to close
    */
   private static void close(final AutoCloseable closeable) {

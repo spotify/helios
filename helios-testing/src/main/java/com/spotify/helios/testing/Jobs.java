@@ -61,10 +61,12 @@ class Jobs {
    * Undeploy the job from all specified hosts, and delete the job. Any failures will be ignored,
    * and we will keep trying each host. A list of errors encountered along the way will be returned
    * to the caller.
+   *
    * @param client the HeliosClient to use
-   * @param job the job to undeploy and delete
-   * @param hosts the hosts to undeploy from
+   * @param job    the job to undeploy and delete
+   * @param hosts  the hosts to undeploy from
    * @param errors errors encountered during the undeploy will be added to this list
+   *
    * @return the list of errors
    */
   static List<AssertionError> undeploy(final HeliosClient client, final Job job,
@@ -79,7 +81,7 @@ class Jobs {
         if (response.getStatus() != JobUndeployResponse.Status.OK
             && response.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
           errors.add(new AssertionError(format("Failed to undeploy job %s - %s",
-                                               id, response)));
+              id, response)));
         }
       } catch (InterruptedException | ExecutionException | TimeoutException e) {
         errors.add(new AssertionError(e));
@@ -92,7 +94,7 @@ class Jobs {
       if (response.getStatus() != JobDeleteResponse.Status.OK
           && response.getStatus() != JobDeleteResponse.Status.JOB_NOT_FOUND) {
         errors.add(new AssertionError(format("Failed to delete job %s - %s",
-                                             id.toString(), response.toString())));
+            id.toString(), response.toString())));
       }
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       errors.add(new AssertionError(e));

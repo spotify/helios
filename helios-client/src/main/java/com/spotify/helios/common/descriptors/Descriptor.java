@@ -23,7 +23,6 @@ package com.spotify.helios.common.descriptors;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.Throwables;
 import com.spotify.helios.common.Json;
 import java.io.IOException;
 

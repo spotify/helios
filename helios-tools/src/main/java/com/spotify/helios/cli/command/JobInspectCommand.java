@@ -98,7 +98,7 @@ public class JobInspectCommand extends WildcardJobCommand {
     if (healthCheck instanceof HttpHealthCheck) {
       final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) healthCheck;
       str += String.format(", port: %s, path: %s", httpHealthCheck.getPort(),
-                         httpHealthCheck.getPath());
+          httpHealthCheck.getPath());
     } else if (healthCheck instanceof TcpHealthCheck) {
       final TcpHealthCheck tcpHealthCheck = (TcpHealthCheck) healthCheck;
       str += String.format(", port: %s", tcpHealthCheck.getPort());
@@ -140,9 +140,9 @@ public class JobInspectCommand extends WildcardJobCommand {
       out.printf("Id: %s%n", job.getId());
       out.printf("Image: %s%n", job.getImage());
       out.printf("Created: %s%n",
-                 job.getCreated() == null ? "" : DATE_FORMATTER.format(new Date(job.getCreated())));
+          job.getCreated() == null ? "" : DATE_FORMATTER.format(new Date(job.getCreated())));
       out.printf("Expires: %s%n",
-                 job.getExpires() == null ? "never" : DATE_FORMATTER.format(job.getExpires()));
+          job.getExpires() == null ? "never" : DATE_FORMATTER.format(job.getExpires()));
       out.printf("Hostname: %s%n", job.getHostname());
       out.printf("Command: %s%n", quote(job.getCommand()));
       printMap(out, "Env:   ", QUOTE, job.getEnv());

@@ -48,8 +48,8 @@ public class CliParserTest {
       "http://master-a1.nyc.com:80",
       "http://master-a2.nyc.com:80",
       "http://master-a3.nyc.com:80",
-  };
-  private static final String[] DOMAINS = {"foo", "bar", "baz"};
+      };
+  private static final String[] DOMAINS = { "foo", "bar", "baz" };
   private static final String SERVICE = "foo-service";
   private static final String SRV = "helios";
 
@@ -97,7 +97,7 @@ public class CliParserTest {
 
   @Test
   public void testComputeTargetsSingleDomain() throws Exception {
-    final String[] args = {SUBCOMMAND, "-d", DOMAINS[0], SERVICE};
+    final String[] args = { SUBCOMMAND, "-d", DOMAINS[0], SERVICE };
     final CliParser cliParser = new CliParser(args);
     final List<Target> targets = cliParser.getTargets();
 
@@ -108,7 +108,7 @@ public class CliParserTest {
 
   @Test
   public void testComputeTargetsMultiDomain() throws Exception {
-    final String[] args = {SUBCOMMAND, "-d", Joiner.on(",").join(DOMAINS), SERVICE};
+    final String[] args = { SUBCOMMAND, "-d", Joiner.on(",").join(DOMAINS), SERVICE };
     final CliParser cliParser = new CliParser(args);
     final List<Target> targets = cliParser.getTargets();
 
@@ -119,7 +119,7 @@ public class CliParserTest {
 
   @Test
   public void testComputeTargetsMultipleEndpointsFromConfig() throws Exception {
-    final String[] args = {SUBCOMMAND, SERVICE};
+    final String[] args = { SUBCOMMAND, SERVICE };
 
     // Create a "~/.helios/config" file, which is the path CliConfig reads by default
     final File configDir = temporaryFolder.newFolder(CliConfig.getConfigDirName());
@@ -152,7 +152,7 @@ public class CliParserTest {
 
   @Test
   public void testComputeTargetsMultipleDomainsFromConfig() throws Exception {
-    final String[] args = {SUBCOMMAND, SERVICE};
+    final String[] args = { SUBCOMMAND, SERVICE };
 
     // Create a "~/.helios/config" file, which is the path CliConfig reads by default
     final File configDir = temporaryFolder.newFolder(CliConfig.getConfigDirName());

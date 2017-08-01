@@ -43,9 +43,10 @@ public class ServiceRegistrars {
    * Create a registrar. Attempts to load it from a plugin if path is not null or using the app
    * class loader otherwise. If no registrar plugin was found, returns a nop registrar.
    *
-   * @param path Path to plugin jar.
+   * @param path    Path to plugin jar.
    * @param address The address of the registry the registrar should connect to.
-   * @param domain The domain that the registry should be managing.
+   * @param domain  The domain that the registry should be managing.
+   *
    * @return The ServiceRegistrar object.
    */
   public static ServiceRegistrar createServiceRegistrar(final Path path,
@@ -81,6 +82,7 @@ public class ServiceRegistrars {
    * Get a registrar factory from a plugin.
    *
    * @param path The path to the plugin jar.
+   *
    * @return The ServiceRegistrarFactory object.
    */
   private static ServiceRegistrarFactory createFactory(final Path path) {

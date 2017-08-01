@@ -144,7 +144,7 @@ public class JobValidator {
       for (final String portName : servicePorts.getPorts().keySet()) {
         if (!job.getPorts().containsKey(portName)) {
           errors.add(format("Service registration refers to missing port mapping: %s=%s",
-                            registration, portName));
+              registration, portName));
         }
         if (!REGISTRATION_NAME_PATTERN.matcher(registration.getName()).matches()) {
           errors.add(format("Invalid service registration name: %s", registration.getName()));
@@ -207,13 +207,14 @@ public class JobValidator {
       }
     }
 
-
     return errors;
   }
 
   /**
    * Validate the Job's image by checking it's not null or empty and has the right format.
+   *
    * @param image The image String
+   *
    * @return A set of error Strings
    */
   private Set<String> validateJobImage(final String image) {
@@ -232,7 +233,9 @@ public class JobValidator {
   /**
    * Validate the Job's JobId by checking name, version, and hash are
    * not null or empty, don't contain invalid characters.
+   *
    * @param job The Job to check.
+   *
    * @return A set of error Strings
    */
   private Set<String> validateJobId(final Job job) {
@@ -247,7 +250,6 @@ public class JobValidator {
     final String jobIdVersion = jobId.getVersion();
     final String jobIdHash = jobId.getHash();
     final JobId recomputedId = job.toBuilder().build().getId();
-
 
     errors.addAll(validateJobName(jobId, recomputedId));
     errors.addAll(validateJobVersion(jobIdVersion, recomputedId));
@@ -491,7 +493,9 @@ public class JobValidator {
 
   /**
    * Validate the Job's health check.
+   *
    * @param job The Job to check.
+   *
    * @return A set of error Strings
    */
   private Set<String> validateJobHealthCheck(final Job job) {
@@ -521,7 +525,7 @@ public class JobValidator {
         errors.add("A port must be defined for HTTP and TCP health checks.");
       } else if (!ports.containsKey(port)) {
         errors.add(format("Health check port '%s' not defined in the job. Known ports are '%s'",
-                          port, Joiner.on(", ").join(ports.keySet())));
+            port, Joiner.on(", ").join(ports.keySet())));
       }
     }
 
@@ -530,7 +534,9 @@ public class JobValidator {
 
   /**
    * Validate the Job's network mode.
+   *
    * @param job The Job to check.
+   *
    * @return A set of error Strings
    */
   private Set<String> validateJobNetworkMode(final Job job) {
@@ -553,7 +559,9 @@ public class JobValidator {
 
   /**
    * Validate the Job's added Linux capabilities.
+   *
    * @param job The Job to check.
+   *
    * @return A set of error Strings
    */
   private Set<String> validateAddCapabilities(final Job job) {

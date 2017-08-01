@@ -160,11 +160,11 @@ public class DeploymentGroupResourceTest {
 
     final Response response = resource.rollingUpdate(
         "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
-                                        RolloutOptions.newBuilder().build()));
+            RolloutOptions.newBuilder().build()));
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     assertEquals(new RollingUpdateResponse(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND),
-                 response.getEntity());
+        response.getEntity());
   }
 
   @Test
@@ -174,10 +174,10 @@ public class DeploymentGroupResourceTest {
 
     final Response response = resource.rollingUpdate(
         "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
-                                        RolloutOptions.newBuilder().build()));
+            RolloutOptions.newBuilder().build()));
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     assertEquals(new RollingUpdateResponse(RollingUpdateResponse.Status.JOB_NOT_FOUND),
-                 response.getEntity());
+        response.getEntity());
   }
 }

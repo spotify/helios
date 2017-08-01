@@ -92,10 +92,10 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         final URI realUri = connection.getURL().toURI();
         if (log.isTraceEnabled()) {
           log.trace("rep: {} {} {} {} {} gzip:{}",
-                    method, realUri, status, payload.size(), decode(payload), gzip);
+              method, realUri, status, payload.size(), decode(payload), gzip);
         } else {
           log.debug("rep: {} {} {} {} gzip:{}",
-                    method, realUri, status, payload.size(), gzip);
+              method, realUri, status, payload.size(), gzip);
         }
 
         return new Response(

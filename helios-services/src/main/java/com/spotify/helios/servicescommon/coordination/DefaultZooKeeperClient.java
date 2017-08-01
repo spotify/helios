@@ -249,7 +249,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
         return;
       }
       final CuratorTransactionFinal t = client.inTransaction().check().forPath(path).and();
-      for (final String node : reverse(nodes))  {
+      for (final String node : reverse(nodes)) {
         t.delete().forPath(node).and();
       }
       t.commit();
@@ -439,7 +439,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       final boolean exists = stat != null;
       clusterIdExists.set(exists);
       log.info("Cluster ID {} {} when checked by {}", id, exists ? "exists" : "does not exist",
-               checker);
+          checker);
     } catch (Exception e) {
       clusterIdExists.set(false);
       log.error("Exception while checking ZooKeeper cluster ID {}", clusterId, e);

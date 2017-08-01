@@ -47,7 +47,7 @@ public class TemporaryJobJsonReports extends TemporaryJobReports {
 
   public TemporaryJobJsonReports(final Path outputDir) {
     this.outputDir = outputDir;
-    final File path  = this.outputDir.toFile();
+    final File path = this.outputDir.toFile();
     if (!path.mkdirs() && !path.isDirectory()) {
       throw new IllegalStateException(format("failed to create directory \"%s\"", outputDir));
     }

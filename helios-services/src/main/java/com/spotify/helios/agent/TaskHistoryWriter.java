@@ -92,7 +92,7 @@ public class TaskHistoryWriter extends AbstractIdleService implements Runnable {
       backingStore;
 
   public TaskHistoryWriter(final String hostname, final ZooKeeperClient client,
-                               final Path backingFile) throws IOException, InterruptedException {
+                           final Path backingFile) throws IOException, InterruptedException {
     this.hostname = hostname;
     this.client = client;
     this.backingStore = PersistentAtomicReference.create(backingFile,
@@ -277,7 +277,7 @@ public class TaskHistoryWriter extends AbstractIdleService implements Runnable {
 
       try {
         log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
-                  item.getTimestamp());
+            item.getTimestamp());
 
         client.ensurePath(historyPath, true);
         client.createAndSetData(historyPath, item.getStatus().toJsonBytes());

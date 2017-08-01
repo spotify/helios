@@ -92,7 +92,7 @@ public class DeadAgentReaper extends RateLimitedService<String> {
       if (downDurationMillis >= timeoutMillis) {
         try {
           log.info("Reaping dead agent '{}' (DOWN for {} hours)",
-                   agent, DurationFormatUtils.formatDurationHMS(downDurationMillis));
+              agent, DurationFormatUtils.formatDurationHMS(downDurationMillis));
           masterModel.deregisterHost(agent);
         } catch (Exception e) {
           log.warn("Failed to reap agent '{}'", agent, e);

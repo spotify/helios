@@ -36,6 +36,7 @@ public interface LogStreamFollower {
    * @param jobId       the job id that the log stream belongs to
    * @param containerId the container id that the log stream belongs to
    * @param logStream   the log stream to follow
+   *
    * @throws IOException if an exception occurred
    */
   void followLog(JobId jobId, String containerId, Iterator<LogMessage> logStream)

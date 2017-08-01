@@ -28,7 +28,6 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.RolloutOptions;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;

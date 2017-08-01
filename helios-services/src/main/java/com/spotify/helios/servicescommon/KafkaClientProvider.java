@@ -84,6 +84,7 @@ public class KafkaClientProvider {
   /**
    * Returns a producer that uses {@link StringSerializer} for
    * keys and {@link ByteArraySerializer} for values.
+   *
    * @return An {@link Optional} of {@link KafkaProducer}.
    */
   public Optional<KafkaProducer<String, byte[]>> getDefaultProducer() {
@@ -92,10 +93,12 @@ public class KafkaClientProvider {
 
   /**
    * Returns a producer with customized serializers for keys and values.
-   * @param keySerializer The serializer for key that implements {@link Serializer}.
+   *
+   * @param keySerializer   The serializer for key that implements {@link Serializer}.
    * @param valueSerializer The serializer for value that implements {@link Serializer}.
-   * @param <K> The type of the key {@link Serializer}.
-   * @param <V> The type of the value {@link Serializer}.
+   * @param <K>             The type of the key {@link Serializer}.
+   * @param <V>             The type of the value {@link Serializer}.
+   *
    * @return An {@link Optional} of {@link KafkaProducer}.
    */
   public <K, V> Optional<KafkaProducer<K, V>> getProducer(

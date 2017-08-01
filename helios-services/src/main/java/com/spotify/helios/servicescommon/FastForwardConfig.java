@@ -37,6 +37,7 @@ public class FastForwardConfig {
 
   /**
    * Connection address, empty means use default.
+   *
    * @return An {@link Optional} of {@link HostAndPort}
    */
   public Optional<HostAndPort> getAddress() {

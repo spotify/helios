@@ -181,27 +181,27 @@ class TaskRunner extends InterruptingExecutionThreadService {
           final ContainerState state = getContainerState(containerId);
           if (state == null) {
             final String err = "container " + containerId + " was not found during health "
-                + "checking, or has no State object";
+                               + "checking, or has no State object";
             log.warn(err);
             throw new RuntimeException(err);
           }
           if (!state.running()) {
             final String err = "container " + containerId + " exited during health checking. "
-                + "Exit code: " + state.exitCode() + ", Config: " + config;
+                               + "Exit code: " + state.exitCode() + ", Config: " + config;
             log.warn(err);
             throw new RuntimeException(err);
           }
 
           final long retryMillis = retryScheduler.nextMillis();
           log.warn("container failed healthcheck, will retry in {}ms: {}: {}",
-                   retryMillis, config, containerId);
+              retryMillis, config, containerId);
           Thread.sleep(retryMillis);
         }
 
         log.info("healthchecking complete of containerId={} taskConfig={}", containerId, config);
       } else {
         log.info("no healthchecks configured for containerId={} taskConfig={}",
-                 containerId, config);
+            containerId, config);
       }
     }
 
@@ -323,7 +323,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
       log.info("Pulled image {} in {}s", image, pullTime.elapsed(SECONDS));
     } catch (DockerTimeoutException e) {
       log.warn("Pulling image {} failed with timeout after {}s", image,
-               pullTime.elapsed(SECONDS), e);
+          pullTime.elapsed(SECONDS), e);
       listener.pullFailed();
       wasTimeout = e;
     } catch (DockerException e) {

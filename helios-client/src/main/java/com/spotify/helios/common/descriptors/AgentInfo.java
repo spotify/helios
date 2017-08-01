@@ -64,17 +64,17 @@ public class AgentInfo extends Descriptor {
   /**
    * Constructor.
    *
-   * @param name  The name of the agent.
-   * @param vmName The name of the JVM.
-   * @param vmVendor The vendor of the JVM.
-   * @param vmVersion The version of the JVM.
-   * @param specName  The specification of the JVM.
-   * @param specVendor The specification vendor of the JVM.
-   * @param specVersion The specification version of the JVM.
+   * @param name           The name of the agent.
+   * @param vmName         The name of the JVM.
+   * @param vmVendor       The vendor of the JVM.
+   * @param vmVersion      The version of the JVM.
+   * @param specName       The specification of the JVM.
+   * @param specVendor     The specification vendor of the JVM.
+   * @param specVersion    The specification version of the JVM.
    * @param inputArguments JVM arguments passed when starting the agent.
-   * @param uptime How long the Agent has been running.
-   * @param startTime The clock time at which the Agent started.
-   * @param version The Helios version of the running Agent.
+   * @param uptime         How long the Agent has been running.
+   * @param startTime      The clock time at which the Agent started.
+   * @param version        The Helios version of the running Agent.
    */
   public AgentInfo(@JsonProperty("name") final String name,
                    @JsonProperty("vmName") final String vmName,

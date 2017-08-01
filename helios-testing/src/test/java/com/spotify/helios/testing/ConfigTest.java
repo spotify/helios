@@ -134,7 +134,7 @@ public class ConfigTest {
     // The local profile is the default, so we don't specify it explicitly so we can test
     // the default loading mechanism.
     parameters = new TestParameters(temporaryJobsBuilder(),
-                                    ".*", validator);
+        ".*", validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 

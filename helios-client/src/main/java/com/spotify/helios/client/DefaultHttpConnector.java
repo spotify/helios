@@ -23,12 +23,9 @@ package com.spotify.helios.client;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
-
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.sshagenttls.HttpsHandler;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.ConnectException;

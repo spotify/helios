@@ -85,7 +85,7 @@ public class CliDeploymentTest extends SystemTestBase {
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, image, IDLE_COMMAND, env, ports,
-                                  registration);
+        registration);
 
     // Query for job
     final Job expected = Job.newBuilder()
@@ -103,7 +103,7 @@ public class CliDeploymentTest extends SystemTestBase {
     assertJobEquals(expected, parsed);
     assertThat(cli("jobs", testJobName, "-q"), containsString(jobId.toString()));
     assertThat(cli("jobs", testJobName + ":" + testJobVersion, "-q"),
-               containsString(jobId.toString()));
+        containsString(jobId.toString()));
     assertEquals("job pattern foozbarz matched no jobs", cli("jobs", "foozbarz").trim());
     assertTrue(cli("jobs", "foozbarz", "-q").isEmpty());
 
@@ -124,15 +124,15 @@ public class CliDeploymentTest extends SystemTestBase {
     final Map<JobId, JobStatus> statuses = Json.read(statusString, STATUSES_TYPE);
     final Job job = statuses.get(jobId).getJob();
     assertEquals(ServicePorts.of("foo"),
-                 job.getRegistration().get(ServiceEndpoint.of("foo-service", "tcp")));
+        job.getRegistration().get(ServiceEndpoint.of("foo-service", "tcp")));
     assertEquals(ServicePorts.of("bar"),
-                 job.getRegistration().get(ServiceEndpoint.of("bar-service", "http")));
+        job.getRegistration().get(ServiceEndpoint.of("bar-service", "http")));
     assertEquals(4711, job.getPorts().get("foo").getInternalPort());
     assertEquals(PortMapping.of(5000, externalPort), job.getPorts().get("bar"));
     assertEquals("f00d", job.getEnv().get("BAD"));
 
     final String duplicateJob = cli("create", testJobName + ":" + testJobVersion, image, "--",
-                                    IDLE_COMMAND);
+        IDLE_COMMAND);
     assertThat(duplicateJob, containsString("JOB_ALREADY_EXISTS"));
 
     final String prestop = stopJob(jobId, testHost());

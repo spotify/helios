@@ -85,13 +85,14 @@ public class HostStatus extends Descriptor {
 
   /**
    * Constructor.
-   * @param jobs  Map of jobs and their deployments for this host.
-   * @param statuses the statuses of jobs on this host.
-   * @param status The up/down status of this host.
-   * @param hostInfo The host information.
-   * @param agentInfo The agent information.
+   *
+   * @param jobs        Map of jobs and their deployments for this host.
+   * @param statuses    the statuses of jobs on this host.
+   * @param status      The up/down status of this host.
+   * @param hostInfo    The host information.
+   * @param agentInfo   The agent information.
    * @param environment The environment provided to the agent on its command line.
-   * @param labels The labels assigned to the agent.
+   * @param labels      The labels assigned to the agent.
    */
   public HostStatus(@JsonProperty("jobs") final Map<JobId, Deployment> jobs,
                     @JsonProperty("statuses") final Map<JobId, TaskStatus> statuses,

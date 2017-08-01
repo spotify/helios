@@ -31,7 +31,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -127,12 +126,13 @@ public class MasterService extends AbstractIdleService {
   /**
    * Create a new service instance. Initializes the control interface and the worker.
    *
-   * @param config The service configuration.
-   * @param environment The DropWizard environment.
+   * @param config               The service configuration.
+   * @param environment          The DropWizard environment.
    * @param curatorClientFactory The zookeeper curator factory.
+   *
    * @throws ConfigurationException If there is a problem with the DropWizard configuration.
-   * @throws IOException IOException
-   * @throws InterruptedException InterruptedException
+   * @throws IOException            IOException
+   * @throws InterruptedException   InterruptedException
    */
   public MasterService(final MasterConfig config,
                        final Environment environment,
@@ -155,7 +155,7 @@ public class MasterService extends AbstractIdleService {
       metrics.start();
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
         environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
-                                                                 metricsRegistry));
+            metricsRegistry));
       }
 
       final FastForwardConfig ffwdConfig = config.getFfwdConfig();
@@ -208,8 +208,8 @@ public class MasterService extends AbstractIdleService {
 
     // Set up service registrar
     this.registrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),
-                                            config.getServiceRegistryAddress(),
-                                            config.getDomain());
+        config.getServiceRegistryAddress(),
+        config.getDomain());
 
     // Set up reaping of expired jobs
     this.expiredJobReaper = ExpiredJobReaper.newBuilder()
@@ -371,6 +371,7 @@ public class MasterService extends AbstractIdleService {
    * Create a Zookeeper client and create the control and state nodes if needed.
    *
    * @param config The service configuration.
+   *
    * @return A zookeeper client.
    */
   private ZooKeeperClient setupZookeeperClient(final MasterConfig config) {

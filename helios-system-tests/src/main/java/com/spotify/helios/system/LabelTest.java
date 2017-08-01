@@ -43,6 +43,7 @@ public class LabelTest extends SystemTestBase {
 
   /**
    * @param hosts Hostnames for which to get labels.
+   *
    * @return a map whose keys are hostnames and values are maps of label key-vals.
    */
   private Callable<Map<String, Map<String, String>>> hostLabels(final Set<String> hosts) {

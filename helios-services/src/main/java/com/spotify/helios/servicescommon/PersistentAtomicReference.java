@@ -27,7 +27,6 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.google.common.base.Supplier;
-import com.google.common.base.Throwables;
 import com.spotify.helios.common.Json;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -81,7 +80,8 @@ public class PersistentAtomicReference<T> {
    * Set the reference to {@code newValue}.
    *
    * @param newValue The value to set.
-   * @throws IOException If an error occurs working with the file on disk.
+   *
+   * @throws IOException          If an error occurs working with the file on disk.
    * @throws InterruptedException If the thread is interrupted.
    */
   public void set(T newValue) throws IOException, InterruptedException {
@@ -109,6 +109,7 @@ public class PersistentAtomicReference<T> {
    * {@link RuntimeException}s.
    *
    * @param newValue The value to set.
+   *
    * @throws InterruptedException If the thread is interrupted.
    */
   public void setUnchecked(T newValue) throws InterruptedException {

@@ -58,12 +58,12 @@ public class ApiTest extends SystemTestBase {
     json.set("id", TextNode.valueOf(testJobName + ":" + testJobVersion));
 
     final HttpURLConnection req = post("/jobs?user=" + TEST_USER,
-                                       Json.asBytes(json));
+        Json.asBytes(json));
 
     assertEquals(req.getResponseCode(), 200);
 
     final CreateJobResponse res = Json.read(toByteArray(req.getInputStream()),
-                                            CreateJobResponse.class);
+        CreateJobResponse.class);
 
     assertEquals(OK, res.getStatus());
     assertTrue(res.getErrors().isEmpty());

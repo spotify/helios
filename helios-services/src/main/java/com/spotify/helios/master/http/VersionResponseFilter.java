@@ -98,7 +98,7 @@ public class VersionResponseFilter implements Filter {
     if (status == Status.INCOMPATIBLE) {
       log.debug("version " + clientVersion + " is incompatible");
       httpResponse.sendError(426, "Your client version is incompatible with the server version "
-          + POM_VERSION);
+                                  + POM_VERSION);
     } else {
       log.debug("version " + clientVersion + " state " + status);
       chain.doFilter(request, response);

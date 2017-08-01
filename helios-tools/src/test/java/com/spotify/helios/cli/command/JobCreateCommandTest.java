@@ -104,8 +104,8 @@ public class JobCreateCommandTest {
 
     when(client.createJob(argThat(matchesName(JOB_NAME)))).thenReturn(immediateFuture(
         new CreateJobResponse(CreateJobResponse.Status.OK,
-                              Collections.<String>emptyList(),
-                              "12345")
+            Collections.<String>emptyList(),
+            "12345")
     ));
   }
 
@@ -250,7 +250,7 @@ public class JobCreateCommandTest {
     assertEquals(0, runCommand());
 
     verify(client).createJob(argThat(hasCapabilities(ImmutableSet.of("cap_one", "cap_two"),
-                                                     ImmutableSet.of("cap_three", "cap_four"))
+        ImmutableSet.of("cap_three", "cap_four"))
     ));
   }
 
@@ -273,7 +273,7 @@ public class JobCreateCommandTest {
     when(options.getString("image")).thenReturn("foobar");
 
     when(options.get("file"))
-            .thenReturn(new File("src/test/resources/job_config_extra_labels.json"));
+        .thenReturn(new File("src/test/resources/job_config_extra_labels.json"));
 
     when(options.getList("labels")).thenReturn(Collections.emptyList());
 

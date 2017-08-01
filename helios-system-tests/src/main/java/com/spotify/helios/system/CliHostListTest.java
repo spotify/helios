@@ -62,7 +62,6 @@ public class CliHostListTest extends SystemTestBase {
     startDefaultAgent(hostname1);
     final AgentMain agent2 = startDefaultAgent(hostname2);
 
-
     // Wait for both agents to come up
     awaitHostRegistered(hostname1, LONG_WAIT_SECONDS, SECONDS);
     awaitHostStatus(hostname2, UP, LONG_WAIT_SECONDS, SECONDS);

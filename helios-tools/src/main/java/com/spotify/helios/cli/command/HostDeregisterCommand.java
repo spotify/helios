@@ -99,7 +99,7 @@ public class HostDeregisterCommand extends ControlCommand {
         final List<String> resolved = resolver.getSortedMatches(host);
         if (!resolved.isEmpty()) {
           out.println("We didn't find your hostname, but we did find some possible matches for you:"
-              + "\n    " + Joiner.on("\n    ").join(resolved) + "\n");
+                      + "\n    " + Joiner.on("\n    ").join(resolved) + "\n");
         }
       }
       code = 1;

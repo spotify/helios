@@ -58,8 +58,8 @@ public class JobStatusTable {
       for (final Map.Entry<String, PortMapping> entry : ts.getPorts().entrySet()) {
         final PortMapping portMapping = entry.getValue();
         portMappings.add(String.format("%s=%d:%d", entry.getKey(),
-                                       portMapping.getInternalPort(),
-                                       portMapping.getExternalPort()));
+            portMapping.getInternalPort(),
+            portMapping.getExternalPort()));
       }
       String state = ts.getState().toString();
       if (ts.getThrottled() != ThrottleState.NO) {

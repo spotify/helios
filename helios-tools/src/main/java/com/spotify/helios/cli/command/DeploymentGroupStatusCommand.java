@@ -71,7 +71,7 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
   }
 
   static int run0(final HeliosClient client, final PrintStream out, final boolean json,
-                          final String name, final boolean full)
+                  final String name, final boolean full)
       throws ExecutionException, InterruptedException {
     final DeploymentGroupStatusResponse status = client.deploymentGroupStatus(name).get();
 

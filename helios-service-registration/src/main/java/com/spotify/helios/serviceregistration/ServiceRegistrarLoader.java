@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 public class ServiceRegistrarLoader {
 
   private static final List<Package> PROVIDED = asList(Logger.class.getPackage(),
-                                                       ServiceRegistrarLoader.class.getPackage());
+      ServiceRegistrarLoader.class.getPackage());
 
   private static final ClassLoader CURRENT = ServiceRegistrarLoader.class.getClassLoader();
 
@@ -46,6 +46,7 @@ public class ServiceRegistrarLoader {
    * Load a {@link ServiceRegistrarFactory} using the current class loader.
    *
    * @return A {@link ServiceRegistrarFactory}, null if none could be found.
+   *
    * @throws ServiceRegistrarLoadingException if loading failed.
    */
   public static ServiceRegistrarFactory load() throws ServiceRegistrarLoadingException {
@@ -58,7 +59,9 @@ public class ServiceRegistrarLoader {
    * in the plugin jar.
    *
    * @param plugin The plugin jar file to load.
+   *
    * @return A {@link ServiceRegistrarFactory}, null if none could be found.
+   *
    * @throws ServiceRegistrarLoadingException if loading failed.
    */
   public static ServiceRegistrarFactory load(final Path plugin)
@@ -73,7 +76,9 @@ public class ServiceRegistrarLoader {
    * @param plugin      The plugin jar file to load.
    * @param environment The class loader to use for providing plugin interface dependencies.
    * @param parent      The parent class loader to assign to the class loader of the jar.
+   *
    * @return A {@link ServiceRegistrarFactory}, null if none could be found.
+   *
    * @throws ServiceRegistrarLoadingException if loading failed.
    */
   public static ServiceRegistrarFactory load(final Path plugin,
@@ -88,7 +93,9 @@ public class ServiceRegistrarLoader {
    *
    * @param source      The source of the class loader.
    * @param classLoader The class loader to load from.
+   *
    * @return A {@link ServiceRegistrarFactory}, null if none could be found.
+   *
    * @throws ServiceRegistrarLoadingException if loading failed.
    */
   public static ServiceRegistrarFactory load(final String source, final ClassLoader classLoader)
@@ -136,7 +143,7 @@ public class ServiceRegistrarLoader {
       throw new RuntimeException("Failed to load plugin jar " + plugin, e);
     }
     final ClassLoader providedClassLoader = new FilteringClassLoader(PROVIDED, environment, parent);
-    return new URLClassLoader(new URL[]{url}, providedClassLoader);
+    return new URLClassLoader(new URL[]{ url }, providedClassLoader);
   }
 
   /**

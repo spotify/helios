@@ -145,8 +145,8 @@ public final class Utils {
   }
 
   public static <K extends Comparable<K>, V> void printMap(final PrintStream out, final String name,
-                                                    final Function<V, String> transform,
-                                                    final Map<K, V> values) {
+                                                           final Function<V, String> transform,
+                                                           final Map<K, V> values) {
     out.print(name);
     boolean first = true;
     for (final K key : Ordering.natural().sortedCopy(values.keySet())) {

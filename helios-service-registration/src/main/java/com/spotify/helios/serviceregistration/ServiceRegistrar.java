@@ -29,6 +29,7 @@ public interface ServiceRegistrar extends AutoCloseable {
    * Asynchronously register a set of service endpoints with a registry. Does not block.
    *
    * @param registration The service endpoints.
+   *
    * @return A handle that can be used to unregister using
    *         {@link #unregister(ServiceRegistrationHandle)}.
    */

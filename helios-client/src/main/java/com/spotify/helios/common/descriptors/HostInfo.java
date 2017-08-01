@@ -73,20 +73,20 @@ public class HostInfo extends Descriptor {
   private final String dockerCertPath;
 
   /**
-   * @param hostname The hostname of the agent.
-   * @param uname The output of the uname command.
-   * @param architecture The architecture of the Agent.
-   * @param osName  The name of the operating system on the Agent.
-   * @param osVersion The version of the operating system (or kernel version).
-   * @param cpus The number of CPUS on the machine.
-   * @param loadAvg The current load average on the host.
+   * @param hostname         The hostname of the agent.
+   * @param uname            The output of the uname command.
+   * @param architecture     The architecture of the Agent.
+   * @param osName           The name of the operating system on the Agent.
+   * @param osVersion        The version of the operating system (or kernel version).
+   * @param cpus             The number of CPUS on the machine.
+   * @param loadAvg          The current load average on the host.
    * @param memoryTotalBytes Total memory on the host.
-   * @param memoryFreeBytes Total memory free on the host.
-   * @param swapTotalBytes Total swap bytes.
-   * @param swapFreeBytes Total free swap bytes.
-   * @param dockerVersion Docker version.
-   * @param dockerHost The docker host address.
-   * @param dockerCertPath The docker certificate path.
+   * @param memoryFreeBytes  Total memory free on the host.
+   * @param swapTotalBytes   Total swap bytes.
+   * @param swapFreeBytes    Total free swap bytes.
+   * @param dockerVersion    Docker version.
+   * @param dockerHost       The docker host address.
+   * @param dockerCertPath   The docker certificate path.
    */
   public HostInfo(@JsonProperty("hostname") final String hostname,
                   @JsonProperty("uname") final String uname,

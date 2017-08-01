@@ -33,37 +33,37 @@ public class HostSelectorTest {
   @Test
   public void testParseEquals() {
     assertEquals(new HostSelector("A", HostSelector.Operator.EQUALS, "B"),
-                 HostSelector.parse("A=B"));
+        HostSelector.parse("A=B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.EQUALS, "B"),
-                 HostSelector.parse("A = B"));
+        HostSelector.parse("A = B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.EQUALS, "B"),
-                 HostSelector.parse("A =B"));
+        HostSelector.parse("A =B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.EQUALS, "B"),
-                 HostSelector.parse("A= B"));
+        HostSelector.parse("A= B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.EQUALS, "B"),
-                 HostSelector.parse("A\t\t=  B"));
+        HostSelector.parse("A\t\t=  B"));
   }
 
   @Test
   public void testParseNotEquals() {
     assertEquals(new HostSelector("A", HostSelector.Operator.NOT_EQUALS, "B"),
-                 HostSelector.parse("A!=B"));
+        HostSelector.parse("A!=B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.NOT_EQUALS, "B"),
-                 HostSelector.parse("A != B"));
+        HostSelector.parse("A != B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.NOT_EQUALS, "B"),
-                 HostSelector.parse("A !=B"));
+        HostSelector.parse("A !=B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.NOT_EQUALS, "B"),
-                 HostSelector.parse("A!= B"));
+        HostSelector.parse("A!= B"));
     assertEquals(new HostSelector("A", HostSelector.Operator.NOT_EQUALS, "B"),
-                 HostSelector.parse("A\t\t!=  B"));
+        HostSelector.parse("A\t\t!=  B"));
   }
 
   @Test
   public void testParseAllowedCharacters() {
     assertEquals(new HostSelector("foo", HostSelector.Operator.EQUALS, "123"),
-                 HostSelector.parse("foo=123"));
+        HostSelector.parse("foo=123"));
     assertEquals(new HostSelector("_abc", HostSelector.Operator.NOT_EQUALS, "d-e"),
-                 HostSelector.parse("_abc!=d-e"));
+        HostSelector.parse("_abc!=d-e"));
   }
 
   @Test

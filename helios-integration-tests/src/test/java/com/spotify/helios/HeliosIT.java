@@ -114,14 +114,14 @@ public class HeliosIT {
   @Test
   public void test() throws Exception {
     final CreateJobResponse create = cli(CreateJobResponse.class, "create", "test:1",
-                                         "spotify/busybox:latest");
+        "spotify/busybox:latest");
     assertThat(create.getStatus(), equalTo(CreateJobResponse.Status.OK));
 
     final JobDeployResponse deploy = cli(JobDeployResponse.class, "deploy", "test:1", TEST_HOST);
     assertThat(deploy.getStatus(), equalTo(JobDeployResponse.Status.OK));
 
     final JobUndeployResponse undeploy = cli(JobUndeployResponse.class,
-                                             "undeploy", "--yes", "test:1", "-a");
+        "undeploy", "--yes", "test:1", "-a");
     assertThat(undeploy.getStatus(), equalTo(JobUndeployResponse.Status.OK));
 
     final JobDeleteResponse delete = cli(JobDeleteResponse.class, "remove", "--yes", "test:1");

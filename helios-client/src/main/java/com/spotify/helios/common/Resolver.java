@@ -25,7 +25,6 @@ import static java.lang.System.getenv;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.spotify.dns.DnsSrvResolver;
 import com.spotify.dns.DnsSrvResolvers;

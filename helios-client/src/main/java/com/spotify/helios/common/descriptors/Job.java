@@ -167,38 +167,41 @@ public class Job extends Descriptor implements Comparable<Job> {
   /**
    * Create a Job.
    *
-   * @param id The id of the job.
-   * @param image The docker image to use.
-   * @param hostname The hostname to pass to the container.
-   * @param created The timestamp in milliseconds of when the job was created.
-   *                This should only be set by the server.
-   * @param command The command to pass to the container.
-   * @param env Environment variables to set
-   * @param resources Resource specification for the container.
-   * @param ports The ports you wish to expose from the container.
-   * @param registration Configuration information for the discovery service (if applicable)
-   * @param gracePeriod How long to let the container run after deregistering with the discovery
-   *                    service.  If nothing is configured in registration, this option is ignored.
-   * @param volumes Docker volumes to mount.
-   * @param expires If set, a timestamp at which the job and any deployments will be removed.
-   * @param registrationDomain If set, overrides the default domain in which discovery service
-   *                           registration occurs.  What is allowed here will vary based upon the
-   *                           discovery service plugin used.
-   * @param creatingUser The user creating the job.
-   * @param token The token needed to manipulate this job.
-   * @param healthCheck A health check Helios will execute on the container.
-   * @param securityOpt A list of strings denoting security options for running Docker containers,
-   *                    i.e. `docker run --security-opt`. See
-   *                    <a href="https://docs.docker.com/reference/run/#security-configuration">Docker docs</a>.
-   * @param networkMode Sets the networking mode for the container. Supported values are: bridge,
-   *                    host, and container:&lt;name|id&gt;. See <a href="https://docs.docker.com/reference/run/#network-settings">Docker docs</a>.
-   * @param metadata Arbitrary key-value pairs that can be stored with the Job. Optional.
-   * @param addCapabilities Linux capabilities to add for the container. Optional.
-   * @param dropCapabilities Linux capabilities to drop for the container. Optional.
-   * @param labels Labels to set on the container. Optional.
-   * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
+   * @param id                      The id of the job.
+   * @param image                   The docker image to use.
+   * @param hostname                The hostname to pass to the container.
+   * @param created                 The timestamp in milliseconds of when the job was created.
+   *                                This should only be set by the server.
+   * @param command                 The command to pass to the container.
+   * @param env                     Environment variables to set
+   * @param resources               Resource specification for the container.
+   * @param ports                   The ports you wish to expose from the container.
+   * @param registration            Configuration information for the discovery service, if
+   *                                applicable.
+   * @param gracePeriod             How long to let the container run after deregistering with the
+   *                                discovery service.  If nothing is configured in registration,
+   *                                this option is ignored.
+   * @param volumes                 Docker volumes to mount.
+   * @param expires                 If set, a timestamp at which the job and any deployments will be
+   *                                removed.
+   * @param registrationDomain      If set, overrides the default domain in which discovery service
+   *                                registration occurs.  What is allowed here will vary based
+   *                                upon the discovery service plugin used.
+   * @param creatingUser            The user creating the job.
+   * @param token                   The token needed to manipulate this job.
+   * @param healthCheck             A health check Helios will execute on the container.
+   * @param securityOpt             A list of strings denoting security options for running Docker
+   *                                containers, i.e. `docker run --security-opt`.
+   * @param networkMode             Sets the networking mode for the container. Supported values
+   *                                are: bridge, host, and container:&lt;name|id&gt;.
+   * @param metadata                Arbitrary, optional key-value pairs to be stored with the Job.
+   * @param addCapabilities         Linux capabilities to add for the container. Optional.
+   * @param dropCapabilities        Linux capabilities to drop for the container. Optional.
+   * @param labels                  Labels to set on the container. Optional.
    * @param secondsToWaitBeforeKill The time to ask Docker to wait after sending a SIGTERM to the
    *                                container's main process before sending it a SIGKILL. Optional.
+   *
+   * @see <a href="https://docs.docker.com/engine/reference/run">Docker run reference</a>
    */
   public Job(
       @JsonProperty("id") final JobId id,
@@ -859,7 +862,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       return ImmutableMap.copyOf(pm.ramdisks);
     }
 
-    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
+    @SuppressWarnings({ "CloneDoesntDeclareCloneNotSupportedException",
+                        "CloneDoesntCallSuperClone" })
     @Override
     public Builder clone() {
       return new Builder(hash, new Parameters(pm));

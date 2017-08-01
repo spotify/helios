@@ -78,7 +78,7 @@ public class JobValidatorTest {
       .setHostname("baz")
       .setEnv(ImmutableMap.of("FOO", "BAR"))
       .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
-                                "2", PortMapping.of(2, 2)))
+          "2", PortMapping.of(2, 2)))
       .setHealthCheck(HEALTH_CHECK)
       .build();
 
@@ -115,26 +115,26 @@ public class JobValidatorTest {
     assertThat(validator.validate(b.setImage("reg.istry:4711/repo").build()), is(empty()));
     assertThat(validator.validate(b.setImage("reg.istry.:4711/repo").build()), is(empty()));
     assertThat(validator.validate(b.setImage("reg.istry:4711/namespace/repo").build()),
-               is(empty()));
+        is(empty()));
     assertThat(validator.validate(b.setImage("reg.istry.:4711/namespace/repo").build()),
-               is(empty()));
+        is(empty()));
     assertThat(validator.validate(b.setImage("1.2.3.4:4711/namespace/repo").build()), is(empty()));
     assertThat(validator.validate(b.setImage("registry.test.net:80/fooo/bar").build()),
-               is(empty()));
+        is(empty()));
     assertThat(validator.validate(b.setImage("registry.test.net.:80/fooo/bar").build()),
-               is(empty()));
+        is(empty()));
     assertThat(
         validator.validate(b.setImage(
             "namespace/foo@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
-                               .build()), is(empty()));
+            .build()), is(empty()));
     assertThat(
         validator.validate(b.setImage(
             "foo.net/bar@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
-                               .build()), is(empty()));
+            .build()), is(empty()));
     assertThat(
         validator.validate(b.setImage(
             "foo@tarsum.v1+sha256:6c3c624b58dbbcd3c0dd82b4c53f04194d1247c6eebdaab7c610cf7d66709b3b")
-                               .build()), is(empty()));
+            .build()), is(empty()));
   }
 
   @Test
@@ -144,7 +144,7 @@ public class JobValidatorTest {
     assertThat(validator.validate(b.setHostname("17").build()), is(empty()));
     // 63 chars
     assertThat(validator.validate(b.setHostname(Strings.repeat("hostname", 7) + "hostnam").build()),
-               is(empty()));
+        is(empty()));
     assertThat(validator.validate(b.setHostname("a").build()), is(empty()));
     assertThat(validator.validate(b.setHostname("foo17bar-baz-quux").build()), is(empty()));
   }
@@ -164,7 +164,7 @@ public class JobValidatorTest {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
     final Job.Builder builder = j.toBuilder();
     final Map<String, PortMapping> ports = ImmutableMap.of("add_ports1", PortMapping.of(1234),
-                                                           "add_ports2", PortMapping.of(2345));
+        "add_ports2", PortMapping.of(2345));
     final ImmutableMap.Builder<String, ServicePortParameters> servicePortsBuilder =
         ImmutableMap.builder();
     servicePortsBuilder.put("add_ports1", new ServicePortParameters(
@@ -185,7 +185,7 @@ public class JobValidatorTest {
         .setVersion("1")
         .setImage("bar")
         .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
-                                  "2", PortMapping.of(2, 1)))
+            "2", PortMapping.of(2, 1)))
         .build();
 
     assertEquals(ImmutableSet.of("Duplicate external port mapping: 1"), validator.validate(job));
@@ -194,16 +194,16 @@ public class JobValidatorTest {
   @Test
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
-                            "bar", EMPTY_HOSTNAME, EMPTY_CREATED, EMPTY_COMMAND, EMPTY_ENV,
-                            EMPTY_RESOURCES, EMPTY_PORTS,
-                            EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
-                            EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
-                            EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, DEFAULT_NETWORK_MODE,
-                            EMPTY_METADATA, EMPTY_CAPS, EMPTY_CAPS, EMPTY_LABELS,
-                            EMPTY_SECONDS_TO_WAIT, EMPTY_RAMDISKS);
+        "bar", EMPTY_HOSTNAME, EMPTY_CREATED, EMPTY_COMMAND, EMPTY_ENV,
+        EMPTY_RESOURCES, EMPTY_PORTS,
+        EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
+        EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
+        EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, DEFAULT_NETWORK_MODE,
+        EMPTY_METADATA, EMPTY_CAPS, EMPTY_CAPS, EMPTY_LABELS,
+        EMPTY_SECONDS_TO_WAIT, EMPTY_RAMDISKS);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
-        + " != " + recomputedId.getHash()), validator.validate(job));
+                                 + " != " + recomputedId.getHash()), validator.validate(job));
   }
 
   @Test
@@ -211,13 +211,13 @@ public class JobValidatorTest {
     final Job.Builder b = Job.newBuilder().setVersion("1").setImage("foo");
     assertEquals(newHashSet("Job name was not specified.",
         "Job hash was not specified in job id [null:1]."),
-                 validator.validate(b.build()));
+        validator.validate(b.build()));
     assertThat(validator.validate(b.setName("foo@bar").build()),
-               contains(
-                   equalTo("Job name may only contain [0-9a-zA-Z-_.] in job name [foo@bar].")));
+        contains(
+            equalTo("Job name may only contain [0-9a-zA-Z-_.] in job name [foo@bar].")));
     assertThat(validator.validate(b.setName("foo&bar").build()),
-               contains(
-                   equalTo("Job name may only contain [0-9a-zA-Z-_.] in job name [foo&bar].")));
+        contains(
+            equalTo("Job name may only contain [0-9a-zA-Z-_.] in job name [foo&bar].")));
   }
 
   @Test
@@ -225,13 +225,13 @@ public class JobValidatorTest {
     final Job.Builder b = Job.newBuilder().setName("foo").setImage("foo");
     assertEquals(newHashSet("Job version was not specified in job id [foo:null].",
         "Job hash was not specified in job id [foo:null]."),
-                 validator.validate(b.build()));
+        validator.validate(b.build()));
     assertThat(validator.validate(b.setVersion("17@bar").build()),
-               contains(equalTo("Job version may only contain [0-9a-zA-Z-_.] "
-                   + "in job version [17@bar].")));
+        contains(equalTo("Job version may only contain [0-9a-zA-Z-_.] "
+                         + "in job version [17@bar].")));
     assertThat(validator.validate(b.setVersion("17&bar").build()),
-               contains(equalTo("Job version may only contain [0-9a-zA-Z-_.] "
-                   + "in job version [17&bar].")));
+        contains(equalTo("Job version may only contain [0-9a-zA-Z-_.] "
+                         + "in job version [17&bar].")));
   }
 
 
@@ -240,77 +240,77 @@ public class JobValidatorTest {
     final Job.Builder b = Job.newBuilder().setName("foo").setVersion("1");
 
     assertEquals(newHashSet("Tag cannot be empty"),
-                 validator.validate(b.setImage("repo:").build()));
+        validator.validate(b.setImage("repo:").build()));
 
     assertEquals(newHashSet("Digest cannot be empty"),
-                 validator.validate(b.setImage("foo@").build()));
+        validator.validate(b.setImage("foo@").build()));
 
     assertEquals(newHashSet("Illegal digest: \":123\""),
-                 validator.validate(b.setImage("foo@:123").build()));
+        validator.validate(b.setImage("foo@:123").build()));
 
     assertEquals(newHashSet("Illegal digest: \"sha256:\""),
-                 validator.validate(b.setImage("foo@sha256:").build()));
+        validator.validate(b.setImage("foo@sha256:").build()));
 
     assertFalse(validator.validate(b.setImage("repo:/").build()).isEmpty());
 
     assertEquals(newHashSet("Invalid domain name: \"1.2.3.4.\""),
-                 validator.validate(b.setImage("1.2.3.4.:4711/namespace/repo").build()));
+        validator.validate(b.setImage("1.2.3.4.:4711/namespace/repo").build()));
 
     assertEquals(newHashSet("Invalid domain name: \" reg.istry\""),
-                 validator.validate(b.setImage(" reg.istry:4711/repo").build()));
+        validator.validate(b.setImage(" reg.istry:4711/repo").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"reg .istry\""),
-                 validator.validate(b.setImage("reg .istry:4711/repo").build()));
+        validator.validate(b.setImage("reg .istry:4711/repo").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"reg.istry \""),
-                 validator.validate(b.setImage("reg.istry :4711/repo").build()));
+        validator.validate(b.setImage("reg.istry :4711/repo").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"reg.istry: 4711\""),
-                 validator.validate(b.setImage("reg.istry: 4711/repo").build()));
+        validator.validate(b.setImage("reg.istry: 4711/repo").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"reg.istry:4711 \""),
-                 validator.validate(b.setImage("reg.istry:4711 /repo").build()));
+        validator.validate(b.setImage("reg.istry:4711 /repo").build()));
 
     assertEquals(newHashSet("Invalid image name (reg.istry:4711/ repo), only ^([a-z0-9._-]+)$ is "
                             + "allowed for each slash-separated name component "
                             + "(failed on \" repo\")"),
-                 validator.validate(b.setImage("reg.istry:4711/ repo").build()));
+        validator.validate(b.setImage("reg.istry:4711/ repo").build()));
 
     assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace /repo), only "
                             + "^([a-z0-9._-]+)$ is allowed for each slash-separated name component "
                             + "(failed on \"namespace \")"),
-                 validator.validate(b.setImage("reg.istry:4711/namespace /repo").build()));
+        validator.validate(b.setImage("reg.istry:4711/namespace /repo").build()));
 
     assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace/ repo), only "
                             + "^([a-z0-9._-]+)$ is allowed for each slash-separated name component "
                             + "(failed on \" repo\")"),
-                 validator.validate(b.setImage("reg.istry:4711/namespace/ repo").build()));
+        validator.validate(b.setImage("reg.istry:4711/namespace/ repo").build()));
 
     assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace/repo ), only "
                             + "^([a-z0-9._-]+)$ is allowed for each slash-separated name component "
                             + "(failed on \"repo \")"),
-                 validator.validate(b.setImage("reg.istry:4711/namespace/repo ").build()));
+        validator.validate(b.setImage("reg.istry:4711/namespace/repo ").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"foo-.ba|z\""),
-                 validator.validate(b.setImage("foo-.ba|z/namespace/baz").build()));
+        validator.validate(b.setImage("foo-.ba|z/namespace/baz").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"reg..istry\""),
-                 validator.validate(b.setImage("reg..istry/namespace/baz").build()));
+        validator.validate(b.setImage("reg..istry/namespace/baz").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"reg..istry\""),
-                 validator.validate(b.setImage("reg..istry/namespace/baz").build()));
+        validator.validate(b.setImage("reg..istry/namespace/baz").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"foo:345345345\""),
-                 validator.validate(b.setImage("foo:345345345/namespace/baz").build()));
+        validator.validate(b.setImage("foo:345345345/namespace/baz").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"foo:-17\""),
-                 validator.validate(b.setImage("foo:-17/namespace/baz").build()));
+        validator.validate(b.setImage("foo:-17/namespace/baz").build()));
 
     final String foos = Strings.repeat("foo", 100);
     final String image = foos + "/bar";
     assertEquals(newHashSet("Invalid image name (" + image + "), repository name cannot be larger"
                             + " than 255 characters"),
-                 validator.validate(b.setImage(image).build()));
+        validator.validate(b.setImage(image).build()));
   }
 
   @Test
@@ -350,13 +350,13 @@ public class JobValidatorTest {
         validator.validate(j.toBuilder().addVolume("/foo:", "/bar").build()));
 
     assertEquals(newHashSet("Volume path is not absolute: foo"),
-                 validator.validate(j.toBuilder().addVolume("foo").build()));
+        validator.validate(j.toBuilder().addVolume("foo").build()));
 
     assertEquals(newHashSet("Volume path is not absolute: foo"),
-                 validator.validate(j.toBuilder().addVolume("foo", "/bar").build()));
+        validator.validate(j.toBuilder().addVolume("foo", "/bar").build()));
 
     assertEquals(newHashSet("Volume source is not absolute: bar"),
-                 validator.validate(j.toBuilder().addVolume("/foo", "bar").build()));
+        validator.validate(j.toBuilder().addVolume("/foo", "bar").build()));
   }
 
   @Test

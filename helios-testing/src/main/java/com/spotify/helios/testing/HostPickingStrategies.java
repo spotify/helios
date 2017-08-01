@@ -63,7 +63,7 @@ public class HostPickingStrategies {
    * For any given invocation returns a random host.
    *
    * @return The strategy object
-   * */
+   */
   public static HostPickingStrategy random() {
     return new RandomHostPickingStrategy(new Random());
   }
@@ -84,6 +84,7 @@ public class HostPickingStrategies {
    * key should put jobs on the same hosts as they were the last time.
    *
    * @param key The random generator seed
+   *
    * @return The strategy object
    */
   public static HostPickingStrategy deterministic(final String key) {
@@ -96,6 +97,7 @@ public class HostPickingStrategies {
    * use the same host, share the strategy between tests as a constant.
    *
    * @param key The random generator seed
+   *
    * @return The strategy object
    */
   public static HostPickingStrategy deterministicOneHost(final String key) {

@@ -72,7 +72,7 @@ public class LoggingLogStreamFollowerTest {
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 abc123")));
+        contains(event(Level.INFO, "[a] [d] 1 abc123")));
   }
 
   @Test
@@ -83,7 +83,7 @@ public class LoggingLogStreamFollowerTest {
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 abc123")));
+        contains(event(Level.INFO, "[a] [d] 1 abc123")));
   }
 
   @Test
@@ -94,8 +94,8 @@ public class LoggingLogStreamFollowerTest {
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 abc123"),
-                        event(Level.INFO, "[a] [d] 1 123abc")));
+        contains(event(Level.INFO, "[a] [d] 1 abc123"),
+            event(Level.INFO, "[a] [d] 1 123abc")));
   }
 
   @Test
@@ -106,8 +106,8 @@ public class LoggingLogStreamFollowerTest {
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 abc123"),
-                        event(Level.INFO, "[a] [d] 1 123abc")));
+        contains(event(Level.INFO, "[a] [d] 1 abc123"),
+            event(Level.INFO, "[a] [d] 1 123abc")));
   }
 
   @Test
@@ -119,10 +119,10 @@ public class LoggingLogStreamFollowerTest {
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 abc"),
-                        event(Level.INFO, "[a] [d] 2 123"),
-                        event(Level.INFO, "[a] [d] 1 123"),
-                        event(Level.INFO, "[a] [d] 2 abc")));
+        contains(event(Level.INFO, "[a] [d] 1 abc"),
+            event(Level.INFO, "[a] [d] 2 123"),
+            event(Level.INFO, "[a] [d] 1 123"),
+            event(Level.INFO, "[a] [d] 2 abc")));
   }
 
   @Test
@@ -134,10 +134,10 @@ public class LoggingLogStreamFollowerTest {
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 abc"),
-                        event(Level.INFO, "[a] [d] 2 123"),
-                        event(Level.INFO, "[a] [d] 1 123"),
-                        event(Level.INFO, "[a] [d] 2 abc")));
+        contains(event(Level.INFO, "[a] [d] 1 abc"),
+            event(Level.INFO, "[a] [d] 2 123"),
+            event(Level.INFO, "[a] [d] 1 123"),
+            event(Level.INFO, "[a] [d] 2 abc")));
   }
 
   @Test
@@ -147,25 +147,25 @@ public class LoggingLogStreamFollowerTest {
 
     final Iterator<LogMessage> stream =
         stream(stdout(Arrays.copyOfRange(annoyingData, 0, 1)),
-               stdout(Arrays.copyOfRange(annoyingData, 1, 2)),
-               stdout(Arrays.copyOfRange(annoyingData, 2, 3)),
-               stdout(Arrays.copyOfRange(annoyingData, 3, 4)),
-               stdout(Arrays.copyOfRange(annoyingData, 4, 5)),
-               stdout(Arrays.copyOfRange(annoyingData, 5, 6)),
-               stdout(Arrays.copyOfRange(annoyingData, 6, 7)),
-               stdout(Arrays.copyOfRange(annoyingData, 7, 8)),
-               stdout(Arrays.copyOfRange(annoyingData, 8, 9)),
-               stdout(Arrays.copyOfRange(annoyingData, 9, 10)),
-               stdout(Arrays.copyOfRange(annoyingData, 10, 11)),
-               stdout(Arrays.copyOfRange(annoyingData, 11, 12)),
-               stdout(Arrays.copyOfRange(annoyingData, 12, 13)),
-               stdout(Arrays.copyOfRange(annoyingData, 13, 14)));
+            stdout(Arrays.copyOfRange(annoyingData, 1, 2)),
+            stdout(Arrays.copyOfRange(annoyingData, 2, 3)),
+            stdout(Arrays.copyOfRange(annoyingData, 3, 4)),
+            stdout(Arrays.copyOfRange(annoyingData, 4, 5)),
+            stdout(Arrays.copyOfRange(annoyingData, 5, 6)),
+            stdout(Arrays.copyOfRange(annoyingData, 6, 7)),
+            stdout(Arrays.copyOfRange(annoyingData, 7, 8)),
+            stdout(Arrays.copyOfRange(annoyingData, 8, 9)),
+            stdout(Arrays.copyOfRange(annoyingData, 9, 10)),
+            stdout(Arrays.copyOfRange(annoyingData, 10, 11)),
+            stdout(Arrays.copyOfRange(annoyingData, 11, 12)),
+            stdout(Arrays.copyOfRange(annoyingData, 12, 13)),
+            stdout(Arrays.copyOfRange(annoyingData, 13, 14)));
 
     final LoggingLogStreamFollower sut = LoggingLogStreamFollower.create(log);
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 foo\u0000\uffff௵\uD808\uDC30")));
+        contains(event(Level.INFO, "[a] [d] 1 foo\u0000\uffff௵\uD808\uDC30")));
   }
 
   @Test
@@ -175,52 +175,52 @@ public class LoggingLogStreamFollowerTest {
 
     final Iterator<LogMessage> stream =
         stream(stdout(Arrays.copyOfRange(annoyingData, 0, 1)),
-               stderr(Arrays.copyOfRange(annoyingData, 0, 1)),
-               stdout(Arrays.copyOfRange(annoyingData, 1, 2)),
-               stderr(Arrays.copyOfRange(annoyingData, 1, 2)),
-               stdout(Arrays.copyOfRange(annoyingData, 2, 3)),
-               stderr(Arrays.copyOfRange(annoyingData, 2, 3)),
-               stdout(Arrays.copyOfRange(annoyingData, 3, 4)),
-               stderr(Arrays.copyOfRange(annoyingData, 3, 4)),
-               stdout(Arrays.copyOfRange(annoyingData, 4, 5)),
-               stderr(Arrays.copyOfRange(annoyingData, 4, 5)),
-               stdout(Arrays.copyOfRange(annoyingData, 5, 6)),
-               stderr(Arrays.copyOfRange(annoyingData, 5, 6)),
-               stdout(Arrays.copyOfRange(annoyingData, 6, 7)),
-               stderr(Arrays.copyOfRange(annoyingData, 6, 7)),
-               stdout(Arrays.copyOfRange(annoyingData, 7, 8)),
-               stderr(Arrays.copyOfRange(annoyingData, 7, 8)),
-               stdout(Arrays.copyOfRange(annoyingData, 8, 9)),
-               stderr(Arrays.copyOfRange(annoyingData, 8, 9)),
-               stdout(Arrays.copyOfRange(annoyingData, 9, 10)),
-               stderr(Arrays.copyOfRange(annoyingData, 9, 10)),
-               stdout(Arrays.copyOfRange(annoyingData, 10, 11)),
-               stderr(Arrays.copyOfRange(annoyingData, 10, 11)),
-               stdout(Arrays.copyOfRange(annoyingData, 11, 12)),
-               stderr(Arrays.copyOfRange(annoyingData, 11, 12)),
-               stdout(Arrays.copyOfRange(annoyingData, 12, 13)),
-               stderr(Arrays.copyOfRange(annoyingData, 12, 13)),
-               stdout(Arrays.copyOfRange(annoyingData, 13, 14)),
-               stderr(Arrays.copyOfRange(annoyingData, 13, 14)));
+            stderr(Arrays.copyOfRange(annoyingData, 0, 1)),
+            stdout(Arrays.copyOfRange(annoyingData, 1, 2)),
+            stderr(Arrays.copyOfRange(annoyingData, 1, 2)),
+            stdout(Arrays.copyOfRange(annoyingData, 2, 3)),
+            stderr(Arrays.copyOfRange(annoyingData, 2, 3)),
+            stdout(Arrays.copyOfRange(annoyingData, 3, 4)),
+            stderr(Arrays.copyOfRange(annoyingData, 3, 4)),
+            stdout(Arrays.copyOfRange(annoyingData, 4, 5)),
+            stderr(Arrays.copyOfRange(annoyingData, 4, 5)),
+            stdout(Arrays.copyOfRange(annoyingData, 5, 6)),
+            stderr(Arrays.copyOfRange(annoyingData, 5, 6)),
+            stdout(Arrays.copyOfRange(annoyingData, 6, 7)),
+            stderr(Arrays.copyOfRange(annoyingData, 6, 7)),
+            stdout(Arrays.copyOfRange(annoyingData, 7, 8)),
+            stderr(Arrays.copyOfRange(annoyingData, 7, 8)),
+            stdout(Arrays.copyOfRange(annoyingData, 8, 9)),
+            stderr(Arrays.copyOfRange(annoyingData, 8, 9)),
+            stdout(Arrays.copyOfRange(annoyingData, 9, 10)),
+            stderr(Arrays.copyOfRange(annoyingData, 9, 10)),
+            stdout(Arrays.copyOfRange(annoyingData, 10, 11)),
+            stderr(Arrays.copyOfRange(annoyingData, 10, 11)),
+            stdout(Arrays.copyOfRange(annoyingData, 11, 12)),
+            stderr(Arrays.copyOfRange(annoyingData, 11, 12)),
+            stdout(Arrays.copyOfRange(annoyingData, 12, 13)),
+            stderr(Arrays.copyOfRange(annoyingData, 12, 13)),
+            stdout(Arrays.copyOfRange(annoyingData, 13, 14)),
+            stderr(Arrays.copyOfRange(annoyingData, 13, 14)));
 
     final LoggingLogStreamFollower sut = LoggingLogStreamFollower.create(log);
     sut.followLog(JobId.fromString("a:b:c"), "d", stream);
 
     assertThat(appender.events(),
-               contains(event(Level.INFO, "[a] [d] 1 f"),
-                        event(Level.INFO, "[a] [d] 2 f"),
-                        event(Level.INFO, "[a] [d] 1 o"),
-                        event(Level.INFO, "[a] [d] 2 o"),
-                        event(Level.INFO, "[a] [d] 1 o"),
-                        event(Level.INFO, "[a] [d] 2 o"),
-                        event(Level.INFO, "[a] [d] 1 \u0000"),
-                        event(Level.INFO, "[a] [d] 2 \u0000"),
-                        event(Level.INFO, "[a] [d] 1 \uffff"),
-                        event(Level.INFO, "[a] [d] 2 \uffff"),
-                        event(Level.INFO, "[a] [d] 1 ௵"),
-                        event(Level.INFO, "[a] [d] 2 ௵"),
-                        event(Level.INFO, "[a] [d] 1 \uD808\uDC30"),
-                        event(Level.INFO, "[a] [d] 2 \uD808\uDC30")));
+        contains(event(Level.INFO, "[a] [d] 1 f"),
+            event(Level.INFO, "[a] [d] 2 f"),
+            event(Level.INFO, "[a] [d] 1 o"),
+            event(Level.INFO, "[a] [d] 2 o"),
+            event(Level.INFO, "[a] [d] 1 o"),
+            event(Level.INFO, "[a] [d] 2 o"),
+            event(Level.INFO, "[a] [d] 1 \u0000"),
+            event(Level.INFO, "[a] [d] 2 \u0000"),
+            event(Level.INFO, "[a] [d] 1 \uffff"),
+            event(Level.INFO, "[a] [d] 2 \uffff"),
+            event(Level.INFO, "[a] [d] 1 ௵"),
+            event(Level.INFO, "[a] [d] 2 ௵"),
+            event(Level.INFO, "[a] [d] 1 \uD808\uDC30"),
+            event(Level.INFO, "[a] [d] 2 \uD808\uDC30")));
   }
 
   @Test

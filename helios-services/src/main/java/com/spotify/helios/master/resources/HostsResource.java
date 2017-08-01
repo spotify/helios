@@ -86,6 +86,7 @@ public class HostsResource {
 
   /**
    * Returns the list of hostnames of known hosts/agents.
+   *
    * @return The list of hostnames.
    */
   @GET
@@ -127,8 +128,10 @@ public class HostsResource {
    * the hostname of the machine.  The {@code id} should be a persistent value for the host, but
    * initially randomly generated.  This way we don't have two machines claiming to be the same
    * host: at least by accident.
+   *
    * @param host The host to register.
-   * @param id The randomly generated ID for the host.
+   * @param id   The randomly generated ID for the host.
+   *
    * @return The response.
    */
   @PUT
@@ -150,7 +153,9 @@ public class HostsResource {
   /**
    * Deregisters the host from the cluster.  Will delete just about everything the cluster knows
    * about it.
+   *
    * @param host The host to deregister.
+   *
    * @return The response.
    */
   @DELETE
@@ -166,14 +171,16 @@ public class HostsResource {
       throw notFound(new HostDeregisterResponse(HostDeregisterResponse.Status.NOT_FOUND, host));
     } catch (HostStillInUseException e) {
       throw badRequest(new HostDeregisterResponse(HostDeregisterResponse.Status.JOBS_STILL_DEPLOYED,
-                                                  host));
+          host));
     }
   }
 
   /**
    * Returns various status information about the host.
-   * @param host The host id.
+   *
+   * @param host         The host id.
    * @param statusFilter An optional status filter.
+   *
    * @return The host status.
    */
   @GET
@@ -198,8 +205,10 @@ public class HostsResource {
 
   /**
    * Returns various status information about the hosts.
-   * @param hosts The hosts.
+   *
+   * @param hosts        The hosts.
    * @param statusFilter An optional status filter.
+   *
    * @return The response.
    */
   @POST
@@ -225,11 +234,13 @@ public class HostsResource {
   /**
    * Sets the deployment of the job identified by its {@link JobId} on the host named by
    * {@code host} to {@code deployment}.
-   * @param host The host to deploy to.
-   * @param jobId The job to deploy.
+   *
+   * @param host       The host to deploy to.
+   * @param jobId      The job to deploy.
    * @param deployment Deployment information.
-   * @param username The user deploying.
-   * @param token The authorization token for this deployment.
+   * @param username   The user deploying.
+   * @param token      The authorization token for this deployment.
+   *
    * @return The response.
    */
 
@@ -253,7 +264,7 @@ public class HostsResource {
       return new JobDeployResponse(JobDeployResponse.Status.OK, host, jobId);
     } catch (JobAlreadyDeployedException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, host,
-                                             jobId));
+          jobId));
     } catch (HostNotFoundException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.HOST_NOT_FOUND, host, jobId));
     } catch (JobDoesNotExistException e) {
@@ -268,9 +279,11 @@ public class HostsResource {
   /**
    * Causes the job identified by its {@link JobId} to be undeployed from the specified host.
    * This call will fail if the host is not found or the job is not deployed on the host.
-   * @param host The host to undeploy from.
+   *
+   * @param host  The host to undeploy from.
    * @param jobId The job to undeploy.
    * @param token The authorization token.
+   *
    * @return The response.
    */
   @DELETE
@@ -299,10 +312,12 @@ public class HostsResource {
   /**
    * Alters the current deployment of a deployed job identified by its job id on the specified
    * host.
-   * @param host The host.
-   * @param jobId The ID of the job.
+   *
+   * @param host       The host.
+   * @param jobId      The ID of the job.
    * @param deployment The new deployment.
-   * @param token The authorization token for this job.
+   * @param token      The authorization token for this job.
+   *
    * @return The response.
    */
   @PATCH
@@ -332,8 +347,10 @@ public class HostsResource {
 
   /**
    * Returns the current {@link Deployment} of {@code job} on {@code host} if it is deployed.
-   * @param host The host where the job is deployed.
+   *
+   * @param host  The host where the job is deployed.
    * @param jobId The ID of the job.
+   *
    * @return The response.
    */
   @GET

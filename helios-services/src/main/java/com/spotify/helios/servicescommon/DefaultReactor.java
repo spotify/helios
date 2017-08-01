@@ -59,8 +59,8 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
   /**
    * Create a reactor that calls the provided callback.
    *
-   * @param name          The reactor name.
-   * @param callback      The callback to call.
+   * @param name     The reactor name.
+   * @param callback The callback to call.
    */
   public DefaultReactor(final String name, final Callback callback) {
     this(name, callback, 0);

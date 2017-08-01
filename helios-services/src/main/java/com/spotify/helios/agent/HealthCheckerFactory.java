@@ -35,7 +35,6 @@ import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -61,7 +60,7 @@ public final class HealthCheckerFactory {
       return new ExecHealthChecker((ExecHealthCheck) healthCheck, docker);
     } else if (healthCheck instanceof HttpHealthCheck) {
       return new HttpHealthChecker((HttpHealthCheck) healthCheck, taskConfig, docker, dockerHost,
-                                   agentInContainer);
+          agentInContainer);
     } else if (healthCheck instanceof TcpHealthCheck) {
       return new TcpHealthChecker((TcpHealthCheck) healthCheck, taskConfig, docker, dockerHost);
     }
@@ -223,7 +222,7 @@ public final class HealthCheckerFactory {
       }
 
       log.info("about to http healthcheck containerId={} with url={} for task={}",
-               containerId, url, taskConfig);
+          containerId, url, taskConfig);
 
       try {
         final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -232,7 +231,7 @@ public final class HealthCheckerFactory {
 
         final int response = conn.getResponseCode();
         log.warn("http healthcheck for containerId={} with url={} returned status={}",
-                 containerId, url, response);
+            containerId, url, response);
         return response >= 200 && response <= 399;
       } catch (Exception e) {
         log.warn("exception in http healthchecking containerId={} with url={}",
@@ -274,7 +273,7 @@ public final class HealthCheckerFactory {
       }
 
       log.info("about to tcp healthcheck containerId={} with address={} for task={}",
-               containerId, address, taskConfig);
+          containerId, address, taskConfig);
 
       try (final Socket s = new Socket()) {
         s.connect(address, CONNECT_TIMEOUT_MILLIS);

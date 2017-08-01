@@ -158,9 +158,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   /**
    * Constructor.
-   * @param provider         {@link ZooKeeperClientProvider}
-   * @param name             The hostname of the machine running the {@link MasterModel}
-   * @param eventSenders     {@link EventSender}
+   *
+   * @param provider     {@link ZooKeeperClientProvider}
+   * @param name         The hostname of the machine running the {@link MasterModel}
+   * @param eventSenders {@link EventSender}
    */
   public ZooKeeperMasterModel(final ZooKeeperClientProvider provider,
                               final String name,
@@ -256,12 +257,12 @@ public class ZooKeeperMasterModel implements MasterModel {
       try {
         client.ensurePath(Paths.historyJob(id));
         client.transaction(create(Paths.configJob(id), job),
-                           create(Paths.configJobRefShort(id), id),
-                           create(Paths.configJobHosts(id)),
-                           create(creationPath),
-                           // Touch the jobs root node so that its version is bumped on every job
-                           // change down the tree. Effectively, make it that version == cVersion.
-                           set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
+            create(Paths.configJobRefShort(id), id),
+            create(Paths.configJobHosts(id)),
+            create(creationPath),
+            // Touch the jobs root node so that its version is bumped on every job
+            // change down the tree. Effectively, make it that version == cVersion.
+            set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
       } catch (final NodeExistsException e) {
         if (client.exists(creationPath) != null) {
           // The job was created, we're done here
@@ -341,9 +342,9 @@ public class ZooKeeperMasterModel implements MasterModel {
    *
    * <p>If successful, the following ZK nodes will be created:
    * <ul>
-   *   <li>/config/deployment-groups/[group-name]</li>
-   *   <li>/status/deployment-groups/[group-name]</li>
-   *   <li>/status/deployment-groups/[group-name]/hosts</li>
+   * <li>/config/deployment-groups/[group-name]</li>
+   * <li>/status/deployment-groups/[group-name]</li>
+   * <li>/status/deployment-groups/[group-name]/hosts</li>
    * </ul>
    * These nodes are guaranteed to exist until the DG is removed.
    *
@@ -366,9 +367,9 @@ public class ZooKeeperMasterModel implements MasterModel {
             create(Paths.configDeploymentGroup(deploymentGroup.getName()), deploymentGroup),
             create(Paths.statusDeploymentGroup(deploymentGroup.getName())),
             create(Paths.statusDeploymentGroupHosts(deploymentGroup.getName()),
-                   Json.asBytesUnchecked(emptyList())),
+                Json.asBytesUnchecked(emptyList())),
             create(Paths.statusDeploymentGroupRemovedHosts(deploymentGroup.getName()),
-                   Json.asBytesUnchecked(emptyList()))
+                Json.asBytesUnchecked(emptyList()))
         );
       } catch (final NodeExistsException e) {
         throw new DeploymentGroupExistsException(deploymentGroup.getName());
@@ -405,11 +406,11 @@ public class ZooKeeperMasterModel implements MasterModel {
    * nodes are guaranteed to be non-existent after a successful remove (not all of them might exist
    * before, though):
    * <ul>
-   *   <li>/config/deployment-groups/[group-name]</li>
-   *   <li>/status/deployment-groups/[group-name]</li>
-   *   <li>/status/deployment-groups/[group-name]/hosts</li>
-   *   <li>/status/deployment-groups/[group-name]/removed</li>
-   *   <li>/status/deployment-group-tasks/[group-name]</li>
+   * <li>/config/deployment-groups/[group-name]</li>
+   * <li>/status/deployment-groups/[group-name]</li>
+   * <li>/status/deployment-groups/[group-name]/hosts</li>
+   * <li>/status/deployment-groups/[group-name]/removed</li>
+   * <li>/status/deployment-group-tasks/[group-name]</li>
    * </ul>
    * If the operation fails no ZK nodes will be removed.
    *
@@ -479,6 +480,7 @@ public class ZooKeeperMasterModel implements MasterModel {
    * again by a reactor.
    *
    * @param status The status of the deployment group attempting to change hosts.
+   *
    * @return True if it's safe to update the hosts.
    */
   private boolean allowHostChange(final DeploymentGroupStatus status) {
@@ -495,8 +497,9 @@ public class ZooKeeperMasterModel implements MasterModel {
    * <p>We want to avoid triggering an automatic rolling update if the most recent rolling update
    * was triggered manually, and failed.
    *
-   * @param group The deployment group that is changing hosts.
+   * @param group  The deployment group that is changing hosts.
    * @param status The status of the aforementioned deployment group.
+   *
    * @return True if we should perform a rolling update.
    */
   private boolean updateOnHostChange(final DeploymentGroup group,
@@ -549,7 +552,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // statusDeploymentGroupRemovedHosts may not exist for deployment groups created before it was
       // introduced.
       client.ensurePathAndSetData(Paths.statusDeploymentGroupRemovedHosts(groupName),
-                                  Json.asBytesUnchecked(emptyList()));
+          Json.asBytesUnchecked(emptyList()));
 
       final List<String> curHosts = getHosts(client, Paths.statusDeploymentGroupHosts(groupName));
       final List<String> previouslyRemovedHosts = getHosts(
@@ -689,9 +692,9 @@ public class ZooKeeperMasterModel implements MasterModel {
         .collect(Collectors.toList());
 
     rolloutTasks.addAll(RollingUndeployPlanner.of(deploymentGroup)
-                            .plan(upHostsToUndeploy));
+        .plan(upHostsToUndeploy));
     rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
-                            .plan(upHostsToDeploy));
+        .plan(upHostsToDeploy));
 
     log.info("generated rolloutTasks for deployment-group name={} "
              + "updateHosts={} undeployHosts={}: {}",
@@ -800,7 +803,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         if (!op.operations().isEmpty()) {
           final List<ZooKeeperOperation> ops = Lists.newArrayList();
           ops.add(check(Paths.statusDeploymentGroupTasks(deploymentGroupName),
-                        versionedTasks.version()));
+              versionedTasks.version()));
           ops.addAll(op.operations());
 
           log.info("rolling-update step on deployment-group: name={}, zookeeper operations={}",
@@ -842,9 +845,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     final List<TaskStatus.State> previousJobStates = getPreviousJobStates(jobId, host, 10);
     final String baseError = "timed out waiting for job " + jobId + " to reach state RUNNING ";
     final String stateInfo = String.format(
-            "(terminal job state %s, previous states: %s)",
-            taskStatus.getState(),
-            Joiner.on("->").join(previousJobStates));
+        "(terminal job state %s, previous states: %s)",
+        taskStatus.getState(),
+        Joiner.on("->").join(previousJobStates));
 
     final Map<String, Object> metadata = Maps.newHashMap();
     metadata.put("jobState", taskStatus.getState());
@@ -853,24 +856,24 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_MISSING)) {
       return opFactory.error(
-              baseError + "due to missing Docker image " + stateInfo,
-              host,
-              RollingUpdateError.IMAGE_MISSING,
-              metadata);
+          baseError + "due to missing Docker image " + stateInfo,
+          host,
+          RollingUpdateError.IMAGE_MISSING,
+          metadata);
     }
     if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_PULL_FAILED)) {
       return opFactory.error(
-              baseError + "due to failure pulling Docker image " + stateInfo,
-              host,
-              RollingUpdateError.IMAGE_PULL_FAILED,
-              metadata);
+          baseError + "due to failure pulling Docker image " + stateInfo,
+          host,
+          RollingUpdateError.IMAGE_PULL_FAILED,
+          metadata);
     }
     if (!Strings.isNullOrEmpty(taskStatus.getContainerError())) {
       return opFactory.error(
-              baseError + stateInfo + " container error: " + taskStatus.getContainerError(),
-              host,
-              RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
-              metadata);
+          baseError + stateInfo + " container error: " + taskStatus.getContainerError(),
+          host,
+          RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
+          metadata);
     }
     return opFactory.error(
         baseError + stateInfo,
@@ -901,7 +904,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // Check if we've exceeded the timeout for the rollout operation.
       if (isRolloutTimedOut(client, deploymentGroup)) {
         return opFactory.error("timed out while retrieving job status", host,
-                               RollingUpdateError.TIMED_OUT_RETRIEVING_JOB_STATUS);
+            RollingUpdateError.TIMED_OUT_RETRIEVING_JOB_STATUS);
       }
 
       // We haven't detected any errors, so assume the agent will write the status soon.
@@ -946,7 +949,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // statusPath doesn't exist or some other ZK issue. probably this deployment group
       // was removed.
       log.warn("error determining deployment group modification time: {} - {}",
-               deploymentGroup.getName(), e);
+          deploymentGroup.getName(), e);
       return false;
     }
   }
@@ -956,8 +959,8 @@ public class ZooKeeperMasterModel implements MasterModel {
                                               final DeploymentGroup deploymentGroup,
                                               final String host) {
     final Deployment deployment = Deployment.of(deploymentGroup.getJobId(), Goal.START,
-                                                Deployment.EMTPY_DEPLOYER_USER, this.name,
-                                                deploymentGroup.getName());
+        Deployment.EMTPY_DEPLOYER_USER, this.name,
+        deploymentGroup.getName());
 
     try {
       final String token = MoreObjects.firstNonNull(
@@ -991,7 +994,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     if (isRolloutTimedOut(client, deploymentGroup)) {
       return opFactory.error("timed out while waiting for job undeployment", host,
-                             RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_UNDEPLOY);
+          RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_UNDEPLOY);
     }
 
     return opFactory.yield();
@@ -1038,8 +1041,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   /**
-   *  rollingUpdateUndeploy is used to undeploy jobs during a rolling update. It enables the
-   *  'skipRedundantUndeploys' flag, which enables the redundantDeployment() check.
+   * rollingUpdateUndeploy is used to undeploy jobs during a rolling update. It enables the
+   * 'skipRedundantUndeploys' flag, which enables the redundantDeployment() check.
    */
   private RollingUpdateOp rollingUpdateUndeploy(final ZooKeeperClient client,
                                                 final RollingUpdateOpFactory opFactory,
@@ -1103,7 +1106,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private boolean isMigration(final Deployment deployment, final DeploymentGroup deploymentGroup) {
     return (deploymentGroup.getRolloutOptions().getMigrate()
-           && deployment.getJobId().equals(deploymentGroup.getJobId()));
+            && deployment.getJobId().equals(deploymentGroup.getJobId()));
   }
 
   /**
@@ -1435,11 +1438,11 @@ public class ZooKeeperMasterModel implements MasterModel {
         operations.add(delete(Paths.configJobCreation(id, jobCreationOperationId)));
       }
       operations.add(delete(Paths.configJobHosts(id)),
-                     delete(Paths.configJobRefShort(id)),
-                     delete(Paths.configJob(id)),
-                     // Touch the jobs root node so that its version is bumped on every job
-                     // change down the tree. Effectively, make it that version == cVersion.
-                     set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
+          delete(Paths.configJobRefShort(id)),
+          delete(Paths.configJob(id)),
+          // Touch the jobs root node so that its version is bumped on every job
+          // change down the tree. Effectively, make it that version == cVersion.
+          set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
       client.transaction(operations.build());
     } catch (final NoNodeException e) {
       throw new JobDoesNotExistException(id);
@@ -1535,7 +1538,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final Task task = new Task(job, deployment.getGoal(), deployment.getDeployerUser(),
-                               deployment.getDeployerMaster(), deployment.getDeploymentGroupName());
+        deployment.getDeployerMaster(), deployment.getDeploymentGroupName());
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath),
         create(portNodes),
@@ -1651,9 +1654,9 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final String path = Paths.configHostJob(host, jobId);
     final Task task = new Task(job, deployment.getGoal(),
-                               existingDeployment.getDeployerUser(),
-                               existingDeployment.getDeployerMaster(),
-                               existingDeployment.getDeploymentGroupName());
+        existingDeployment.getDeployerUser(),
+        existingDeployment.getDeployerMaster(),
+        existingDeployment.getDeploymentGroupName());
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {
@@ -1695,7 +1698,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final byte[] data = client.getData(path);
       final Task task = parse(data, Task.class);
       return Deployment.of(jobId, task.getGoal(), task.getDeployerUser(), task.getDeployerMaster(),
-                           task.getDeploymentGroupName());
+          task.getDeploymentGroupName());
     } catch (KeeperException.NoNodeException e) {
       return null;
     } catch (KeeperException | IOException e) {
@@ -1868,7 +1871,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           final byte[] data = client.getData(containerPath);
           final Task task = parse(data, Task.class);
           jobs.put(jobId, Deployment.of(jobId, task.getGoal(), task.getDeployerUser(),
-                                        task.getDeployerMaster(), task.getDeploymentGroupName()));
+              task.getDeployerMaster(), task.getDeploymentGroupName()));
         } catch (KeeperException.NoNodeException ignored) {
           log.debug("deployment config node disappeared: {}", jobIdString);
         }
@@ -2000,7 +2003,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final Task task = new Task(job, deployment.getGoal(), deployment.getDeployerUser(),
-                               deployment.getDeployerMaster(), deployment.getDeploymentGroupName());
+        deployment.getDeployerMaster(), deployment.getDeploymentGroupName());
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath),
         create(portNodes),

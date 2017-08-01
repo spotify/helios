@@ -50,10 +50,10 @@ public class EnvironmentVariableTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost(),
-                      "--env",
-                      "SPOTIFY_POD=PODNAME",
-                      "SPOTIFY_ROLE=ROLENAME",
-                      "BAR=badfood");
+        "--env",
+        "SPOTIFY_POD=PODNAME",
+        "SPOTIFY_ROLE=ROLENAME",
+        "BAR=badfood");
     awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the agent to report environment vars
@@ -69,15 +69,15 @@ public class EnvironmentVariableTest extends SystemTestBase {
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<String> command = asList("sh", "-c",
-                                          "echo pod: $SPOTIFY_POD; "
-                                          + "echo role: $SPOTIFY_ROLE; "
-                                          + "echo foo: $FOO; "
-                                          + "echo bar: $BAR");
+          "echo pod: $SPOTIFY_POD; "
+          + "echo role: $SPOTIFY_ROLE; "
+          + "echo foo: $FOO; "
+          + "echo bar: $BAR");
 
       // Create job
       final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command,
-                                    ImmutableMap.of("FOO", "4711",
-                                                    "BAR", "deadbeef"));
+          ImmutableMap.of("FOO", "4711",
+              "BAR", "deadbeef"));
 
       // deploy
       deployJob(jobId, testHost());
@@ -98,15 +98,15 @@ public class EnvironmentVariableTest extends SystemTestBase {
           cli("hosts", testHost(), "--json"), new TypeReference<Map<String, HostStatus>>() {});
 
       assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
-                                   "SPOTIFY_ROLE", "ROLENAME",
-                                   "BAR", "badfood"),
-                   status.get(testHost()).getEnvironment());
+          "SPOTIFY_ROLE", "ROLENAME",
+          "BAR", "badfood"),
+          status.get(testHost()).getEnvironment());
 
       assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
-                                   "SPOTIFY_ROLE", "ROLENAME",
-                                   "BAR", "deadbeef",
-                                   "FOO", "4711"),
-                   status.get(testHost()).getStatuses().get(jobId).getEnv());
+          "SPOTIFY_ROLE", "ROLENAME",
+          "BAR", "deadbeef",
+          "FOO", "4711"),
+          status.get(testHost()).getStatuses().get(jobId).getEnv());
     }
   }
 }

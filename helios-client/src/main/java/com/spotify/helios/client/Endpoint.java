@@ -34,12 +34,14 @@ public interface Endpoint {
    * A valid URI for Helios must have a scheme that's either http or https,
    * a hostname, and a port. I.e. it must be of the form http(s)://heliosmaster.domain.net:port.
    * It's up to the implementation to enforce this.
+   *
    * @return URI
    */
   URI getUri();
 
   /**
    * Returns the {@link InetAddress} to which the URI's hostname resolves.
+   *
    * @return List of InetAddress
    */
   InetAddress getIp();

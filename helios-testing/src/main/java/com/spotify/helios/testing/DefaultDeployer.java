@@ -27,7 +27,6 @@ import static org.junit.Assert.fail;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 import com.spotify.helios.client.HeliosClient;
@@ -91,7 +90,7 @@ public class DefaultDeployer implements Deployer {
         .toList();
 
     log.info("Got this filtered list of hosts with host filter '{}': {}",
-             hostFilter, filteredHosts);
+        hostFilter, filteredHosts);
 
     if (filteredHosts.isEmpty()) {
       fail(format("no hosts matched the filter pattern - %s", hostFilter));
@@ -127,14 +126,14 @@ public class DefaultDeployer implements Deployer {
   @VisibleForTesting
   String pickHost(final List<String> filteredHosts) {
     final List<String> mutatedList = Lists.newArrayList(filteredHosts);
-    
+
     while (true) {
       final String candidateHost = hostPicker.pickHost(mutatedList);
       try {
         final HostStatus hostStatus = client.hostStatus(candidateHost).get();
         if (hostStatus != null && Status.UP == hostStatus.getStatus()) {
           return candidateHost;
-        } 
+        }
         mutatedList.remove(candidateHost);
         if (mutatedList.isEmpty()) {
           fail("all hosts matching filter pattern are DOWN");

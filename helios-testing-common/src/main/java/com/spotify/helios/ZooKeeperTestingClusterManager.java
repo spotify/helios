@@ -278,6 +278,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
    * Get a {@link CuratorFramework} client connected to only one of the peers.
    *
    * @param id The curator ID.
+   *
    * @return The curator.
    */
   public CuratorFramework peerCurator(final int id) {

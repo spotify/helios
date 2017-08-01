@@ -147,7 +147,7 @@ public class FastForwardReporter implements Managed {
   @Override
   public void start() throws Exception {
     log.info("Scheduling reporting of metrics every {} {}",
-             interval, intervalTimeUnit.name().toLowerCase());
+        interval, intervalTimeUnit.name().toLowerCase());
 
     // wrap the runnable in a try-catch as uncaught exceptions will prevent subsequent executions
     executor.scheduleAtFixedRate(() -> {

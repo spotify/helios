@@ -45,17 +45,17 @@ import org.slf4j.LoggerFactory;
  * The logic for whether a job should be reaped depends on whether it's deployed, its last history
  * event, its creation date, and the specified number of retention days.
  *
- * <p>1. A job that's deployed should NOT BE reaped regardless of its history or creation date.
- * 2. A job not deployed, with history, and an event before the number of retention days should
- *    BE reaped.
- * 3. A job not deployed, with history, and an event after the number of retention days should NOT
- *    BE reaped. An example is a job created a long time ago but deployed recently.
- * 4. A job not deployed, without history, and without a creation date should BE reaped. Only really
- *    old versions of Helios create jobs without dates.
- * 5. A job not deployed, without history, and with a creation date before the number of retention
- *    days should BE reaped.
- * 6. A job not deployed, without history, and with a creation date after the number of retention
- *    days should NOT BE reaped.
+ * <p>1. A job that is deployed should NOT BE reaped, regardless of its history or creation date.
+ *    2. A job that is not deployed, with history, and an event *before* the number of retention
+ *       days, should BE reaped.
+ *    3. A job that is not deployed, with history, and an event *after* the number of retention
+ *       days should NOT BE reaped. For example: a job created long ago but deployed recently.
+ *    4. A job that is not deployed, without history, and without a creation date should BE
+ *       reaped. Only really old versions of Helios create jobs without dates.
+ *    5. A job that is not deployed, without history, but with a creation date before the number of
+ *       retention days should BE reaped.
+ *    6. A job that is not deployed, without history, and with a creation date after the number of
+ *       retention days should NOT BE reaped.
  *
  * <p>Note that the --disable-job-history flag in {@link com.spotify.helios.agent.AgentParser}
  * controls whether the Helios agent should write job history to the data store. If this is
@@ -118,17 +118,17 @@ public class OldJobReaper extends RateLimitedService<Job> {
           final Long created = job.getCreated();
           if (created == null) {
             log.info("Marked job '{}' for reaping (not deployed, no history, no creation date)",
-                     jobId);
+                jobId);
             reap = true;
           } else if ((clock.now().getMillis() - created) > retentionMillis) {
             log.info("Marked job '{}' for reaping (not deployed, no history, creation date "
                      + "of {} before retention time of {} days)",
-                     jobId, DATE_FORMATTER.print(created), retentionDays);
+                jobId, DATE_FORMATTER.print(created), retentionDays);
             reap = true;
           } else {
             log.info("NOT reaping job '{}' (not deployed, no history, creation date of {} after "
                      + "retention time of {} days)",
-                     jobId, DATE_FORMATTER.print(created), retentionDays);
+                jobId, DATE_FORMATTER.print(created), retentionDays);
             reap = false;
           }
         } else {
@@ -143,12 +143,12 @@ public class OldJobReaper extends RateLimitedService<Job> {
           if (unusedDurationMillis > retentionMillis) {
             log.info("Marked job '{}' for reaping (not deployed, has history whose last event "
                      + "on {} was before the retention time of {} days)",
-                     jobId, eventDate, retentionDays);
+                jobId, eventDate, retentionDays);
             reap = true;
           } else {
             log.info("NOT reaping job '{}' (not deployed, has history whose last event "
                      + "on {} was after the retention time of {} days)",
-                     jobId, eventDate, retentionDays);
+                jobId, eventDate, retentionDays);
             reap = false;
           }
         }

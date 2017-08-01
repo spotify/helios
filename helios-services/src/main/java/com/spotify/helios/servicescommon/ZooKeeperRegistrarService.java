@@ -161,7 +161,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
             log.warn("ZooKeeper connection lost, retrying registration in {} ms", sleep);
           } else if (e instanceof HostNotFoundException) {
             log.error("ZooKeeper deregistration of old hostname failed, retrying in {} ms: {}",
-                      sleep, e);
+                sleep, e);
           } else {
             log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
           }
@@ -177,7 +177,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
           return;
         } else {
           log.warn("registration not successful, sleeping for {} seconds",
-                   TimeUnit.MILLISECONDS.toSeconds(sleep));
+              TimeUnit.MILLISECONDS.toSeconds(sleep));
           sleeper.sleep(sleep);
         }
       }

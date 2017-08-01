@@ -64,9 +64,9 @@ public class JobRemoveTest extends SystemTestBase {
   }
 
   private Boolean awaitJobUndeployed(final HeliosClient client, final String host,
-                                        final JobId jobId,
-                                        final int timeout,
-                                        final TimeUnit timeunit) throws Exception {
+                                     final JobId jobId,
+                                     final int timeout,
+                                     final TimeUnit timeunit) throws Exception {
     return Polling.await(timeout, timeunit, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {

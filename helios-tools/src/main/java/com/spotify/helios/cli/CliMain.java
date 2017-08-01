@@ -72,7 +72,7 @@ public class CliMain {
     try {
       final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
       return parser.getCommand().run(parser.getNamespace(), parser.getTargets(), out, err,
-                                     parser.getUsername(), parser.getJson(), stdin);
+          parser.getUsername(), parser.getJson(), stdin);
     } catch (Exception e) {
       // print entire stack trace in verbose mode, otherwise just the exception message
       if (parser.getNamespace().getInt("verbose") > 0) {

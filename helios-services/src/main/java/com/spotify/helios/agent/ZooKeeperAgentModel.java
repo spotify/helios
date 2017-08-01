@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.Json;
@@ -82,14 +81,14 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
 
     this.tasks = client.pathChildrenCache(Paths.configHostJobs(host), taskConfigFile,
-                                          Json.type(Task.class));
+        Json.type(Task.class));
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
 
     this.taskStatuses = ZooKeeperUpdatingPersistentDirectory.create("agent-model-task-statuses",
-                                                                    provider,
-                                                                    taskStatusFile,
-                                                                    Paths.statusHostJobs(host));
+        provider,
+        taskStatusFile,
+        Paths.statusHostJobs(host));
     this.historyWriter = historyWriter;
 
     this.eventSenders = eventSenders;

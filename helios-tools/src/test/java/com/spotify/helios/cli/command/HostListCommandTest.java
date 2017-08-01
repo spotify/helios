@@ -233,7 +233,7 @@ public class HostListCommandTest {
     assertEquals(0, ret);
 
     assertEquals(ImmutableList.of("HOST", hostname + "."),
-                 TestUtils.readFirstColumnFromOutput(baos.toString(), false));
+        TestUtils.readFirstColumnFromOutput(baos.toString(), false));
   }
 
   @Test
@@ -251,7 +251,7 @@ public class HostListCommandTest {
     assertEquals(0, ret);
 
     assertEquals(ImmutableList.of("HOST", hostname + "."),
-                 TestUtils.readFirstColumnFromOutput(baos.toString(), false));
+        TestUtils.readFirstColumnFromOutput(baos.toString(), false));
   }
 
   /**

@@ -26,9 +26,7 @@ import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
-
 import java.util.Collections;
-
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,11 +45,11 @@ public class JobCreateTest extends SystemTestBase {
 
     // Create job
     final String output = createJobRawOutput(Job.newBuilder()
-                                                 .setName(testJobName)
-                                                 .setVersion(testJobVersion)
-                                                 .setImage(BUSYBOX)
-                                                 .setHostname("$%^&")
-                                                 .build());
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(BUSYBOX)
+        .setHostname("$%^&")
+        .build());
     assertThat(output, Matchers.containsString("Invalid hostname "));
   }
 

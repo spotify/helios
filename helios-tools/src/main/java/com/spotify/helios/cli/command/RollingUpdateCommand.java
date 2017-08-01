@@ -247,7 +247,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
           if (done && reported.add(host)) {
             out.println(format("%s -> %s (%d/%d)", host, state,
-                               reported.size(), status.getHostStatuses().size()));
+                reported.size(), status.getHostStatuses().size()));
           }
         }
       }

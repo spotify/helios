@@ -61,7 +61,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
   public void simpleTest() throws Exception {
     assertThat(testResult(SimpleTestImpl.class), isSuccessful());
     assertTrue("jobs are running that should not be",
-               client.jobs().get(15, SECONDS).isEmpty());
+        client.jobs().get(15, SECONDS).isEmpty());
 
     // Ensure test reports were written and everything was successful
     final File[] reportFiles = REPORT_DIR.getRoot().listFiles();
@@ -191,7 +191,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
     public void testVolume() {
       temporaryJobs.job()
           .volume(System.getProperty("user.dir") + "/helios-testing/src/test/resources/helios.conf",
-                  "/helios.conf")
+              "/helios.conf")
           .command("sh", "-c", "while :; do sleep 5; done")
           .deploy();
     }

@@ -43,7 +43,7 @@ public class JobsTest {
 
     // Simple test to verify the job description contains the image name and a shortened job hash.
     assertThat(Jobs.getJobDescription(job),
-               both(startsWith(image)).and(containsString(shortHash)));
+        both(startsWith(image)).and(containsString(shortHash)));
   }
 
 }

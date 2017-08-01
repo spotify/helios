@@ -131,8 +131,8 @@ public class CliParser {
     this.username = (username == null) ? cliConfig.getUsername() : username;
     this.json = equal(options.getBoolean(globalArgs.jsonArg.getDest()), true);
     this.loggingConfig = new LoggingConfig(options.getInt(globalArgs.verbose.getDest()),
-                                           false, null,
-                                           options.getBoolean(globalArgs.noLogSetup.getDest()));
+        false, null,
+        options.getBoolean(globalArgs.noLogSetup.getDest()));
 
     // Merge domains and explicit endpoints into master endpoints
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
@@ -234,8 +234,9 @@ public class CliParser {
   /**
    * Use this instead of calling parser.handle error directly. This will print a header with
    * links to jira and documentation before the standard error message is printed.
+   *
    * @param parser the parser which will print the standard error message
-   * @param ex the exception that will be printed
+   * @param ex     the exception that will be printed
    */
   @SuppressWarnings("UseOfSystemOutOrSystemErr")
   private void handleError(ArgumentParser parser, ArgumentParserException ex) {

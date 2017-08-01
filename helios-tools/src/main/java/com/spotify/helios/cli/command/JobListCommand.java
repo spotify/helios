@@ -132,8 +132,8 @@ public class JobListCommand extends ControlCommand {
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(job.getEnv());
           final JobStatus status = jobStatuses.get(jobId);
           table.row(full ? jobId : jobId.toShortString(), jobId.getName(), jobId.getVersion(),
-                    status != null ? status.getDeployments().keySet().size() : 0,
-                    command, env);
+              status != null ? status.getDeployments().keySet().size() : 0,
+              command, env);
         }
         table.print();
       }

@@ -21,7 +21,6 @@
 package com.spotify.helios.system;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.concat;
@@ -65,8 +64,6 @@ import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
-import com.spotify.docker.client.LogMessage;
-import com.spotify.docker.client.LogReader;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.exceptions.DockerRequestException;
@@ -103,7 +100,6 @@ import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
-import com.sun.jersey.api.client.ClientResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -129,7 +125,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -237,12 +232,12 @@ public abstract class SystemTestBase {
     if (portRange != null) {
       final String[] parts = portRange.split(":", 2);
       dockerPortRange = Range.closedOpen(Integer.valueOf(parts[0]),
-                                         Integer.valueOf(parts[1]));
+          Integer.valueOf(parts[1]));
       allocatedPort = Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<AllocatedPort>() {
         @Override
         public AllocatedPort call() throws Exception {
           final int port = ThreadLocalRandom.current().nextInt(dockerPortRange.lowerEndpoint(),
-                                                               dockerPortRange.upperEndpoint());
+              dockerPortRange.upperEndpoint());
           return temporaryPorts.tryAcquire("docker-probe", port);
         }
       });
@@ -289,7 +284,7 @@ public abstract class SystemTestBase {
       // Start a container with an exposed port
       final HostConfig hostConfig = HostConfig.builder()
           .portBindings(ImmutableMap.of("4711/tcp",
-                                        singletonList(PortBinding.of("0.0.0.0", probePort))))
+              singletonList(PortBinding.of("0.0.0.0", probePort))))
           .build();
       final ContainerConfig config = ContainerConfig.builder()
           .image(BUSYBOX)
@@ -400,8 +395,8 @@ public abstract class SystemTestBase {
     for (final Thread t : sorted.values()) {
       final ThreadGroup tg = t.getThreadGroup();
       log.info("{}: \"{}\" ({}{})", t.getId(), t.getName(),
-               (tg == null ? "" : tg.getName() + " "),
-               (t.isDaemon() ? "daemon" : ""));
+          (tg == null ? "" : tg.getName() + " "),
+          (t.isDaemon() ? "daemon" : ""));
     }
     log.info(Strings.repeat("=", 80));
   }
@@ -636,7 +631,7 @@ public abstract class SystemTestBase {
                             final List<String> command,
                             final Date expires) throws Exception {
     return createJob(name, version, image, EMPTY_HOSTNAME, command, EMPTY_ENV, EMPTY_PORTS,
-                     EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, expires);
+        EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, expires);
   }
 
   protected JobId createJob(final String name,
@@ -666,7 +661,7 @@ public abstract class SystemTestBase {
                             final Map<ServiceEndpoint, ServicePorts> registration)
       throws Exception {
     return createJob(name, version, image, command, env, ports, registration, EMPTY_GRACE_PERIOD,
-                     EMPTY_VOLUMES);
+        EMPTY_VOLUMES);
   }
 
   protected JobId createJob(final String name,
@@ -679,7 +674,7 @@ public abstract class SystemTestBase {
                             final Integer gracePeriod,
                             final Map<String, String> volumes) throws Exception {
     return createJob(name, version, image, EMPTY_HOSTNAME, command, env, ports, registration,
-                     gracePeriod, volumes, EMPTY_EXPIRES);
+        gracePeriod, volumes, EMPTY_EXPIRES);
   }
 
   protected JobId createJob(final String name,
@@ -694,18 +689,18 @@ public abstract class SystemTestBase {
                             final Map<String, String> volumes,
                             final Date expires) throws Exception {
     return createJob(Job.newBuilder()
-                         .setName(name)
-                         .setVersion(version)
-                         .setImage(image)
-                         .setHostname(hostname)
-                         .setCommand(command)
-                         .setEnv(env)
-                         .setPorts(ports)
-                         .setRegistration(registration)
-                         .setGracePeriod(gracePeriod)
-                         .setVolumes(volumes)
-                         .setExpires(expires)
-                         .build());
+        .setName(name)
+        .setVersion(version)
+        .setImage(image)
+        .setHostname(hostname)
+        .setCommand(command)
+        .setEnv(env)
+        .setPorts(ports)
+        .setRegistration(registration)
+        .setGracePeriod(gracePeriod)
+        .setVolumes(volumes)
+        .setExpires(expires)
+        .build());
   }
 
   protected JobId createJob(final Job job) throws Exception {
@@ -1057,7 +1052,7 @@ public abstract class SystemTestBase {
         } catch (DockerException e) {
           if ((e instanceof DockerRequestException)
               && ((DockerRequestException) e).message().contains(
-                  "Driver btrfs failed to remove root filesystem")) {
+              "Driver btrfs failed to remove root filesystem")) {
             // Workaround btrfs issue where removing containers throws an exception,
             // but succeeds anyway.
             return true;

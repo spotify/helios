@@ -1,3 +1,3 @@
 {
-    "image": "spotify/busybox:latest"
+  "image": "spotify/busybox:latest"
 }

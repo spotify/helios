@@ -45,7 +45,7 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
     final long start = System.currentTimeMillis();
 
     assertThat(testResult(TempJobFailureTestImpl.class),
-               hasSingleFailureContaining("AssertionError: Unexpected job state"));
+        hasSingleFailureContaining("AssertionError: Unexpected job state"));
     final long end = System.currentTimeMillis();
     assertTrue("Test should not time out", (end - start) < Jobs.TIMEOUT_MILLIS);
 

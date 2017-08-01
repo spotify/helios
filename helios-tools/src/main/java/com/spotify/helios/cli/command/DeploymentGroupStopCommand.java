@@ -64,7 +64,7 @@ public class DeploymentGroupStopCommand extends ControlCommand {
       return 1;
     } else {
       out.println(format("Failed to stop deployment-group %s. Status: %d",
-                         name, status));
+          name, status));
       return 1;
     }
   }

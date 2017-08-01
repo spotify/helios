@@ -49,8 +49,8 @@ public class HostRegisterCommand extends ControlCommand {
 
   @Override
   int run(final Namespace options, final HeliosClient client, PrintStream out, final boolean json,
-      final BufferedReader stdin)
-          throws ExecutionException, InterruptedException {
+          final BufferedReader stdin)
+      throws ExecutionException, InterruptedException {
     final String host = options.getString(hostArg.getDest());
     final String id = options.getString(idArg.getDest());
 

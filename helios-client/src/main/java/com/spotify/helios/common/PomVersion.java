@@ -60,7 +60,8 @@ public class PomVersion implements Comparable<PomVersion> {
     return patch;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return String.format("%d.%d.%d%s", major, minor, patch, isSnapshot ? "-SNAPSHOT" : "");
   }
 

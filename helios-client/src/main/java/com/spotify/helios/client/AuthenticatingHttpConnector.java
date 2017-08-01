@@ -44,9 +44,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-
 import javax.security.auth.x500.X500Principal;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +70,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
                                      final EndpointIterator endpointIterator,
                                      final DefaultHttpConnector delegate) {
     this(user, agentProxyOpt, clientCertificatePath, endpointIterator,
-         delegate, getSshIdentities(agentProxyOpt));
+        delegate, getSshIdentities(agentProxyOpt));
   }
 
   @VisibleForTesting

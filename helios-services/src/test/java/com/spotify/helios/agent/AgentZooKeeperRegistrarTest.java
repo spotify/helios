@@ -68,8 +68,8 @@ public class AgentZooKeeperRegistrarTest {
 
     final PersistentEphemeralNode ephemeralNode = mock(PersistentEphemeralNode.class);
     when(client.persistentEphemeralNode(upPath,
-                                        PersistentEphemeralNode.Mode.EPHEMERAL,
-                                        new byte[]{}))
+        PersistentEphemeralNode.Mode.EPHEMERAL,
+        new byte[]{}))
         .thenReturn(ephemeralNode);
 
     // default behavior for checking ID of the host registered in zookeeper - it is this host
@@ -140,6 +140,6 @@ public class AgentZooKeeperRegistrarTest {
     // a few notable items
     final List<ZooKeeperOperation> actual = opsCaptor.getValue();
     assertThat(actual, hasItems(ZooKeeperOperations.delete(idPath),
-                                ZooKeeperOperations.create(idPath, hostId.getBytes())));
+        ZooKeeperOperations.create(idPath, hostId.getBytes())));
   }
 }

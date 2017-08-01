@@ -36,7 +36,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.common.base.Throwables;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,7 +71,9 @@ public class Json {
    * serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The byte array for the given object.
+   *
    * @throws JsonProcessingException If the json cannot be generated.
    * @see #asBytesUnchecked(Object)
    */
@@ -84,7 +85,9 @@ public class Json {
    * Serialize an object to json. Use when object is expected to be json serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The byte array for the given object.
+   *
    * @see #asBytes(Object)
    */
   public static byte[] asBytesUnchecked(final Object value) {
@@ -100,7 +103,9 @@ public class Json {
    * serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The serialized object.
+   *
    * @throws JsonProcessingException If the json cannot be generated.
    * @see #asStringUnchecked(Object)
    */
@@ -112,7 +117,9 @@ public class Json {
    * Serialize an object to a json string. Use when object is expected to be json serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The serialized object.
+   *
    * @see #asString(Object)
    */
   public static String asStringUnchecked(final Object value) {
@@ -128,7 +135,9 @@ public class Json {
    * serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The serialized object.
+   *
    * @throws JsonProcessingException If the json cannot be generated.
    * @see #asPrettyStringUnchecked(Object)
    */
@@ -140,7 +149,9 @@ public class Json {
    * Serialize an object to a json string. Use when object is expected to be json serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The serialized object.
+   *
    * @see #asPrettyString(Object)
    */
   public static String asPrettyStringUnchecked(final Object value) {
@@ -156,7 +167,9 @@ public class Json {
    * Use when it is not know whether an object can be json serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The serialized object.
+   *
    * @throws JsonProcessingException If the json cannot be generated.
    * @see #asPrettyStringUnchecked(Object)
    */
@@ -169,7 +182,9 @@ public class Json {
    * Use when object is expected to be json serializable.
    *
    * @param value The object to serialize.
+   *
    * @return The serialized object.
+   *
    * @see #asPrettyString(Object)
    */
   public static String asNormalizedStringUnchecked(final Object value) {

@@ -55,13 +55,13 @@ public class JobUndeployCommand extends WildcardJobCommand {
     parser.help("undeploy a job from hosts");
 
     hostsArg = parser.addArgument("hosts")
-            .nargs("*")
-            .help("The hosts to undeploy the job from.");
+        .nargs("*")
+        .help("The hosts to undeploy the job from.");
 
     tokenArg = parser.addArgument("--token")
-            .nargs("?")
-            .setDefault("")
-            .help("Insecure access token");
+        .nargs("?")
+        .setDefault("")
+        .help("Insecure access token");
 
     allArg = parser.addArgument("-a", "--all")
         .action(storeTrue())

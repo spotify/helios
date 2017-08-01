@@ -29,7 +29,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Uninterruptibles;

@@ -53,11 +53,11 @@ public class BoundedRandomExponentialBackoff implements RetryIntervalPolicy {
   public BoundedRandomExponentialBackoff(final long minIntervalMillis, final long maxIntervalMillis,
                                          final float randomizationFactor) {
     checkArgument(closed(0.0f, 1.0f).contains(randomizationFactor),
-                  "randomization factor must be in in [0.0, 1.0]");
+        "randomization factor must be in in [0.0, 1.0]");
     checkArgument(minIntervalMillis > 0, "min interval must be positive");
     checkArgument(maxIntervalMillis > 0, "max interval must be positive");
     checkArgument(minIntervalMillis <= maxIntervalMillis,
-                  "min interval must be less or equal to max interval");
+        "min interval must be less or equal to max interval");
 
     this.minIntervalMillis = minIntervalMillis;
     this.maxIntervalMillis = maxIntervalMillis;
@@ -136,7 +136,7 @@ public class BoundedRandomExponentialBackoff implements RetryIntervalPolicy {
 
     public BoundedRandomExponentialBackoff build() {
       return new BoundedRandomExponentialBackoff(minIntervalMillis, maxIntervalMillis,
-                                                 randomizationFactor);
+          randomizationFactor);
     }
 
 

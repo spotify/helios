@@ -66,7 +66,7 @@ public class DeploymentGroupRemoveCommand extends ControlCommand {
     } else {
       if (failed) {
         out.println(format("Failed to remove deployment-group %s, status: %s",
-                           name, status.getStatus()));
+            name, status.getStatus()));
       } else {
         out.println(format("Deployment-group %s removed", name));
       }

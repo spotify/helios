@@ -28,7 +28,6 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.FileAppender;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;

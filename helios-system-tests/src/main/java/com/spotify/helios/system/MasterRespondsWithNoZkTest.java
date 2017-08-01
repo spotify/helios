@@ -97,8 +97,7 @@ public class MasterRespondsWithNoZkTest extends SystemTestBase {
 
       when(curator.getZookeeperClient()).thenReturn(czkClient);
 
-      @SuppressWarnings("unchecked")
-      final Listenable<ConnectionStateListener> mockListener =
+      @SuppressWarnings("unchecked") final Listenable<ConnectionStateListener> mockListener =
           (Listenable<ConnectionStateListener>) mock(Listenable.class);
 
       when(curator.getConnectionStateListenable()).thenReturn(mockListener);

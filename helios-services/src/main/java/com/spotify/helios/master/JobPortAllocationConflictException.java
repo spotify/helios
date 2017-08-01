@@ -36,7 +36,7 @@ public class JobPortAllocationConflictException extends HeliosException {
                                             final String host, final int port) {
 
     super(format("Allocation of port %d for job %s collides with job %s on host %s",
-                 port, id, conflictingId, host));
+        port, id, conflictingId, host));
     this.id = id;
     this.conflictingId = conflictingId;
     this.host = host;

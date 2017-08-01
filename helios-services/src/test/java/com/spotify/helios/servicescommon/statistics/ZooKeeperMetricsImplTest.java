@@ -46,7 +46,7 @@ public class ZooKeeperMetricsImplTest {
 
     final Timer timer = registry.timer(name);
     assertEquals(1, timer.getCount());
-    assertArrayEquals(new long[]{100}, timer.getSnapshot().getValues());
+    assertArrayEquals(new long[]{ 100 }, timer.getSnapshot().getValues());
   }
 
   @Test

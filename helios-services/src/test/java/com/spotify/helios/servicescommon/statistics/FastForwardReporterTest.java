@@ -163,7 +163,7 @@ public class FastForwardReporterTest {
   }
 
   private void verifyMeterStats(String what, String type) throws Exception {
-    for (final String stat : new String[]{"1m", "5m"}) {
+    for (final String stat : new String[]{ "1m", "5m" }) {
       verify(ffwd).send(argThat(allOf(
           hasKey("helios.test"),
           containsAttributes("what", what, "metric_type", type, "stat", stat),

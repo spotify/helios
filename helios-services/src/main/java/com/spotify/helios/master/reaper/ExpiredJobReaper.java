@@ -91,7 +91,7 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
             log.debug("job {} was already undeployed when it hit deadline", jobId, e);
           } catch (TokenVerificationException e) {
             log.error("couldn't undeploy job {} from host {} because token verification failed",
-                      jobId, host, e);
+                jobId, host, e);
           }
         }
 
@@ -112,7 +112,7 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
   protected ScheduledFuture<?> schedule(final Runnable runnable,
                                         final ScheduledExecutorService executorService) {
     return executorService.scheduleWithFixedDelay(runnable, new Random().nextInt(interval),
-                                                  interval, timeUnit);
+        interval, timeUnit);
   }
 
   public static Builder newBuilder() {

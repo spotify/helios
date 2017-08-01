@@ -115,7 +115,7 @@ public class JobStatusCommandTest {
         "JOB ID             HOST      GOAL     STATE      CONTAINER ID    PORTS    ",
         "foo:bar:6123457    host1.    START    RUNNING                             ",
         "foo:bat:c8aa21a    host2.    START    RUNNING                             "
-        ));
+    ));
 
   }
 
@@ -174,9 +174,9 @@ public class JobStatusCommandTest {
 
   private static Job jobWithId(final JobId jobId) {
     return Job.newBuilder()
-          .setName(jobId.getName())
-          .setVersion(jobId.getVersion())
-          .setHash(jobId.getHash())
-          .build();
+        .setName(jobId.getName())
+        .setVersion(jobId.getVersion())
+        .setHash(jobId.getHash())
+        .build();
   }
 }

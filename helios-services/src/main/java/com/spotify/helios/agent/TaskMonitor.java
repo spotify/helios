@@ -83,6 +83,7 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
 
   /**
    * Get the current task throttle as derived from task runner events.
+   *
    * @return The throttle state.
    */
   public ThrottleState throttle() {
@@ -220,7 +221,7 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
         flapTimeout.cancel(false);
       }
       flapTimeout = scheduler.schedule(new UpdateThrottle(),
-                                       flapController.millisLeftToUnflap(), MILLISECONDS);
+          flapController.millisLeftToUnflap(), MILLISECONDS);
     }
 
     // Let the caller know if they need to commit the state change
@@ -243,6 +244,7 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
 
   /**
    * Used to schedule flapping state updates while task is running.
+   *
    * @see #updateThrottle()
    */
   private class UpdateThrottle implements Runnable {

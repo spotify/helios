@@ -191,7 +191,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
         .setCommand(asList("sh", "-c", "nc -l -p 4711"))
         .addPort(portName, PortMapping.of(4711))
         .addRegistration(ServiceEndpoint.of(serviceName, serviceProtocol),
-                         ServicePorts.of(portName))
+            ServicePorts.of(portName))
         .setHealthCheck(healthCheck)
         .build();
 
@@ -205,7 +205,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     verify(registrar, never()).register(any(ServiceRegistration.class));
 
     // create the file in the container to make the healthcheck succeed
-    final String[] makeFileCmd = new String[]{"touch", "file"};
+    final String[] makeFileCmd = new String[]{ "touch", "file" };
     final ExecCreation execCreation = dockerClient.execCreate(
         jobState.getContainerId(), makeFileCmd);
     final String execId = execCreation.id();
@@ -319,7 +319,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
         .setVersion(testJobVersion)
         .setImage(ALPINE)
         .setCommand(asList("sh", "-c",
-                           "nc -l -p 4711 && nc -lk -p 4712 -e hostname"))
+            "nc -l -p 4711 && nc -lk -p 4712 -e hostname"))
         .addPort("poke", PortMapping.of(4711))
         .addPort("health", PortMapping.of(4712))
         .addRegistration(ServiceEndpoint.of("foo_service", "foo_proto"), ServicePorts.of("health"))

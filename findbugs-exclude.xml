@@ -1,32 +1,32 @@
 <FindBugsFilter>
 
-  <!--We're not worried about someone modifying exposed byte arrays (although maybe we should be)-->
-  <Match>
-    <Bug code="EI,EI2"/>
-    <Or>
-      <Class name="com.spotify.helios.servicescommon.coordination.Node"/>
-      <Class name="com.spotify.helios.servicescommon.coordination.SetData"/>
-    </Or>
-  </Match>
+    <!--We're not worried about someone modifying exposed byte arrays (although maybe we should be)-->
+    <Match>
+        <Bug code="EI,EI2"/>
+        <Or>
+            <Class name="com.spotify.helios.servicescommon.coordination.Node"/>
+            <Class name="com.spotify.helios.servicescommon.coordination.SetData"/>
+        </Or>
+    </Match>
 
-  <!--We're not using Java serialization-->
-  <Match>
-    <Bug pattern="SE_BAD_FIELD"/>
-  </Match>
+    <!--We're not using Java serialization-->
+    <Match>
+        <Bug pattern="SE_BAD_FIELD"/>
+    </Match>
 
-  <!--We're using named Objects as locks-->
-  <Match>
-    <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON"/>
-    <Or>
-      <Class name="com.spotify.helios.servicescommon.coordination.RetryingZooKeeperNodeWriter$1"/>
-      <Class name="com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory$3"/>
-    </Or>
-  </Match>
+    <!--We're using named Objects as locks-->
+    <Match>
+        <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON"/>
+        <Or>
+            <Class name="com.spotify.helios.servicescommon.coordination.RetryingZooKeeperNodeWriter$1"/>
+            <Class name="com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory$3"/>
+        </Or>
+    </Match>
 
-  <!--No, Map.remove() should not return byte[]{} instead of null-->
-  <Match>
-    <Class name="com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory$MapView"/>
-    <Method name="remove"/>
-    <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS"/>
-  </Match>
+    <!--No, Map.remove() should not return byte[]{} instead of null-->
+    <Match>
+        <Class name="com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory$MapView"/>
+        <Method name="remove"/>
+        <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS"/>
+    </Match>
 </FindBugsFilter>

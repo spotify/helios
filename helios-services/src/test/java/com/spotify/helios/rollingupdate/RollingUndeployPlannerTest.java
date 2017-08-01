@@ -40,8 +40,8 @@ public class RollingUndeployPlannerTest {
   public void testSerialRollout() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
-                               .setParallelism(1)
-                               .build())
+            .setParallelism(1)
+            .build())
         .build();
 
     final RolloutPlanner rolloutPlanner = RollingUndeployPlanner.of(deploymentGroup);
@@ -69,8 +69,8 @@ public class RollingUndeployPlannerTest {
   public void testParallelRollout() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
-                               .setParallelism(2)
-                               .build())
+            .setParallelism(2)
+            .build())
         .build();
 
     final RolloutPlanner rolloutPlanner = RollingUndeployPlanner.of(deploymentGroup);
@@ -98,8 +98,8 @@ public class RollingUndeployPlannerTest {
   public void testParallelRolloutWithRemainder() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
-                               .setParallelism(3)
-                               .build())
+            .setParallelism(3)
+            .build())
         .build();
 
     final RolloutPlanner rolloutPlanner = RollingUndeployPlanner.of(deploymentGroup);

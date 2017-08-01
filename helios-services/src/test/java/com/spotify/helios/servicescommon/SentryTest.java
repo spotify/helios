@@ -81,7 +81,7 @@ public class SentryTest {
     // make sure we got the message as expected, note that getMessage is a blocking method
     final String message = udpServer.getMessage();
     assertTrue("Expected message beginning with 'Sentry', instead got " + message,
-               message.startsWith("Sentry"));
+        message.startsWith("Sentry"));
   }
 
   /**

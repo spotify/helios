@@ -125,7 +125,7 @@ public class TemporaryJobs implements TestRule {
             builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
 
     prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
-                                               .or(DEFAULT_PREFIX_DIRECTORY));
+        .or(DEFAULT_PREFIX_DIRECTORY));
     try {
       if (isNullOrEmpty(builder.jobPrefix)) {
         this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
@@ -315,9 +315,8 @@ public class TemporaryJobs implements TestRule {
    * </ol>
    *
    * @return an instance of TemporaryJobs
-   * @see <a href=
-   * "https://github.com/spotify/helios/blob/master/docs/testing_framework.md#configuration-by-file"
-   * >Helios Testing Framework - Configuration By File</a>
+   *
+   * @see <a href="https://github.com/spotify/helios/blob/master/docs/testing_framework.md#configuration-by-file">Helios Testing Framework - Configuration By File</a>
    */
   public static TemporaryJobs create() {
     return builder().build();
@@ -361,7 +360,7 @@ public class TemporaryJobs implements TestRule {
   }
 
   private void perform(final Statement base, final TemporaryJobReports.ReportWriter writer)
-          throws InterruptedException {
+      throws InterruptedException {
     // Run the actual test on a thread
     final Future<Object> future = executor.submit(new Callable<Object>() {
       @Override
@@ -444,7 +443,7 @@ public class TemporaryJobs implements TestRule {
       // If we can't obtain a lock for the file, it either has already been deleted, or is being
       // used by another process. In either case, skip over it.
       try (
-        JobPrefixFile prefixFile = JobPrefixFile.tryFromExistingFile(file.toPath())
+          JobPrefixFile prefixFile = JobPrefixFile.tryFromExistingFile(file.toPath())
       ) {
         if (prefixFile == null) {
           log.debug("Unable to create JobPrefixFile for {}", file.getPath());
@@ -648,24 +647,26 @@ public class TemporaryJobs implements TestRule {
             this.config.getString("hostPickingStrategyKey")));
 
       } else {
-        throw new RuntimeException("The hostPickingStrategy " + value + " is not valid. "
-          + "Valid values are [random, onerandom, deterministic, onedeterministic] and the "
-          + "deterministic variants require a string value hostPickingStrategyKey to be set "
-          + "which is used to seed the random number generator, so can be any string.");
+        throw new RuntimeException(
+            "The hostPickingStrategy " + value + " is not valid. "
+            + "Valid values are [random, onerandom, deterministic, onedeterministic] and the "
+            + "deterministic variants require a string value hostPickingStrategyKey to be set "
+            + "which is used to seed the random number generator, so can be any string.");
       }
     }
 
     private void verifyHasStrategyKey(final String value) {
       if (!this.config.hasPath("hostPickingStrategyKey")) {
-        throw new RuntimeException("host picking strategy [" + value + "] selected but no "
+        throw new RuntimeException(
+            "host picking strategy [" + value + "] selected but no "
             + "value for hostPickingStrategyKey which is used to seed the random number generator");
       }
     }
 
     public Builder domain(final String domain) {
       return client(clientBuilder.setUser(user)
-                        .setDomain(domain)
-                        .build());
+          .setDomain(domain)
+          .build());
     }
 
     public Builder endpoints(final String... endpoints) {
@@ -684,8 +685,8 @@ public class TemporaryJobs implements TestRule {
 
     public Builder endpointStrings(final List<String> endpoints) {
       return client(clientBuilder.setUser(user)
-                        .setEndpointStrings(endpoints)
-                        .build());
+          .setEndpointStrings(endpoints)
+          .build());
     }
 
     public Builder hostPickingStrategy(final HostPickingStrategy strategy) {

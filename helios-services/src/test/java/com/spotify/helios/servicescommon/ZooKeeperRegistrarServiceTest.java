@@ -230,7 +230,7 @@ public class ZooKeeperRegistrarServiceTest {
 
   @Test
   public void testLatchNotSignalledOnRegistrationConflict() throws Exception {
-    final ZooKeeperRegistrar zooKeeperRegistrar =  createStubRegistrar(false);
+    final ZooKeeperRegistrar zooKeeperRegistrar = createStubRegistrar(false);
 
     final int initialCount = 1;
     final CountDownLatch latch = new CountDownLatch(initialCount);
@@ -248,6 +248,6 @@ public class ZooKeeperRegistrarServiceTest {
     assertNull(complete.get(3000, MILLISECONDS));
 
     assertEquals("Latch should not be counted down if registration did not complete",
-                 initialCount, latch.getCount());
+        initialCount, latch.getCount());
   }
 }

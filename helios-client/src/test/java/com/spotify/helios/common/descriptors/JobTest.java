@@ -208,7 +208,7 @@ public class JobTest {
     assertEquals("metadata", expectedMetadata, builder.getMetadata());
     assertEquals("addCapabilities", expectedAddCapabilities, builder.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
-                 builder.getDropCapabilities());
+        builder.getDropCapabilities());
     assertEquals("labels", expectedLabels, builder.getLabels());
 
     // Check final output
@@ -258,7 +258,7 @@ public class JobTest {
     assertEquals("metadata", expectedMetadata, rebuilder.getMetadata());
     assertEquals("addCapabilities", expectedAddCapabilities, rebuilder.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
-                 rebuilder.getDropCapabilities());
+        rebuilder.getDropCapabilities());
     assertEquals("labels", expectedLabels, rebuilder.getLabels());
 
     // Check clone
@@ -284,7 +284,7 @@ public class JobTest {
     assertEquals("metadata", expectedMetadata, cloned.getMetadata());
     assertEquals("addCapabilities", expectedAddCapabilities, cloned.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
-                 cloned.getDropCapabilities());
+        cloned.getDropCapabilities());
     assertEquals("labels", expectedLabels, cloned.getLabels());
 
     final Job clonedJob = cloned.build();
@@ -300,7 +300,7 @@ public class JobTest {
     assertEquals("volumes", expectedVolumes, clonedJob.getVolumes());
     assertEquals("expires", expectedExpires, clonedJob.getExpires());
     assertEquals("registrationDomain", expectedRegistrationDomain,
-                 clonedJob.getRegistrationDomain());
+        clonedJob.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, clonedJob.getCreatingUser());
     assertEquals("resources", expectedResources, clonedJob.getResources());
     assertEquals("healthCheck", expectedHealthCheck, clonedJob.getHealthCheck());
@@ -309,7 +309,7 @@ public class JobTest {
     assertEquals("metadata", expectedMetadata, clonedJob.getMetadata());
     assertEquals("addCapabilities", expectedAddCapabilities, clonedJob.getAddCapabilities());
     assertEquals("dropCapabilities", expectedDropCapabilities,
-                 clonedJob.getDropCapabilities());
+        clonedJob.getDropCapabilities());
     assertEquals("labels", expectedLabels, clonedJob.getLabels());
   }
 
@@ -344,9 +344,9 @@ public class JobTest {
   @Test
   public void verifySha1Id() throws IOException {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
-                                                   "image", "foobar:4711",
-                                                   "name", "foozbarz",
-                                                   "version", "17");
+        "image", "foobar:4711",
+        "name", "foozbarz",
+        "version", "17");
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -366,10 +366,10 @@ public class JobTest {
   public void verifySha1IdWithEnv() throws IOException {
     final Map<String, String> env = ImmutableMap.of("FOO", "BAR");
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
-                                                   "image", "foobar:4711",
-                                                   "name", "foozbarz",
-                                                   "version", "17",
-                                                   "env", env);
+        "image", "foobar:4711",
+        "name", "foozbarz",
+        "version", "17",
+        "env", env);
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -494,7 +494,7 @@ public class JobTest {
     builder.addMetadata("added", "data");
     builder.addPort("added_port", PortMapping.of(4711));
     builder.addRegistration(ServiceEndpoint.of("added_reg", "added_proto"),
-                            ServicePorts.of("added_port"));
+        ServicePorts.of("added_port"));
     builder.setGracePeriod(480);
 
     assertEquals(expectedCommand, job.getCommand());
@@ -510,7 +510,7 @@ public class JobTest {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
     final Job.Builder builder = j.toBuilder();
     final Map<String, PortMapping> ports = ImmutableMap.of("add_ports1", PortMapping.of(1234),
-                                                           "add_ports2", PortMapping.of(2345));
+        "add_ports2", PortMapping.of(2345));
     final ImmutableMap.Builder<String, ServicePortParameters> servicePortsBuilder =
         ImmutableMap.builder();
     servicePortsBuilder.put("add_ports1", new ServicePortParameters(

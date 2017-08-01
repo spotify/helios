@@ -48,7 +48,9 @@ public class Endpoints {
 
   /**
    * Returns a {@link Supplier} of a list of {@link Endpoint}.
+   *
    * @param uriSupplier A Supplier of a list of URIs.
+   *
    * @return A Supplier of a list of Endpoints.
    */
   public static Supplier<List<Endpoint>> of(final Supplier<List<URI>> uriSupplier) {
@@ -57,8 +59,10 @@ public class Endpoints {
 
   /**
    * Returns a {@link Supplier} of a list of {@link Endpoint}.
+   *
    * @param uriSupplier A Supplier of a list of URIs.
    * @param dnsResolver An instance of {@link DnsResolver}
+   *
    * @return A Supplier of a list of Endpoints.
    */
   static Supplier<List<Endpoint>> of(final Supplier<List<URI>> uriSupplier,
@@ -73,7 +77,9 @@ public class Endpoints {
 
   /**
    * Returns a list of {@link Endpoint}.
+   *
    * @param uris A list of URIs.
+   *
    * @return A list of Endpoints.
    */
   public static List<Endpoint> of(final List<URI> uris) {
@@ -82,8 +88,10 @@ public class Endpoints {
 
   /**
    * Returns a list of {@link Endpoint}.
-   * @param uris A list of URIs.
+   *
+   * @param uris        A list of URIs.
    * @param dnsResolver An instance of {@link DnsResolver}
+   *
    * @return A list of Endpoints.
    */
   static List<Endpoint> of(final List<URI> uris, final DnsResolver dnsResolver) {

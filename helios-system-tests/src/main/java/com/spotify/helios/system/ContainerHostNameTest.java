@@ -51,12 +51,12 @@ public class ContainerHostNameTest extends SystemTestBase {
 
       // Create job
       final JobId jobId = createJob(Job.newBuilder()
-                                .setName(testJobName)
-                                .setVersion(testJobVersion)
-                                .setImage(BUSYBOX)
-                                .setHostname(testHost())
-                                .setCommand(command)
-                                .build());
+          .setName(testJobName)
+          .setVersion(testJobVersion)
+          .setImage(BUSYBOX)
+          .setHostname(testHost())
+          .setCommand(command)
+          .build());
 
       // deploy
       deployJob(jobId, testHost());

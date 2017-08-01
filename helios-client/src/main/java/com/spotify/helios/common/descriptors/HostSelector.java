@@ -150,6 +150,7 @@ public class HostSelector extends Descriptor {
    * Check if the given value matches the host selectors.
    *
    * @param value Label value to test against.
+   *
    * @return True iff the value matches the host selector condition.
    */
   public boolean matches(@Nullable final String value) {

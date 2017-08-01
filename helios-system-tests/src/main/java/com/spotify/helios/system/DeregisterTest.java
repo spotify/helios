@@ -76,7 +76,7 @@ public class DeregisterTest extends SystemTestBase {
         .setImage(BUSYBOX)
         .setCommand(IDLE_COMMAND)
         .setPorts(ImmutableMap.of("foo", PortMapping.of(4711),
-                                  "bar", PortMapping.of(4712, ports.localPort("bar"))))
+            "bar", PortMapping.of(4712, ports.localPort("bar"))))
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = client.createJob(job).get();
@@ -128,7 +128,7 @@ public class DeregisterTest extends SystemTestBase {
         .setImage(BUSYBOX)
         .setCommand(IDLE_COMMAND)
         .setPorts(ImmutableMap.of("foo", PortMapping.of(4711),
-                                  "bar", PortMapping.of(4712, ports.localPort("bar"))))
+            "bar", PortMapping.of(4712, ports.localPort("bar"))))
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = client.createJob(job).get();

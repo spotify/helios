@@ -106,7 +106,7 @@ public class SupervisorTest {
       .build();
   private static final Map<String, PortMapping> PORTS = Collections.emptyMap();
   private static final Map<String, String> ENV = ImmutableMap.of("foo", "17",
-                                                         "bar", "4711");
+      "bar", "4711");
   private static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
 
   private final ContainerInfo runningResponse = mock(ContainerInfo.class);
@@ -181,15 +181,15 @@ public class SupervisorTest {
 
     // Verify that the container is created
     verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
-                                                   containerNameCaptor.capture());
+        containerNameCaptor.capture());
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(CREATING)
-                                                       .setContainerId(null)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(CREATING)
+            .setContainerId(null)
+            .setEnv(ENV)
+            .build())
     );
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
     assertEquals(IMAGE, containerConfig.image());
@@ -201,25 +201,25 @@ public class SupervisorTest {
     // Verify that the container is started
     verify(docker, timeout(30000)).startContainer(eq(containerId));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(STARTING)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(STARTING)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
     when(docker.inspectContainer(eq(containerId))).thenReturn(runningResponse);
 
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(RUNNING)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(RUNNING)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
 
     // Stop the job
@@ -232,35 +232,34 @@ public class SupervisorTest {
 
     // Verify that the pulling state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(PULLING_IMAGE)
-                                                       .setContainerId(null)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(START)
+            .setState(PULLING_IMAGE)
+            .setContainerId(null)
+            .setEnv(ENV)
+            .build())
     );
-
 
     // Verify that the STOPPING and STOPPED states are signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(STOP)
-                                                       .setState(STOPPING)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(STOP)
+            .setState(STOPPING)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
 
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(JOB)
-                                                       .setGoal(STOP)
-                                                       .setState(STOPPED)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(JOB)
+            .setGoal(STOP)
+            .setState(STOPPED)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
   }
 
@@ -279,7 +278,6 @@ public class SupervisorTest {
     mockTaskStatus(longKillTimeJob.getId());
 
     final Supervisor longKillTimeSupervisor = createSupervisor(longKillTimeJob);
-
 
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(ContainerCreation.builder().id(containerId).build());

@@ -23,7 +23,6 @@ package com.spotify.helios.cli.command;
 import static com.google.common.base.Strings.repeat;
 import static java.lang.String.format;
 
-import com.google.common.base.Throwables;
 import com.spotify.helios.cli.Target;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;

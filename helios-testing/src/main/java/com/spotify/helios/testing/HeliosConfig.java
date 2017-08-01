@@ -55,6 +55,7 @@ public class HeliosConfig {
    * @param profilePath  The path at which the default profile is specified.
    * @param profilesPath The path at which profiles are nested.
    * @param rootConfig   The config file root to read the default profile from.
+   *
    * @return The name of the default profile.
    */
   static Config getDefaultProfile(
@@ -71,6 +72,7 @@ public class HeliosConfig {
    * @param profilesPath The path at which profiles are nested.
    * @param profile      The name of the profile to load.
    * @param rootConfig   The config file root to load profiles from.
+   *
    * @return The requested configuration, or an empty configuration if profile is null.
    */
   static Config getProfile(

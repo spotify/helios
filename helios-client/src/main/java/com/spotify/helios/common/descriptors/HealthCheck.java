@@ -63,7 +63,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = ExecHealthCheck.class, name = HealthCheck.EXEC),
     @JsonSubTypes.Type(value = HttpHealthCheck.class, name = HealthCheck.HTTP),
-    @JsonSubTypes.Type(value = TcpHealthCheck.class, name = HealthCheck.TCP)})
+    @JsonSubTypes.Type(value = TcpHealthCheck.class, name = HealthCheck.TCP) })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class HealthCheck extends Descriptor {
 

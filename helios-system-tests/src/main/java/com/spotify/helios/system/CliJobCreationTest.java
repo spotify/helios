@@ -134,7 +134,7 @@ public class CliJobCreationTest extends SystemTestBase {
     // Trying to create a job with an invalid image name should return JSON with
     // INVALID_JOB_DEFINITION
     final String output = cli("create", "--json", testJobNameAndVersion,
-                              "DOES_NOT_LIKE_AT_ALL-CAPITALS");
+        "DOES_NOT_LIKE_AT_ALL-CAPITALS");
     final CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
     assertEquals(CreateJobResponse.Status.INVALID_JOB_DEFINITION, createJobResponse.getStatus());
     assertTrue(createJobResponse.getId().startsWith(testJobNameAndVersion));
@@ -159,7 +159,7 @@ public class CliJobCreationTest extends SystemTestBase {
     // Trying to create a job with an ambiguous template reference should return JSON with
     // AMBIGUOUS_JOB_REFERENCE
     final String output = cli("create", "--json", "--template", testJobNameAndVersion,
-                              testJobNameAndVersion, BUSYBOX);
+        testJobNameAndVersion, BUSYBOX);
     final CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
     assertEquals(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, createJobResponse.getStatus());
   }

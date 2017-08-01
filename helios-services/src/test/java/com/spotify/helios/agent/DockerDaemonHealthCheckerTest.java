@@ -28,9 +28,7 @@ import static org.mockito.Mockito.when;
 import com.codahale.metrics.health.HealthCheck;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerRequestException;
-
 import java.net.URI;
-
 import org.junit.Test;
 
 public class DockerDaemonHealthCheckerTest {

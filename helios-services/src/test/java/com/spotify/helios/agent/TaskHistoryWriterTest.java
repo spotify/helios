@@ -72,7 +72,7 @@ public class TaskHistoryWriterTest {
       .setVersion("version")
       .build();
   private static final JobId JOB_ID = JOB.getId();
-  private static final TaskStatus TASK_STATUS =  TaskStatus.newBuilder()
+  private static final TaskStatus TASK_STATUS = TaskStatus.newBuilder()
       .setState(State.CREATING)
       .setJob(JOB)
       .setGoal(START)
@@ -115,7 +115,7 @@ public class TaskHistoryWriterTest {
   }
 
   private void makeWriter(final ZooKeeperClient client)
-          throws Exception {
+      throws Exception {
     writer = new TaskHistoryWriter(HOSTNAME, client, agentStateDirs.resolve("task-history.json"));
     writer.startUp();
   }

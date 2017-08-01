@@ -48,6 +48,7 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
    * Creates a new logging log stream follower.
    *
    * @param log the log to forward logs to
+   *
    * @return a new instance
    */
   public static LoggingLogStreamFollower create(final Logger log) {
@@ -153,10 +154,10 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
       final JobId jobId,
       final StringBuilder stringBuilder) {
     log.info("[{}] [{}] {} {}",
-             jobId.getName(),
-             containerId.substring(0, Math.min(7, containerId.length())),
-             stream.id(),
-             stringBuilder.toString());
+        jobId.getName(),
+        containerId.substring(0, Math.min(7, containerId.length())),
+        stream.id(),
+        stringBuilder.toString());
     stringBuilder.setLength(0);
   }
 

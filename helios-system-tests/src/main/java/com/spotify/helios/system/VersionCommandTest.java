@@ -38,7 +38,7 @@ public class VersionCommandTest extends SystemTestBase {
     // to verify output contains two version numbers (one for client, one for master)
     final String regexp = String.format("(?s).*%s.*%s.*", POM_VERSION, POM_VERSION);
     assertTrue("response does not contain two version numbers - \n" + response,
-               response.matches(regexp));
+        response.matches(regexp));
   }
 
   @Test
@@ -58,7 +58,7 @@ public class VersionCommandTest extends SystemTestBase {
         getVersion("version", "--json", "-z", masterEndpoint() + "/badPath");
     assertEquals("wrong client version", POM_VERSION, version.getClientVersion());
     assertEquals("wrong master version", "Master replied with error code 404",
-                 version.getMasterVersion());
+        version.getMasterVersion());
   }
 
   private VersionResponse getVersion(String... args) throws Exception {
