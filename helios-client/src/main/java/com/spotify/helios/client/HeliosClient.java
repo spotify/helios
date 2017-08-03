@@ -42,6 +42,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -427,10 +429,11 @@ public class HeliosClient implements Closeable {
         new AsyncFunction<Response, VersionResponse>() {
           @Override
           public ListenableFuture<VersionResponse> apply(@NotNull Response reply) throws Exception {
-            final String masterVersion =
-                reply == null ? "Unable to connect to master" :
-                reply.status() == HTTP_OK ? Json.read(reply.payload(), String.class) :
-                "Master replied with error code " + reply.status();
+            final String masterVersion = reply == null
+                ? "Unable to connect to master"
+                : reply.status() == HTTP_OK
+                    ? Json.read(reply.payload(), String.class)
+                    : "Master replied with error code " + reply.status();
 
             return immediateFuture(new VersionResponse(Version.POM_VERSION, masterVersion));
           }
@@ -733,6 +736,15 @@ public class HeliosClient implements Closeable {
       final DefaultHttpConnector connector =
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
+      Optional<AccessToken> accessTokenOpt = Optional.absent();
+      try {
+        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+        accessTokenOpt = Optional.of(credentials.getAccessToken());
+      } catch (IOException e) {
+        // As with AgentProxy below, defer enforcing authorization to the masters
+        log.debug("Exception (possibly benign) while loading Application Default Credentials", e);
+      }
+
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
       try {
         agentProxyOpt = Optional.of(AgentProxies.newInstance());
@@ -761,6 +773,7 @@ public class HeliosClient implements Closeable {
       }
 
       return new AuthenticatingHttpConnector(user,
+          accessTokenOpt,
           agentProxyOpt,
           Optional.fromNullable(certKeyPaths),
           endpointIterator,

@@ -32,6 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.auth.oauth2.AccessToken;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -45,7 +46,10 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.net.ssl.HttpsURLConnection;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Before;
@@ -61,6 +65,8 @@ public class AuthenticatingHttpConnectorTest {
   private final String method = "GET";
   private final byte[] entity = new byte[0];
   private final ImmutableMap<String, List<String>> headers = ImmutableMap.of();
+  private final ImmutableMap<String, List<String>> headersWithAuthorization =
+      ImmutableMap.of("Authorization", Collections.singletonList("Bearer <token>"));
 
   private List<Endpoint> endpoints;
 
@@ -77,6 +83,7 @@ public class AuthenticatingHttpConnectorTest {
 
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
     return new AuthenticatingHttpConnector(USER,
+        Optional.<AccessToken>absent(),
         proxy,
         Optional.<CertKeyPaths>absent(),
         endpointIterator,
@@ -92,8 +99,23 @@ public class AuthenticatingHttpConnectorTest {
         CertKeyPaths.create(CERTIFICATE_PATH, KEY_PATH);
 
     return new AuthenticatingHttpConnector(USER,
+        Optional.<AccessToken>absent(),
         Optional.<AgentProxy>absent(),
         Optional.of(clientCertificatePath),
+        endpointIterator,
+        connector);
+  }
+
+
+  private AuthenticatingHttpConnector createAuthenticatingConnectorWithAccessToken() {
+    final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
+    final AccessToken accessToken =
+        new AccessToken("dummy-access-token", null);
+
+    return new AuthenticatingHttpConnector(USER,
+        Optional.<AccessToken>of(accessToken),
+        Optional.<AgentProxy>absent(),
+        Optional.<CertKeyPaths>absent(),
         endpointIterator,
         connector);
   }
@@ -144,6 +166,27 @@ public class AuthenticatingHttpConnectorTest {
     authConnector.connect(uri, method, entity, headers);
 
     verify(connector, never()).setExtraHttpsHandler(any(HttpsHandler.class));
+  }
+
+  @Test
+  public void testAccessToken_ResponseIsOk() throws Exception {
+    final AuthenticatingHttpConnector authConnector =
+        createAuthenticatingConnectorWithAccessToken();
+
+    final String path = "/foo/bar";
+
+    final HttpsURLConnection connection = mock(HttpsURLConnection.class);
+    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+        eq(method),
+        eq(entity),
+        eq(headersWithAuthorization))
+    ).thenReturn(connection);
+    when(connection.getResponseCode()).thenReturn(200);
+
+    final URI uri = new URI("https://helios" + path);
+
+    final Map<String, List<String>> headers = new HashMap<>();
+    authConnector.connect(uri, method, entity, headers);
   }
 
   @Test
