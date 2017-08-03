@@ -1455,10 +1455,14 @@ public class ZooKeeperMasterModel implements MasterModel {
     // Delete job history on a best effort basis
     try {
       client.deleteRecursive(Paths.historyJob(id));
+      System.out.println("Finished deleteRecursive()");
     } catch (NoNodeException ignored) {
       // There's no history for this job
     } catch (KeeperException e) {
-      log.warn("error removing job history for job {}", id, e);
+      System.out.println("error removing job history for job " + id + "\n" + e);
+    } catch (Exception e) {
+      System.out.println("Exception error removing job history for job " + id + "\n" + e);
+      throw e;
     }
 
     return job;
