@@ -192,4 +192,19 @@ public class CliParserTest {
 
     assertTrue(parser.getNamespace().getBoolean("insecure"));
   }
+
+  @Test
+  public void testGoogleApplicationDefaultCredentialsEnabledByDefault() throws Exception {
+    final CliParser parser = new CliParser(toArray(singleEndpointArgs));
+
+    assertTrue(parser.getNamespace().getBoolean("google_application_default_credentials"));
+  }
+
+  @Test
+  public void testGoogleApplicationDefaultCredentialsDisabled() throws Exception {
+    final CliParser parser = new CliParser(
+        toArray(singleEndpointArgs, "--google-application-default-credentials=false"));
+
+    assertFalse(parser.getNamespace().getBoolean("google_application_default_credentials"));
+  }
 }

@@ -608,6 +608,7 @@ public class HeliosClient implements Closeable {
     private CertKeyPaths certKeyPaths;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
+    private boolean googleApplicationDefaultCredentials = true;
     private ListeningScheduledExecutorService executorService;
     private boolean shutDownExecutorOnClose = true;
     private int httpTimeout = 10000;
@@ -656,6 +657,11 @@ public class HeliosClient implements Closeable {
      */
     public Builder setSslHostnameVerification(final boolean enabled) {
       this.sslHostnameVerification = enabled;
+      return this;
+    }
+
+    public Builder setGoogleApplicationDefaultCredentials(final boolean enabled) {
+      this.googleApplicationDefaultCredentials = enabled;
       return this;
     }
 
@@ -737,12 +743,14 @@ public class HeliosClient implements Closeable {
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
       Optional<AccessToken> accessTokenOpt = Optional.absent();
-      try {
-        GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-        accessTokenOpt = Optional.of(credentials.getAccessToken());
-      } catch (IOException e) {
-        // As with AgentProxy below, defer enforcing authorization to the masters
-        log.debug("Exception (possibly benign) while loading Application Default Credentials", e);
+      if (googleApplicationDefaultCredentials) {
+        try {
+          GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+          accessTokenOpt = Optional.of(credentials.getAccessToken());
+        } catch (IOException | RuntimeException e) {
+          // As with AgentProxy below, defer actually enforcing authorization to the masters
+          log.debug("Exception (possibly benign) while loading Application Default Credentials", e);
+        }
       }
 
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
