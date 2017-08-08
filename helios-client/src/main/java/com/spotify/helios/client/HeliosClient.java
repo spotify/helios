@@ -93,6 +93,8 @@ import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagenttls.CertKeyPaths;
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -608,7 +610,8 @@ public class HeliosClient implements Closeable {
     private CertKeyPaths certKeyPaths;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
-    private boolean googleApplicationDefaultCredentials = true;
+    private boolean useGoogleCredentials = true;
+    private Optional<File> googleCredentials = Optional.absent();
     private ListeningScheduledExecutorService executorService;
     private boolean shutDownExecutorOnClose = true;
     private int httpTimeout = 10000;
@@ -660,8 +663,13 @@ public class HeliosClient implements Closeable {
       return this;
     }
 
-    public Builder setGoogleApplicationDefaultCredentials(final boolean enabled) {
-      this.googleApplicationDefaultCredentials = enabled;
+    public Builder setUseGoogleCredentials(final boolean enabled) {
+      this.useGoogleCredentials = enabled;
+      return this;
+    }
+
+    public Builder setGoogleCredentials(final File credentials) {
+      this.googleCredentials = Optional.fromNullable(credentials);
       return this;
     }
 
@@ -743,14 +751,11 @@ public class HeliosClient implements Closeable {
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
       Optional<AccessToken> accessTokenOpt = Optional.absent();
-      if (googleApplicationDefaultCredentials) {
-        try {
-          GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
-          accessTokenOpt = Optional.of(credentials.getAccessToken());
-        } catch (IOException | RuntimeException e) {
-          // As with AgentProxy below, defer actually enforcing authorization to the masters
-          log.debug("Exception (possibly benign) while loading Application Default Credentials", e);
-        }
+      try {
+        accessTokenOpt = Optional.fromNullable(getGoogleCredentialsAccessToken());
+      } catch (IOException e) {
+        // As with AgentProxy below, defer actually enforcing authorization to the masters
+        log.debug("Exception (possibly benign) while loading Google Credentials", e);
       }
 
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
@@ -786,6 +791,29 @@ public class HeliosClient implements Closeable {
           Optional.fromNullable(certKeyPaths),
           endpointIterator,
           connector);
+    }
+
+    private AccessToken getGoogleCredentialsAccessToken() throws IOException, RuntimeException {
+      if (!useGoogleCredentials && googleCredentials.isPresent()) {
+        throw new IllegalStateException(
+            "Cannot disable use of Google Credentials and also specify a credentials file");
+      }
+
+      if (!useGoogleCredentials) {
+        return null;
+      }
+
+      final GoogleCredentials credentials;
+      if (googleCredentials.isPresent()) {
+        log.debug("Reading credentials from file: " + googleCredentials.get());
+        final FileInputStream s = new FileInputStream(googleCredentials.get());
+        credentials = GoogleCredentials.fromStream(s);
+      } else {
+        log.debug("Reading application default credentials");
+        credentials = GoogleCredentials.getApplicationDefault();
+      }
+      credentials.refresh();
+      return credentials.getAccessToken();
     }
   }
 

@@ -22,6 +22,7 @@ package com.spotify.helios.cli;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Charsets;
@@ -34,8 +35,10 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class CliParserTest {
@@ -194,17 +197,26 @@ public class CliParserTest {
   }
 
   @Test
-  public void testGoogleApplicationDefaultCredentialsEnabledByDefault() throws Exception {
+  public void testGoogleCredentialsEnabledByDefault() throws Exception {
     final CliParser parser = new CliParser(toArray(singleEndpointArgs));
 
-    assertTrue(parser.getNamespace().getBoolean("google_application_default_credentials"));
+    assertTrue(parser.getNamespace().getBoolean("use_google_credentials"));
+    assertNull(parser.getNamespace().getString("google_credentials"));
   }
 
   @Test
-  public void testGoogleApplicationDefaultCredentialsDisabled() throws Exception {
+  public void testGoogleCredentialsDisabled() throws Exception {
     final CliParser parser = new CliParser(
-        toArray(singleEndpointArgs, "--google-application-default-credentials=false"));
+        toArray(singleEndpointArgs, "--use-google-credentials=false"));
 
-    assertFalse(parser.getNamespace().getBoolean("google_application_default_credentials"));
+    assertFalse(parser.getNamespace().getBoolean("use_google_credentials"));
+    assertNull(parser.getNamespace().getString("google_credentials"));
+  }
+
+  @Test
+  public void testGoogleCredentialsFromFile() throws Exception {
+    final CliParser parser = new CliParser(
+        toArray(singleEndpointArgs, "--google-credentials=/dev/null"));
+    assertEquals(new File("/dev/null"), parser.getNamespace().get("google_credentials"));
   }
 }
