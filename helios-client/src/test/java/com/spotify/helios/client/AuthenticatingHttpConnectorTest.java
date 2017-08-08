@@ -64,7 +64,7 @@ public class AuthenticatingHttpConnectorTest {
   private final DefaultHttpConnector connector = mock(DefaultHttpConnector.class);
   private final String method = "GET";
   private final byte[] entity = new byte[0];
-  private final ImmutableMap<String, List<String>> headers = ImmutableMap.of();
+  private final Map<String, List<String>> headers = new HashMap<>();
   private final ImmutableMap<String, List<String>> headersWithAuthorization =
       ImmutableMap.of("Authorization", Collections.singletonList("Bearer <token>"));
 
@@ -106,18 +106,19 @@ public class AuthenticatingHttpConnectorTest {
         connector);
   }
 
-
-  private AuthenticatingHttpConnector createAuthenticatingConnectorWithAccessToken() {
+  private AuthenticatingHttpConnector createAuthenticatingConnectorWithAccessToken(
+      final Optional<AgentProxy> proxy, final List<Identity> identities) {
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
     final AccessToken accessToken =
         new AccessToken("dummy-access-token", null);
 
     return new AuthenticatingHttpConnector(USER,
         Optional.<AccessToken>of(accessToken),
-        Optional.<AgentProxy>absent(),
+        proxy,
         Optional.<CertKeyPaths>absent(),
         endpointIterator,
-        connector);
+        connector,
+        identities);
   }
 
   private CustomTypeSafeMatcher<URI> matchesAnyEndpoint(final String path) {
@@ -135,6 +136,20 @@ public class AuthenticatingHttpConnectorTest {
           }
         }
         return false;
+      }
+    };
+  }
+
+  private CustomTypeSafeMatcher<Map<String, List<String>>> hasKeys(final List<String> keys) {
+    return new CustomTypeSafeMatcher<Map<String, List<String>>>("A map with keys " + keys) {
+      @Override
+      protected boolean matchesSafely(final Map<String, List<String>> map) {
+        for (final String key : keys) {
+          if (!map.containsKey(key)) {
+            return false;
+          }
+        }
+        return true;
       }
     };
   }
@@ -171,7 +186,8 @@ public class AuthenticatingHttpConnectorTest {
   @Test
   public void testAccessToken_ResponseIsOk() throws Exception {
     final AuthenticatingHttpConnector authConnector =
-        createAuthenticatingConnectorWithAccessToken();
+        createAuthenticatingConnectorWithAccessToken(
+            Optional.<AgentProxy>absent(), ImmutableList.<Identity>of());
 
     final String path = "/foo/bar";
 
@@ -179,14 +195,41 @@ public class AuthenticatingHttpConnectorTest {
     when(connector.connect(argThat(matchesAnyEndpoint(path)),
         eq(method),
         eq(entity),
-        eq(headersWithAuthorization))
+        argThat(hasKeys(Collections.singletonList("Authorization"))))
+    ).thenReturn(connection);
+    when(connection.getResponseCode()).thenReturn(200);
+
+    final URI uri = new URI("https://helios" + path);
+    final HttpURLConnection returnedConnection =
+        authConnector.connect(uri, method, entity, headers);
+
+    assertSame(returnedConnection, connection);
+  }
+
+  @Test
+  public void testAccessToken_UsesAgentIdentities() throws Exception {
+    final AgentProxy proxy = mock(AgentProxy.class);
+    final Identity identity = mockIdentity();
+    final AuthenticatingHttpConnector authConnector = createAuthenticatingConnectorWithAccessToken(
+        Optional.of(proxy), ImmutableList.of(identity));
+
+    final String path = "/foo/bar";
+
+    final HttpsURLConnection connection = mock(HttpsURLConnection.class);
+    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+        eq(method),
+        eq(entity),
+        argThat(hasKeys(Collections.singletonList("Authorization"))))
     ).thenReturn(connection);
     when(connection.getResponseCode()).thenReturn(200);
 
     final URI uri = new URI("https://helios" + path);
 
-    final Map<String, List<String>> headers = new HashMap<>();
-    authConnector.connect(uri, method, entity, headers);
+    final HttpURLConnection returnedConnection =
+        authConnector.connect(uri, method, entity, headers);
+    assertSame(returnedConnection, connection);
+
+    verify(connector).setExtraHttpsHandler(isA(HttpsHandler.class));
   }
 
   @Test
@@ -341,9 +384,7 @@ public class AuthenticatingHttpConnectorTest {
     final HttpURLConnection returnedConnection = authConnector.connect(
         uri, method, entity, headers);
 
-    assertSame("If there is only one identity do not expect any additional endpoints to "
-               + "be called after the first returns Unauthorized",
-        returnedConnection, connection);
-
+    assertSame("Expect client to forego making additional connections when "
+               + "server returns 502 Bad Gateway", returnedConnection, connection);
   }
 }

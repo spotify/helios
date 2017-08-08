@@ -113,9 +113,12 @@ public class AuthenticatingHttpConnector implements HttpConnector {
       log.debug("connecting to {}", ipUri);
 
       if (accessTokenOpt.isPresent()) {
-        // prioritize using bearer token
-        return connectWithBearerToken(ipUri, method, entity, headers);
-      } else if (clientCertificatePath.isPresent()) {
+        final String token = accessTokenOpt.get().getTokenValue();
+        headers.put("Authorization", singletonList("Bearer " + token));
+        log.debug("Add Authorization header with bearer token");
+      }
+
+      if (clientCertificatePath.isPresent()) {
         // prioritize using the certificate file if set
         return connectWithCertificateFile(ipUri, method, entity, headers);
       } else if (agentProxy.isPresent() && !identities.isEmpty()) {
@@ -135,14 +138,6 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     } catch (IOException e) {
       throw new HeliosException("Unexpected error connecting to " + ipUri, e);
     }
-  }
-
-  private HttpURLConnection connectWithBearerToken(final URI ipUri, final String method,
-                                                   final byte[] entity,
-                                                   final Map<String, List<String>> headers)
-      throws HeliosException {
-    headers.put("Authorization", singletonList(String.format("Bearer %s", accessTokenOpt)));
-    return doConnect(ipUri, method, entity, headers);
   }
 
   private HttpURLConnection connectWithCertificateFile(final URI ipUri, final String method,
