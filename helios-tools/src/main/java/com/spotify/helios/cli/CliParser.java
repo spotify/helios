@@ -264,6 +264,7 @@ public class CliParser {
     private final Argument domainsArg;
     private final Argument srvNameArg;
     private final Argument usernameArg;
+    private final Argument googleCredentialsArg;
     private final Argument verbose;
     private final Argument noLogSetup;
     private final Argument jsonArg;
@@ -295,6 +296,11 @@ public class CliParser {
       usernameArg = addArgument("-u", "--username")
           .setDefault(System.getProperty("user.name"))
           .help("username");
+
+      googleCredentialsArg = addArgument("--google-credentials")
+          .type(Boolean.class)
+          .setDefault(true)
+          .help("enable authentication using access tokens derived from Google Credentials");
 
       verbose = addArgument("-v", "--verbose")
           .action(Arguments.count());

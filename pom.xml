@@ -353,12 +353,12 @@
             <dependency>
                 <groupId>com.google.auth</groupId>
                 <artifactId>google-auth-library-credentials</artifactId>
-                <version>0.4.0</version>
+                <version>0.7.1</version>
             </dependency>
             <dependency>
                 <groupId>com.google.auth</groupId>
                 <artifactId>google-auth-library-oauth2-http</artifactId>
-                <version>0.4.0</version>
+                <version>0.7.1</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.findbugs</groupId>

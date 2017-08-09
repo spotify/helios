@@ -87,6 +87,7 @@ public final class Utils {
         .setHttpTimeout(httpTimeout, TimeUnit.SECONDS)
         .setRetryTimeout(retryTimeout, TimeUnit.SECONDS)
         .setSslHostnameVerification(!options.getBoolean("insecure"))
+        .setGoogleCredentialsEnabled(options.getBoolean("google_credentials"))
         .setUser(username)
         .build();
   }

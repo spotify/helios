@@ -81,3 +81,20 @@ The latter is typically not suitable for non-interactive use cases (e.g. a scrip
 When you use the Helios API (via the `HeliosClient` class) you have the same options as when using the CLI, as explained above. You can also explicitly set the path where the certificate and key is via the `HeliosClient.Builder.setCertKeyPaths()` method. If a certificate path is set explicitly the `HELIOS_CERT_PATH` is ignored.
 
 Again, for non-interactive use cases relying on ssh-agent is typically not a suitable solution so we recommend that you specify a path either explicitly or via the `HELIOS_CERT_PATH` environment variable.
+
+## Access Tokens
+
+In addition to the above authentication schemes, the `Builder` for the
+`HeliosClient` class will attempt to acquire an access token from Google
+credentials. If it is set, the `HELIOS_GOOGLE_CREDENTIALS` environment variable
+will be used; otherwise, the Application Default Credentials will be used. When
+a token is available, it will be included by the client in all requests using an
+`Authorization: Bearer <token>` header. This feature is enabled by default, but
+can be disabled by passing `--google-credentials=false` at the command line, or
+by calling `setGoogleCredentialsEnabled(false)` on the builder.
+
+Only access tokens derived from Google credentials are supported at this time.
+If Google credentials are not available, the header is simply omitted; the
+client proceeds with the request as before, using the authentication schemes
+described above when possible. The necessary process of verifying the identity
+and enforcing authorization of resources is not implemented in this project.

@@ -22,6 +22,7 @@ package com.spotify.helios.cli;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.base.Charsets;
@@ -34,8 +35,10 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class CliParserTest {
@@ -191,5 +194,18 @@ public class CliParserTest {
     final CliParser parser = new CliParser(toArray(singleEndpointArgs, "--insecure"));
 
     assertTrue(parser.getNamespace().getBoolean("insecure"));
+  }
+
+  @Test
+  public void testGoogleCredentialsEnabledByDefault() throws Exception {
+    final CliParser parser = new CliParser(toArray(singleEndpointArgs));
+    assertTrue(parser.getNamespace().getBoolean("google_credentials"));
+  }
+
+  @Test
+  public void testDisableGoogleCredentials() throws Exception {
+    final CliParser parser = new CliParser(
+        toArray(singleEndpointArgs, "--google-credentials=false"));
+    assertFalse(parser.getNamespace().getBoolean("google_credentials"));
   }
 }
