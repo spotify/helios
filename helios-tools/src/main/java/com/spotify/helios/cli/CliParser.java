@@ -29,7 +29,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import com.google.common.collect.ImmutableList;
@@ -265,7 +264,6 @@ public class CliParser {
     private final Argument domainsArg;
     private final Argument srvNameArg;
     private final Argument usernameArg;
-    private final Argument useGoogleCredentialsArg;
     private final Argument googleCredentialsArg;
     private final Argument verbose;
     private final Argument noLogSetup;
@@ -299,15 +297,10 @@ public class CliParser {
           .setDefault(System.getProperty("user.name"))
           .help("username");
 
-      useGoogleCredentialsArg = addArgument("--use-google-credentials")
+      googleCredentialsArg = addArgument("--google-credentials")
           .type(Boolean.class)
           .setDefault(true)
-          .help("authenticate using access token derived from Google Credentials");
-
-      googleCredentialsArg = addArgument("--google-credentials")
-          .type(fileType().verifyExists().verifyCanRead())
-          .help("path to a Google Credentials file; when not provided, Application "
-                + "Default Credentials will be used");
+          .help("enable authentication using access tokens derived from Google Credentials");
 
       verbose = addArgument("-v", "--verbose")
           .action(Arguments.count());

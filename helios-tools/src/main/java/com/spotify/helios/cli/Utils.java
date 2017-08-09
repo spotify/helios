@@ -33,7 +33,6 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
@@ -83,15 +82,12 @@ public final class Utils {
 
     log.debug("using HeliosClient httpTimeout={}, retryTimeout={}", httpTimeout, retryTimeout);
 
-
-
     return HeliosClient.newBuilder()
         .setEndpointSupplier(Endpoints.of(target.getEndpointSupplier()))
         .setHttpTimeout(httpTimeout, TimeUnit.SECONDS)
         .setRetryTimeout(retryTimeout, TimeUnit.SECONDS)
         .setSslHostnameVerification(!options.getBoolean("insecure"))
-        .setUseGoogleCredentials(options.getBoolean("use_google_credentials"))
-        .setGoogleCredentials(options.<File>get("google_credentials"))
+        .setGoogleCredentialsEnabled(options.getBoolean("google_credentials"))
         .setUser(username)
         .build();
   }

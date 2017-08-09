@@ -199,24 +199,13 @@ public class CliParserTest {
   @Test
   public void testGoogleCredentialsEnabledByDefault() throws Exception {
     final CliParser parser = new CliParser(toArray(singleEndpointArgs));
-
-    assertTrue(parser.getNamespace().getBoolean("use_google_credentials"));
-    assertNull(parser.getNamespace().getString("google_credentials"));
+    assertTrue(parser.getNamespace().getBoolean("google_credentials"));
   }
 
   @Test
-  public void testGoogleCredentialsDisabled() throws Exception {
+  public void testDisableGoogleCredentials() throws Exception {
     final CliParser parser = new CliParser(
-        toArray(singleEndpointArgs, "--use-google-credentials=false"));
-
-    assertFalse(parser.getNamespace().getBoolean("use_google_credentials"));
-    assertNull(parser.getNamespace().getString("google_credentials"));
-  }
-
-  @Test
-  public void testGoogleCredentialsFromFile() throws Exception {
-    final CliParser parser = new CliParser(
-        toArray(singleEndpointArgs, "--google-credentials=/dev/null"));
-    assertEquals(new File("/dev/null"), parser.getNamespace().get("google_credentials"));
+        toArray(singleEndpointArgs, "--google-credentials=false"));
+    assertFalse(parser.getNamespace().getBoolean("google_credentials"));
   }
 }

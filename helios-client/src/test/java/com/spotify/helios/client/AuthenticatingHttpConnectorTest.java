@@ -109,8 +109,7 @@ public class AuthenticatingHttpConnectorTest {
   private AuthenticatingHttpConnector createAuthenticatingConnectorWithAccessToken(
       final Optional<AgentProxy> proxy, final List<Identity> identities) {
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
-    final AccessToken accessToken =
-        new AccessToken("dummy-access-token", null);
+    final AccessToken accessToken = new AccessToken("<token>", null);
 
     return new AuthenticatingHttpConnector(USER,
         Optional.<AccessToken>of(accessToken),
