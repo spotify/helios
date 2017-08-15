@@ -174,8 +174,9 @@ public class JobValidator {
 
     // Validate Expiry
     final Date expiry = job.getExpires();
-    if (expiry != null && expiry.before(new Date())) {
-      errors.add("Job expires in the past");
+    final Date now = new Date();
+    if (expiry != null && expiry.before(now)) {
+      errors.add("Job expires in the past - " + expiry + " is before " + now);
     }
 
     errors.addAll(validateJobHealthCheck(job));

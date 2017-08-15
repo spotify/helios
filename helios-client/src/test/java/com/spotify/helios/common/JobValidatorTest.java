@@ -46,6 +46,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -455,7 +456,7 @@ public class JobValidatorTest {
     final java.util.Date d = new java.util.Date(System.currentTimeMillis() - (86400 * 1000));
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar")
         .setExpires(d).build();
-    assertEquals(newHashSet("Job expires in the past"), validator.validate(j));
+    assertThat(validator.validate(j), contains(startsWith("Job expires in the past")));
   }
 
   @Test
