@@ -1,0 +1,39 @@
+version: 2
+
+jobs:
+  build:
+    working_directory: /helios
+
+    docker:
+      - image: maven:3.3-jdk-8
+
+    environment:
+      MAVEN_OPTS: -Xmx128m
+
+    steps:
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Calculate dependencies
+          command: find . -name pom.xml | xargs cat > .poms-combined
+
+      - restore_cache:
+          key: v1-pom-{{ checksum ".poms-combined" }}
+
+      - run:
+          name: Setup machine
+          command: ./circle.sh pre_machine
+
+      - run:
+          name: Build project
+          command: ./circle.sh build
+
+      - run:
+          name: Run tests
+          command: ./circle.sh test
+
+      - save_cache:
+          key: v1-pom-{{ checksum ".poms-combined" }}
+          paths:
+            - ~/.m2
