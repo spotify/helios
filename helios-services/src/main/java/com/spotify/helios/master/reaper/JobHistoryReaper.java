@@ -93,7 +93,6 @@ public class JobHistoryReaper extends RateLimitedService<String> {
 
   @Override
   void processItem(final String jobId) {
-    log.info("Deciding whether to reap job history for job {}", jobId);
     final JobId id = JobId.fromString(jobId);
     final Job job = masterModel.getJob(id);
     if (job == null) {
