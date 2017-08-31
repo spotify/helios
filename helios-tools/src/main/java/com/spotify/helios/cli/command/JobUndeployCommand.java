@@ -36,18 +36,13 @@ import java.util.concurrent.ExecutionException;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JobUndeployCommand extends WildcardJobCommand {
-
-  private static final Logger log = LoggerFactory.getLogger(JobUndeployCommand.class);
 
   private final Argument hostsArg;
   private final Argument tokenArg;
   private final Argument allArg;
   private final Argument yesArg;
-  private final Argument forceArg;
 
   public JobUndeployCommand(final Subparser parser) {
     super(parser);
@@ -70,11 +65,6 @@ public class JobUndeployCommand extends WildcardJobCommand {
     yesArg = parser.addArgument("--yes")
         .action(storeTrue())
         .help("Automatically answer 'yes' to the interactive prompt.");
-
-    // TODO (dxia) Deprecated, remove at a later date
-    forceArg = parser.addArgument("--force")
-        .action(storeTrue())
-        .help("Automatically answer 'yes' to the interactive prompt.");
   }
 
   @Override
@@ -85,13 +75,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
 
     final boolean all = options.getBoolean(allArg.getDest());
     final boolean yes = options.getBoolean(yesArg.getDest());
-    final boolean force = options.getBoolean(forceArg.getDest());
     final List<String> hosts;
-
-    if (force) {
-      log.warn("If you are using '--force' to skip the interactive prompt, "
-               + "note that we have deprecated it. Please use '--yes'.");
-    }
 
     if (all) {
       final JobStatus status = client.jobStatus(jobId).get();
@@ -101,7 +85,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
         return 0;
       }
 
-      if (!yes && !force) {
+      if (!yes) {
         out.printf("This will undeploy %s from %s%n", jobId, hosts);
         final boolean confirmed = Utils.userConfirmed(out, stdin);
         if (!confirmed) {

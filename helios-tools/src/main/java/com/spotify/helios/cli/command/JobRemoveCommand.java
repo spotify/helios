@@ -32,16 +32,11 @@ import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JobRemoveCommand extends WildcardJobCommand {
 
-  private static final Logger log = LoggerFactory.getLogger(JobRemoveCommand.class);
-
   private final Argument tokenArg;
   private final Argument yesArg;
-  private final Argument forceArg;
 
   public JobRemoveCommand(Subparser parser) {
     super(parser);
@@ -56,11 +51,6 @@ public class JobRemoveCommand extends WildcardJobCommand {
     yesArg = parser.addArgument("--yes")
         .action(Arguments.storeTrue())
         .help("Automatically answer 'yes' to the interactive prompt.");
-
-    // TODO (dxia) Deprecated, remove at a later date
-    forceArg = parser.addArgument("--force")
-        .action(Arguments.storeTrue())
-        .help("Automatically answer 'yes' to the interactive prompt.");
   }
 
   @Override
@@ -69,14 +59,8 @@ public class JobRemoveCommand extends WildcardJobCommand {
                              final BufferedReader stdin)
       throws IOException, ExecutionException, InterruptedException {
     final boolean yes = options.getBoolean(yesArg.getDest());
-    final boolean force = options.getBoolean(forceArg.getDest());
 
-    if (force) {
-      log.warn("If you are using '--force' to skip the interactive prompt, "
-               + "note that we have deprecated it. Please use '--yes'.");
-    }
-
-    if (!yes && !force) {
+    if (!yes) {
       out.printf("This will remove the job %s%n", jobId);
       final boolean confirmed = Utils.userConfirmed(out, stdin);
       if (!confirmed) {
