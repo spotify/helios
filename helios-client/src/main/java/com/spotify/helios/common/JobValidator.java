@@ -355,17 +355,26 @@ public class JobValidator {
     final String digest;
 
     final int lastAtSign = imageRef.lastIndexOf('@');
-    final int lastColon = imageRef.lastIndexOf(':');
+    final int tagColon;
+    final int tagEnd;
 
+    // Parse digest
     if (lastAtSign != -1) {
-      repo = imageRef.substring(0, lastAtSign);
       digest = imageRef.substring(lastAtSign + 1);
+      tagEnd = lastAtSign;
+      tagColon = imageRef.lastIndexOf(':', tagEnd);
       valid &= validateDigest(digest, errors);
-    } else if (lastColon != -1 && !(tag = imageRef.substring(lastColon + 1)).contains("/")) {
-      repo = imageRef.substring(0, lastColon);
+    } else {
+      tagColon = imageRef.lastIndexOf(':');
+      tagEnd = imageRef.length();
+    }
+
+    // Parse tag
+    if (tagColon != -1 && !(tag = imageRef.substring(tagColon + 1, tagEnd)).contains("/")) {
+      repo = imageRef.substring(0, tagColon);
       valid &= validateTag(tag, errors);
     } else {
-      repo = imageRef;
+      repo = imageRef.substring(0, tagEnd);
     }
 
     final String invalidRepoName = "Invalid repository name (ex: \"registry.domain.tld/myrepos\")";
