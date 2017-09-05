@@ -138,11 +138,13 @@ public class JobValidatorTest {
             .build()), is(empty()));
     assertThat(
         validator.validate(b.setImage(
-            "baz.io/foo/foo-bar:1.2.3-SNAPSHOT-20170830T143321-decafbad@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+            "baz.io/foo/foo-bar:1.2.3-SNAPSHOT-20170830T143321-decafbad"
+                + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
             .build()), is(empty()));
     assertThat(
         validator.validate(b.setImage(
-            "baz.io:4711/foo/foo-bar:1.2.3-SNAPSHOT-20170830T143321-decafbad@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+            "baz.io:4711/foo/foo-bar:1.2.3-SNAPSHOT-20170830T143321-decafbad"
+                + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
             .build()), is(empty()));
   }
 
@@ -255,7 +257,8 @@ public class JobValidatorTest {
         validator.validate(b.setImage("repo:").build()));
 
     assertEquals(newHashSet("Tag cannot be empty"),
-        validator.validate(b.setImage("repo:@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
+        validator.validate(b.setImage("repo:"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
 
     assertEquals(newHashSet("Digest cannot be empty"),
         validator.validate(b.setImage("foo@").build()));
@@ -290,7 +293,8 @@ public class JobValidatorTest {
         validator.validate(b.setImage("reg.istry :4711/repo").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"1.2.3.4.\""),
-        validator.validate(b.setImage("1.2.3.4.:4711/namespace/repo@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
+        validator.validate(b.setImage("1.2.3.4.:4711/namespace/repo"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"reg.istry: 4711\""),
         validator.validate(b.setImage("reg.istry: 4711/repo").build()));
@@ -299,7 +303,8 @@ public class JobValidatorTest {
         validator.validate(b.setImage("reg.istry:4711 /repo").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"reg.istry:4711 \""),
-        validator.validate(b.setImage("reg.istry:4711 /repo@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
+        validator.validate(b.setImage("reg.istry:4711 /repo"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
 
     assertEquals(newHashSet("Invalid image name (reg.istry:4711/ repo), only ^([a-z0-9._-]+)$ is "
                             + "allowed for each slash-separated name component "
@@ -321,10 +326,12 @@ public class JobValidatorTest {
                             + "(failed on \"repo \")"),
         validator.validate(b.setImage("reg.istry:4711/namespace/repo ").build()));
 
-    assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace/ repo@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae), only "
+    assertEquals(newHashSet("Invalid image name (reg.istry:4711/namespace/ repo"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae), only "
                             + "^([a-z0-9._-]+)$ is allowed for each slash-separated name component "
                             + "(failed on \" repo\")"),
-        validator.validate(b.setImage("reg.istry:4711/namespace/ repo@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
+        validator.validate(b.setImage("reg.istry:4711/namespace/ repo"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"foo-.ba|z\""),
         validator.validate(b.setImage("foo-.ba|z/namespace/baz").build()));
@@ -339,10 +346,12 @@ public class JobValidatorTest {
         validator.validate(b.setImage("reg..istry/namespace/baz:foo").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"reg..istry\""),
-        validator.validate(b.setImage("reg..istry/namespace/baz:foo@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
+        validator.validate(b.setImage("reg..istry/namespace/baz:foo"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
 
     assertEquals(newHashSet("Invalid domain name: \"reg..istry\""),
-        validator.validate(b.setImage("reg..istry/namespace/baz@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
+        validator.validate(b.setImage("reg..istry/namespace/baz"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"foo:345345345\""),
         validator.validate(b.setImage("foo:345345345/namespace/baz").build()));
@@ -351,7 +360,8 @@ public class JobValidatorTest {
         validator.validate(b.setImage("foo:345345345/namespace/baz:bar").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"foo:345345345\""),
-        validator.validate(b.setImage("foo:345345345/namespace/baz:bar@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
+        validator.validate(b.setImage("foo:345345345/namespace/baz:bar"
+            + "@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae").build()));
 
     assertEquals(newHashSet("Invalid port in endpoint: \"foo:-17\""),
         validator.validate(b.setImage("foo:-17/namespace/baz").build()));
