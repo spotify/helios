@@ -93,7 +93,7 @@ public class JobTest {
     final Date setExpires = new Date();
     final String setRegistrationDomain = "my.domain";
     final String setCreatingUser = "username";
-    final Resources setResources = new Resources(10485760L, 10485761L, 4L, "1");
+    final Resources setResources = new Resources(10485760L, 10485761L, 4L, "1", 67108864L);
     final HealthCheck setHealthCheck = HealthCheck.newHttpHealthCheck()
         .setPath("/healthcheck")
         .setPort("set_ports")

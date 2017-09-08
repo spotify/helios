@@ -73,7 +73,7 @@ public class JobIdHashIsStableTest {
       .setName("a-full-job")
       .setNetworkMode("host")
       .setRegistrationDomain("domain")
-      .setResources(new Resources(1L, 2L, 3L, "4"))
+      .setResources(new Resources(1L, 2L, 3L, "4", null))
       .setSecondsToWaitBeforeKill(99)
       .setSecurityOpt(ImmutableList.of("opt"))
       .setToken("token")

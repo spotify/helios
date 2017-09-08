@@ -52,6 +52,7 @@ public class ResourcesTest extends SystemTestBase {
   private static final Long MEMORY_SWAP = 10485763L;
   private static final Long CPU_SHARES = 512L;
   private static final String CPUSET_CPUS = "0-1";
+  private static final Long SHM_SIZE = 67108864L;
 
   @Before
   public void setup() throws Exception {
@@ -64,7 +65,7 @@ public class ResourcesTest extends SystemTestBase {
         .setName(testJobName)
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
-        .setResources(new Resources(MEMORY, MEMORY_SWAP, CPU_SHARES, CPUSET_CPUS))
+        .setResources(new Resources(MEMORY, MEMORY_SWAP, CPU_SHARES, CPUSET_CPUS, SHM_SIZE))
         .setCommand(IDLE_COMMAND)
         .setCreatingUser(TEST_USER)
         .build();

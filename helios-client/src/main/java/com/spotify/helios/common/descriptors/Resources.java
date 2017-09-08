@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
  *   "memorySwap" : 10485760,
  *   "cpuset"     : "0",
  *   "cpuShares"  : 512
+ *   "shmSize"    : 67108864
  * }
  * </pre>
  */
@@ -42,15 +43,18 @@ public class Resources extends Descriptor {
   private final Long memorySwap;
   private final Long cpuShares;
   private final String cpuset;
+  private final Long shmSize;
 
   public Resources(@JsonProperty("memory") final Long memory,
                    @JsonProperty("memorySwap") final Long memorySwap,
                    @JsonProperty("cpuShares") final Long cpuShares,
-                   @JsonProperty("cpuset") final String cpuset) {
+                   @JsonProperty("cpuset") final String cpuset,
+                   @JsonProperty("shmSize") final Long shmSize) {
     this.memory = memory;
     this.memorySwap = memorySwap;
     this.cpuShares = cpuShares;
     this.cpuset = cpuset;
+    this.shmSize = shmSize;
   }
 
   @Nullable
@@ -71,6 +75,11 @@ public class Resources extends Descriptor {
   @Nullable
   public String getCpuset() {
     return cpuset;
+  }
+
+  @Nullable
+  public Long getShmSize() {
+    return shmSize;
   }
 
   @Override
@@ -96,6 +105,9 @@ public class Resources extends Descriptor {
     if (memorySwap != null ? !memorySwap.equals(that.memorySwap) : that.memorySwap != null) {
       return false;
     }
+    if (shmSize != null ? !shmSize.equals(that.shmSize) : that.shmSize != null) {
+      return false;
+    }
 
     return true;
   }
@@ -106,6 +118,7 @@ public class Resources extends Descriptor {
     result = 31 * result + (memorySwap != null ? memorySwap.hashCode() : 0);
     result = 31 * result + (cpuShares != null ? cpuShares.hashCode() : 0);
     result = 31 * result + (cpuset != null ? cpuset.hashCode() : 0);
+    result = 31 * result + (shmSize != null ? shmSize.hashCode() : 0);
     return result;
   }
 
@@ -116,6 +129,7 @@ public class Resources extends Descriptor {
            + ", memorySwap=" + memorySwap
            + ", cpuShares=" + cpuShares
            + ", cpuset='" + cpuset + '\''
+           + ", shmSize=" + shmSize
            + '}';
   }
 }
