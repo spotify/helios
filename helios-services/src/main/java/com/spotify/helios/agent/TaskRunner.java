@@ -115,6 +115,13 @@ class TaskRunner extends InterruptingExecutionThreadService {
     // Interrupt the thread blocking on waitContainer
     stopAsync().awaitTerminated();
 
+    if (System.getenv("CONTAINER_STATS") != null) {
+      try {
+        log.info("container {} stats: {}", containerName, docker.stats(containerName));
+      } catch (DockerException e) {
+        log.warn("Could not log container stats. Exception was {}", e);
+      }
+    }
     try {
       docker.stopContainer(container, secondsToWaitBeforeKill);
     } catch (DockerException e) {
