@@ -4,7 +4,7 @@ Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?styl
 Helios is a Docker orchestration platform for deploying and managing
 containers across an entire fleet of servers. Helios provides a HTTP
 API as well as a command-line client to interact with servers running
-your containers. It also keeps history of events in your cluster including
+your containers. It also keeps a history of events in your cluster including
 information such as deploys, restarts and version changes.
 
 
