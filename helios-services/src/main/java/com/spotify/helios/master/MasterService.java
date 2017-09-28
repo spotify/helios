@@ -109,6 +109,7 @@ public class MasterService extends AbstractIdleService {
 
   private static final String LOGBACK_ACCESS_CONFIG = "logback-access.xml";
   private static final String LOGBACK_ACCESS_RESOURCE = "/" + LOGBACK_ACCESS_CONFIG;
+  private static final String DG_EVENT_TOPIC = "HeliosDeploymentGroupEvents";
 
   private final Server server;
   private final MasterConfig config;
@@ -187,14 +188,12 @@ public class MasterService extends AbstractIdleService {
       }
     }
 
-    final String deploymentGroupEventTopic = TaskStatusEvent.TASK_STATUS_EVENT_TOPIC;
-
     final List<EventSender> eventSenders =
-        EventSenderFactory.build(environment, config, metricsRegistry, deploymentGroupEventTopic);
+        EventSenderFactory.build(environment, config, metricsRegistry, DG_EVENT_TOPIC);
 
     final ZooKeeperMasterModel model =
         new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders,
-            deploymentGroupEventTopic);
+            DG_EVENT_TOPIC);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker =
         new ZooKeeperHealthChecker(zooKeeperClient);
