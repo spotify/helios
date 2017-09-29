@@ -195,6 +195,8 @@ public class RollingUpdateOpFactory {
         deploymentGroup, task, errMsg, errorCode, metadata);
     events.add(taskEv);
     events.add(eventFactory.rollingUpdateFailed(deploymentGroup, taskEv));
+    log.info("rolling-update step on deployment-group name={} failed; message={}",
+        deploymentGroup.getName(), errMsg);
 
     return new RollingUpdateOp(ImmutableList.copyOf(operations),
         ImmutableList.copyOf(events));
