@@ -51,7 +51,10 @@ public class Json {
       .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private static final ObjectWriter NORMALIZING_OBJECT_WRITER = new ObjectMapper()
-      .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+      .setDefaultPropertyInclusion(
+          //parameters are valueIncl=NON_EMPTY, contentIncl=ALWAYS
+          JsonInclude.Value.construct(JsonInclude.Include.NON_EMPTY, JsonInclude.Include.ALWAYS)
+      )
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
       .configure(WRITE_DATES_AS_TIMESTAMPS, false)
