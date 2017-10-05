@@ -28,6 +28,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +50,7 @@ class GoogleCredentialsAccessTokenProvider {
    *
    * @return Return an AccessToken or null
    */
-  static AccessToken getAccessToken() throws IOException {
+  static AccessToken getAccessToken(List<String> scopes) throws IOException {
     GoogleCredentials credentials = null;
 
     // first check whether the environment variable is set
@@ -73,11 +74,17 @@ class GoogleCredentialsAccessTokenProvider {
       return null;
     }
 
-    // Google Service Account Credentials require an access scope before calling `refresh()`;
-    // see https://cloud.google.com/compute/docs/access/service-accounts#accesscopesiam.
-    credentials.createScoped(singletonList("https://www.googleapis.com/auth/cloud-platform"));
+    if (!scopes.isEmpty()) {
+      credentials.createScoped(scopes);
+    }
     credentials.refresh();
 
     return credentials.getAccessToken();
+  }
+
+  static AccessToken getAccessToken() throws IOException {
+    // Google Service Account Credentials require an access scope before calling `refresh()`;
+    // see https://cloud.google.com/compute/docs/access/service-accounts#accesscopesiam.
+    return getAccessToken(singletonList("https://www.googleapis.com/auth/cloud-platform"));
   }
 }
