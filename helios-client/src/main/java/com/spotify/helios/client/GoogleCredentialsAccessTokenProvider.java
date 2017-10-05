@@ -21,15 +21,18 @@
 
 package com.spotify.helios.client;
 
+import static java.util.Collections.singletonList;
+
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GoogleCredentialsAccessTokenProvider {
+class GoogleCredentialsAccessTokenProvider {
   private static final Logger log =
       LoggerFactory.getLogger(GoogleCredentialsAccessTokenProvider.class);
 
@@ -38,7 +41,7 @@ public class GoogleCredentialsAccessTokenProvider {
    * <ol>
    * <li>First check to see if the environment variable HELIOS_GOOGLE_CREDENTIALS is set
    * and points to a readable file</li>
-   * <li>Otherwise check if Google Application Default Credentials can be loaded</li>
+   * <li>Otherwise check if Google Application Default Credentials (ADC) can be loaded</li>
    * </ol>
    *
    * <p>Note that we use a special environment variable of our own in addition to any environment
@@ -47,7 +50,7 @@ public class GoogleCredentialsAccessTokenProvider {
    *
    * @return Return an AccessToken or null
    */
-  public static AccessToken getAccessToken() throws IOException {
+  static AccessToken getAccessToken(List<String> scopes) throws IOException {
     GoogleCredentials credentials = null;
 
     // first check whether the environment variable is set
@@ -71,7 +74,17 @@ public class GoogleCredentialsAccessTokenProvider {
       return null;
     }
 
+    if (!scopes.isEmpty()) {
+      credentials.createScoped(scopes);
+    }
     credentials.refresh();
+
     return credentials.getAccessToken();
+  }
+
+  static AccessToken getAccessToken() throws IOException {
+    // Google Service Account Credentials require an access scope before calling `refresh()`;
+    // see https://cloud.google.com/compute/docs/access/service-accounts#accesscopesiam.
+    return getAccessToken(singletonList("https://www.googleapis.com/auth/cloud-platform"));
   }
 }
