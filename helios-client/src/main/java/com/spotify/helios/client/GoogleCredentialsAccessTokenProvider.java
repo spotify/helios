@@ -25,6 +25,7 @@ import static java.util.Collections.singletonList;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -50,7 +51,7 @@ class GoogleCredentialsAccessTokenProvider {
    *
    * @return Return an AccessToken or null
    */
-  static AccessToken getAccessToken(List<String> scopes) throws IOException {
+  static AccessToken getAccessToken(final List<String> scopes) throws IOException {
     GoogleCredentials credentials = null;
 
     // first check whether the environment variable is set
@@ -70,16 +71,21 @@ class GoogleCredentialsAccessTokenProvider {
       log.debug("Using Google Application Default Credentials");
     }
 
+    return getAccessToken(credentials, scopes);
+  }
+
+  @VisibleForTesting
+  static AccessToken getAccessToken(final GoogleCredentials credentials,
+                                    final List<String> scopes) throws IOException {
     if (credentials == null) {
       return null;
     }
 
-    if (!scopes.isEmpty()) {
-      credentials.createScoped(scopes);
-    }
-    credentials.refresh();
+    final GoogleCredentials newCredentials =
+        scopes.isEmpty() ? credentials : credentials.createScoped(scopes);
+    newCredentials.refresh();
 
-    return credentials.getAccessToken();
+    return newCredentials.getAccessToken();
   }
 
   static AccessToken getAccessToken() throws IOException {
