@@ -624,18 +624,26 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
-    log.info("preparing to initiate rolling-update on deployment-group: name={}, jobId={}",
-        deploymentGroup.getName(), jobId);
+    final Job job = getJob(jobId);
+    if (job == null) {
+      throw new JobDoesNotExistException(jobId);
+    }
+
+    final RolloutOptions mergedRolloutOptions =
+        options.withFallback(
+            job.getRolloutOptions().withFallback(
+                RolloutOptions.DEFAULT_ROLLOUT_OPTIONS));
+
+    log.info("preparing to initiate rolling-update on deployment-group: "
+             + "name={}, jobId={}, options={}",
+        deploymentGroup.getName(), jobId, mergedRolloutOptions);
+
 
     final DeploymentGroup updated = deploymentGroup.toBuilder()
         .setJobId(jobId)
-        .setRolloutOptions(options)
+        .setRolloutOptions(mergedRolloutOptions)
         .setRollingUpdateReason(MANUAL)
         .build();
-
-    if (getJob(jobId) == null) {
-      throw new JobDoesNotExistException(jobId);
-    }
 
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
     final ZooKeeperClient client = provider.get("rollingUpdate");

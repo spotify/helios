@@ -71,7 +71,7 @@ public class DeploymentGroupInspectCommandTest {
           .setMigrate(true)
           .setOverlap(true)
           .setParallelism(2)
-          .setTimeout(10)
+          .setTimeout(10L)
           .setToken("foo")
           .build()
       )

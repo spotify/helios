@@ -40,7 +40,7 @@ public class DeploymentGroupTest {
         ImmutableList.of(HostSelector.parse("foo=bar"), HostSelector.parse("baz=qux"));
     final JobId setJobId = JobId.fromString("foo:0.1.0");
     final RolloutOptions setRolloutOptions = RolloutOptions.newBuilder()
-        .setTimeout(1000)
+        .setTimeout(1000L)
         .setParallelism(2)
         .setMigrate(false)
         .build();

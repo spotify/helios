@@ -93,13 +93,11 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .help("Deployment group name");
 
     timeoutArg = parser.addArgument("-t", "--timeout")
-        .setDefault(RolloutOptions.DEFAULT_TIMEOUT)
         .type(Long.class)
         .help("Fail rollout if a job takes longer than this to reach RUNNING (seconds)");
 
     parallelismArg = parser.addArgument("-p", "--par")
         .dest("parallelism")
-        .setDefault(RolloutOptions.DEFAULT_PARALLELISM)
         .type(Integer.class)
         .help("Number of hosts to deploy to concurrently");
 
@@ -114,14 +112,12 @@ public class RollingUpdateCommand extends WildcardJobCommand {
               + "this will NOT abort the rolling update, it will just cause this command to exit.");
 
     migrateArg = parser.addArgument("--migrate")
-        .setDefault(false)
         .action(storeTrue())
         .help("When specified a rolling-update will undeploy not only jobs previously deployed "
               + "by the deployment-group but also jobs with the same job id. Use it ONCE when "
               + "migrating a service to using deployment-groups");
 
     overlapArg = parser.addArgument("--overlap")
-        .setDefault(false)
         .action(storeTrue())
         .help("When specified a rolling-update will, for every host, first deploy the new "
               + "version of a job before undeploying the old one. Note that the command will fail "
@@ -129,12 +125,10 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     tokenArg = parser.addArgument("--token")
         .nargs("?")
-        .setDefault(EMPTY_TOKEN)
         .help("Insecure access token meant to prevent accidental changes to your job "
               + "(e.g. undeploys).");
 
     ignoreFailuresArg = parser.addArgument("--ignore-failures")
-        .setDefault(false)
         .action(storeTrue())
         .help("When specified, the rolling-update will ignore *all* failures and will proceed "
               + "to deploying the job to all hosts in the deployment group. The rolling-update "
@@ -152,17 +146,17 @@ public class RollingUpdateCommand extends WildcardJobCommand {
                              final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
     final String name = options.getString(nameArg.getDest());
-    final long timeout = options.getLong(timeoutArg.getDest());
-    final int parallelism = options.getInt(parallelismArg.getDest());
+    final Long timeout = options.getLong(timeoutArg.getDest());
+    final Integer parallelism = options.getInt(parallelismArg.getDest());
     final boolean async = options.getBoolean(asyncArg.getDest());
     final long rolloutTimeout = options.getLong(rolloutTimeoutArg.getDest());
-    final boolean migrate = options.getBoolean(migrateArg.getDest());
-    final boolean overlap = options.getBoolean(overlapArg.getDest());
+    final Boolean migrate = options.getBoolean(migrateArg.getDest());
+    final Boolean overlap = options.getBoolean(overlapArg.getDest());
     final String token = options.getString(tokenArg.getDest());
-    final boolean ignoreFailures = options.getBoolean(ignoreFailuresArg.getDest());
+    final Boolean ignoreFailures = options.getBoolean(ignoreFailuresArg.getDest());
 
-    checkArgument(timeout > 0, "Timeout must be greater than 0");
-    checkArgument(parallelism > 0, "Parallelism must be greater than 0");
+    checkArgument(timeout == null || timeout > 0, "Timeout must be greater than 0");
+    checkArgument(parallelism == null || parallelism > 0, "Parallelism must be greater than 0");
     checkArgument(rolloutTimeout > 0, "Rollout timeout must be greater than 0");
 
     final long startTime = timeSupplier.get();
@@ -175,6 +169,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setToken(token)
         .setIgnoreFailures(ignoreFailures)
         .build();
+
     final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
 
     if (response.getStatus() != RollingUpdateResponse.Status.OK) {

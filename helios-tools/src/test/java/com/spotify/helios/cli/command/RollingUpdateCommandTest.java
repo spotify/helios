@@ -69,7 +69,10 @@ public class RollingUpdateCommandTest {
   private static final RolloutOptions OPTIONS = RolloutOptions.newBuilder()
       .setTimeout(TIMEOUT)
       .setParallelism(PARALLELISM)
+      .setMigrate(false)
+      .setOverlap(false)
       .setToken(TOKEN)
+      .setIgnoreFailures(false)
       .build();
 
   private final Namespace options = mock(Namespace.class);
@@ -92,6 +95,7 @@ public class RollingUpdateCommandTest {
     when(options.getBoolean("migrate")).thenReturn(false);
     when(options.getBoolean("overlap")).thenReturn(false);
     when(options.getString("token")).thenReturn(TOKEN);
+    when(options.getBoolean("ignore_failures")).thenReturn(false);
   }
 
   private static DeploymentGroupStatusResponse.HostStatus makeHostStatus(
@@ -457,7 +461,9 @@ public class RollingUpdateCommandTest {
         .setTimeout(TIMEOUT)
         .setParallelism(PARALLELISM)
         .setMigrate(true)
+        .setOverlap(false)
         .setToken(TOKEN)
+        .setIgnoreFailures(false)
         .build();
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, rolloutOptions);
     assertEquals(0, ret);
@@ -491,8 +497,10 @@ public class RollingUpdateCommandTest {
     final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
         .setTimeout(TIMEOUT)
         .setParallelism(PARALLELISM)
+        .setMigrate(false)
         .setOverlap(true)
         .setToken(TOKEN)
+        .setIgnoreFailures(false)
         .build();
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, rolloutOptions);
     assertEquals(0, ret);
