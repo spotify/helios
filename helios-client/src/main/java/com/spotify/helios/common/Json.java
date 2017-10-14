@@ -344,6 +344,10 @@ public class Json {
     return OBJECT_MAPPER.writer();
   }
 
+  public static <T> T convert(Object from, Class<T> to) {
+    return OBJECT_MAPPER.convertValue(from, to);
+  }
+
   public static byte[] sha1digest(final Object obj) throws IOException {
     final String json = NORMALIZING_OBJECT_WRITER.writeValueAsString(obj);
     final Map<String, Object> map = OBJECT_MAPPER.readValue(json, MAP_TYPE);

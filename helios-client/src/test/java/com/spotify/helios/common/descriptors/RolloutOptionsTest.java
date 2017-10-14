@@ -37,6 +37,11 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_IGNORE_FAILURES;
+import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_MIGRATE;
+import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_TOKEN;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -63,7 +68,45 @@ public class RolloutOptionsTest {
 
     final RolloutOptions options = Json.read(node.toString(), RolloutOptions.class);
 
-    assertThat("RolloutOptions.ignoreFailures should default to false",
-        options.getIgnoreFailures(), is(false));
+    assertThat("RolloutOptions.ignoreFailures should default to null",
+        options.getIgnoreFailures(), is(nullValue()));
+  }
+
+  @Test
+  public void testCanDeserializeStringlyTypedFields() throws Exception {
+    final ObjectMapper mapper = new ObjectMapper();
+    final ObjectNode node = mapper.createObjectNode()
+        .put("migrate", "false")
+        .put("parallelism", "2")
+        .put("timeout", "1000");
+
+    final RolloutOptions options = Json.read(node.toString(), RolloutOptions.class);
+
+    assertThat(options.getMigrate(), is(Boolean.FALSE));
+    assertThat(options.getParallelism(), is(2));
+    assertThat(options.getTimeout(), is(1000L));
+  }
+
+  @Test
+  public void testCanDeserializeNullFields() throws Exception {
+    final String json = "{\"migrate\": null, \"parallelism\": null}";
+
+    final RolloutOptions options = Json.read(json, RolloutOptions.class);
+
+    assertThat(options.getMigrate(), is(nullValue()));
+    assertThat(options.getParallelism(), is(nullValue()));
+  }
+
+  @Test
+  public void testRolloutOptionsWithFallback() throws Exception {
+    final RolloutOptions allNull = new RolloutOptions(null, null, null, null, null, null);
+    assertThat(allNull.withFallback(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS),
+        equalTo(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS));
+
+    final RolloutOptions partial = new RolloutOptions(1000L, 2, null, true, null, null);
+    assertThat(
+        partial.withFallback(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS),
+        equalTo(new RolloutOptions(
+            1000L, 2, DEFAULT_MIGRATE, true, DEFAULT_TOKEN, DEFAULT_IGNORE_FAILURES)));
   }
 }
