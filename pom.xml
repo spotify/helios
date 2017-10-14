@@ -157,32 +157,32 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
-                <version>2.9.0</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-guava</artifactId>
-                <version>2.9.0</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
-                <version>2.9.0</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>2.9.0</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>2.9.0</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.jaxrs</groupId>
                 <artifactId>jackson-jaxrs-json-provider</artifactId>
-                <version>2.9.0</version>
+                <version>${jackson.version}</version>
             </dependency>
             <dependency>
                 <groupId>joda-time</groupId>
@@ -416,6 +416,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <autoReleaseAfterClose>true</autoReleaseAfterClose>
         <jacoco.version>0.7.1.201405082137</jacoco.version>
+        <jackson.version>2.9.2</jackson.version>
         <jdeb.skip>false</jdeb.skip>
         <surefire.version>2.16</surefire.version>
         <surefireArgLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</surefireArgLine>
