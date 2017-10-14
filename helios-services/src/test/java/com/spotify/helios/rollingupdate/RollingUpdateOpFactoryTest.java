@@ -56,13 +56,13 @@ public class RollingUpdateOpFactoryTest {
 
   private static final DeploymentGroup MANUAL_DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
       .setName("my_group")
-      .setRolloutOptions(RolloutOptions.newBuilder().build())
+      .setRolloutOptions(RolloutOptions.getDefault())
       .setRollingUpdateReason(MANUAL)
       .build();
 
   private static final DeploymentGroup HOSTS_CHANGED_DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
       .setName("my_group")
-      .setRolloutOptions(RolloutOptions.newBuilder().build())
+      .setRolloutOptions(RolloutOptions.getDefault())
       .setRollingUpdateReason(HOSTS_CHANGED)
       .build();
 

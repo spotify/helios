@@ -48,6 +48,7 @@ import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
@@ -123,6 +124,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument addCapabilityArg;
   private final Argument dropCapabilityArg;
   private final Argument labelsArg;
+  private final Argument rolloutOptionsArg;
   private final Supplier<Map<String, String>> envVarSupplier;
 
   public JobCreateCommand(final Subparser parser) {
@@ -276,6 +278,13 @@ public class JobCreateCommand extends ControlCommand {
         .setDefault(new ArrayList<String>())
         .help("Labels (key-value pairs) to apply onto the container. "
               + "Defaults to nothing.");
+
+    rolloutOptionsArg = parser.addArgument("--rollout-options")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Rollout options to use during a rolling-update. Use this switch more than once to "
+              + "specify multiple options. Args should be of the form key=val. Valid keys are "
+              + "migrate, parallelism, timeout, overlap, token, and ignoreFailures.");
 
     this.envVarSupplier = envVarSupplier;
   }
@@ -551,6 +560,14 @@ public class JobCreateCommand extends ControlCommand {
       final Map<String, String> labels = Maps.newHashMap();
       labels.putAll(parseListOfPairs(labelsList, "labels"));
       builder.setLabels(labels);
+    }
+
+    final List<String> rolloutOptionsList = options.getList(rolloutOptionsArg.getDest());
+    if (!rolloutOptionsList.isEmpty()) {
+      final Map<String, String> rolloutOptionsMap = Maps.newHashMap();
+      rolloutOptionsMap.putAll(parseListOfPairs(rolloutOptionsList, "rollout_options"));
+      final RolloutOptions rolloutOptions = Json.convert(rolloutOptionsMap, RolloutOptions.class);
+      builder.setRolloutOptions(rolloutOptions);
     }
 
     // We build without a hash here because we want the hash to be calculated server-side.

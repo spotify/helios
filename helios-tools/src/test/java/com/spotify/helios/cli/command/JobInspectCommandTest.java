@@ -22,6 +22,7 @@ package com.spotify.helios.cli.command;
 
 import static com.spotify.helios.common.descriptors.PortMapping.UDP;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -35,6 +36,7 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Date;
@@ -52,6 +54,15 @@ public class JobInspectCommandTest {
   private static final String JOB_NAME = "foo";
   private static final String JOB_VERSION = "2-bbb";
   private static final String JOB_NAME_VERSION = JOB_NAME + ":" + JOB_VERSION;
+
+  private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder()
+      .setIgnoreFailures(true)
+      .setMigrate(true)
+      .setOverlap(true)
+      .setParallelism(2)
+      .setTimeout(250L)
+      .setToken("foobar")
+      .build();
 
   private static final Job JOB = Job.newBuilder()
       .setName(JOB_NAME)
@@ -74,6 +85,7 @@ public class JobInspectCommandTest {
               .externalPort(456)
               .build()
       ))
+      .setRolloutOptions(ROLLOUT_OPTIONS)
       .build();
 
   private final Namespace options = mock(Namespace.class);
@@ -111,6 +123,31 @@ public class JobInspectCommandTest {
     assertThat(output, containsString("Drop capabilities: cap3, cap4"));
     assertThat(output, containsString("Ports: bar=0.0.0.0:123:456/tcp"));
     assertThat(output, containsString("foo=127.0.0.1:80:8080/udp"));
+    assertThat(output, containsString("Rollout options (null options will fallback to defaults "
+                                      + "at rolling-update time): timeout: 250, parallelism: 2, "
+                                      + "migrate: true, overlap: true, token: foobar, "
+                                      + "ignoreFailures: true"));
+  }
+
+  @Test
+  public void testRolloutOptionsNull() throws Exception {
+    final String jobVersion = "no-rollout-options";
+    final String jobNameVersion = JOB_NAME + ":" + jobVersion;
+    final Map<JobId, Job> jobs = ImmutableMap.of(
+        new JobId(JOB_NAME, jobVersion), JOB.toBuilder().setRolloutOptions(null).build()
+    );
+    when(client.jobs(jobNameVersion)).thenReturn(Futures.immediateFuture(jobs));
+    when(options.getString("job")).thenReturn(jobNameVersion);
+    final int ret = command.run(options, client, out, false, null);
+
+    assertEquals(0, ret);
+    final String output = baos.toString();
+    assertThat(output, not(containsString("timeout: ")));
+    assertThat(output, not(containsString("parallelism: ")));
+    assertThat(output, not(containsString("migrate: ")));
+    assertThat(output, not(containsString("overlap: ")));
+    assertThat(output, not(containsString("token: ")));
+    assertThat(output, not(containsString("ignoreFailures: ")));
   }
 
   @Test

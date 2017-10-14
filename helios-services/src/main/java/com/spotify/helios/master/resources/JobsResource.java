@@ -29,6 +29,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
@@ -73,12 +74,19 @@ public class JobsResource {
   private final MasterModel model;
   private final MasterMetrics metrics;
   private final JobValidator jobValidator;
-  private Clock clock = new SystemClock();
+  private final Clock clock;
 
   public JobsResource(final MasterModel model, final MasterMetrics metrics,
                       final Set<String> whitelistedCapabilities) {
+    this(model, metrics, whitelistedCapabilities, new SystemClock());
+  }
+
+  @VisibleForTesting
+  JobsResource(final MasterModel model, final MasterMetrics metrics,
+               final Set<String> whitelistedCapabilities, final Clock clock) {
     this.model = model;
     this.metrics = metrics;
+    this.clock = clock;
     this.jobValidator = new JobValidator(true, true, whitelistedCapabilities);
   }
 
