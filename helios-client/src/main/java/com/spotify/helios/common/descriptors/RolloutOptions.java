@@ -163,6 +163,14 @@ public class RolloutOptions {
            + '}';
   }
 
+  public RolloutOptions withFallback(final RolloutOptions other) {
+    // TODO(nickplatt):
+    // This should actually fallback to `other` for each property that hasn't been set explicitly.
+    // Since RollingUpdateCommand provides default values, we don't have a good way to know whether
+    // the flags were provided explicitly or whether they're just the defaults.
+    return this;
+  }
+
   public static class Builder {
 
     private long timeout;

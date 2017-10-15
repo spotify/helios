@@ -627,15 +627,23 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.info("preparing to initiate rolling-update on deployment-group: name={}, jobId={}",
         deploymentGroup.getName(), jobId);
 
-    final DeploymentGroup updated = deploymentGroup.toBuilder()
-        .setJobId(jobId)
-        .setRolloutOptions(options)
-        .setRollingUpdateReason(MANUAL)
-        .build();
-
-    if (getJob(jobId) == null) {
+    final Job job = getJob(jobId);
+    if (job == null) {
       throw new JobDoesNotExistException(jobId);
     }
+
+    // TODO(nickplatt):
+    // How can we identify which fields need a fallback? Hard, since RollingUpdateCommand provides
+    // default, non-null values for all fields. Probably we need to make the fields @Nullable and
+    // not send them unless the CLI has the flag, but that's a breaking change. Needs more thought.
+    final RolloutOptions mergedRolloutOptions =
+        options.withFallback(job.getRolloutOptions());
+
+    final DeploymentGroup updated = deploymentGroup.toBuilder()
+        .setJobId(jobId)
+        .setRolloutOptions(mergedRolloutOptions)
+        .setRollingUpdateReason(MANUAL)
+        .build();
 
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
     final ZooKeeperClient client = provider.get("rollingUpdate");

@@ -138,6 +138,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, String> EMPTY_LABELS = emptyMap();
   public static final Integer EMPTY_SECONDS_TO_WAIT = null;
   public static final Map<String, String> EMPTY_RAMDISKS = emptyMap();
+  public static final RolloutOptions EMPTY_ROLLOUT_OPTIONS = null;
 
   private final JobId id;
   private final String image;
@@ -163,6 +164,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<String, String> labels;
   private final Integer secondsToWaitBeforeKill;
   private final Map<String, String> ramdisks;
+  private final RolloutOptions rolloutOptions;
 
   /**
    * Create a Job.
@@ -227,7 +229,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities,
       @JsonProperty("labels") @Nullable final Map<String, String> labels,
       @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill,
-      @JsonProperty("ramdisks") @Nullable final Map<String, String> ramdisks) {
+      @JsonProperty("ramdisks") @Nullable final Map<String, String> ramdisks,
+      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
     this.id = id;
     this.image = image;
 
@@ -255,6 +258,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.labels = Optional.fromNullable(labels).or(EMPTY_LABELS);
     this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
     this.ramdisks = firstNonNull(ramdisks, EMPTY_RAMDISKS);
+    this.rolloutOptions = firstNonNull(rolloutOptions, EMPTY_ROLLOUT_OPTIONS);
   }
 
   private Job(final JobId id, final Builder.Parameters pm) {
@@ -284,6 +288,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
     this.labels = ImmutableMap.copyOf(pm.labels);
     this.ramdisks = ImmutableMap.copyOf(pm.ramdisks);
+    this.rolloutOptions = pm.rolloutOptions;
   }
 
   public JobId getId() {
@@ -380,6 +385,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Map<String, String> getRamdisks() {
     return ramdisks;
+  }
+
+  public RolloutOptions getRolloutOptions() {
+    return this.rolloutOptions;
   }
 
   public static Builder newBuilder() {
@@ -541,6 +550,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, String> labels;
       public Integer secondsToWaitBeforeKill;
       public Map<String, String> ramdisks;
+      public RolloutOptions rolloutOptions;
 
       private Parameters() {
         this.created = EMPTY_CREATED;
@@ -561,6 +571,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.dropCapabilities = EMPTY_CAPS;
         this.labels = EMPTY_LABELS;
         this.ramdisks = Maps.newHashMap(EMPTY_RAMDISKS);
+        this.rolloutOptions = EMPTY_ROLLOUT_OPTIONS;
       }
 
       private Parameters(final Parameters pm) {
@@ -589,6 +600,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.labels = pm.labels;
         this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
         this.ramdisks = Maps.newHashMap(pm.ramdisks);
+        this.rolloutOptions = pm.rolloutOptions;
       }
 
       private Parameters withoutMetaParameters() {
@@ -770,6 +782,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setRolloutOptions(final RolloutOptions options) {
+      pm.rolloutOptions = options;
+      return this;
+    }
+
     public String getName() {
       return pm.name;
     }
@@ -861,6 +878,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     public Map<String, String> getRamdisks() {
       return ImmutableMap.copyOf(pm.ramdisks);
     }
+
+    public RolloutOptions getRolloutOptions() { return pm.rolloutOptions; }
 
     @SuppressWarnings({ "CloneDoesntDeclareCloneNotSupportedException",
                         "CloneDoesntCallSuperClone" })
