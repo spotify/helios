@@ -65,8 +65,12 @@ import org.jetbrains.annotations.Nullable;
  *   "expires" : null,
  *   "gracePeriod": 60,
  *   "rolloutOptions": {
+ *     "migrate": false,
+ *     "parallelism": 2,
+ *     "timeout": 1000,
  *     "overlap": true,
- *     "timeout": 1000
+ *     "token": "insecure-access-token",
+ *     "ignoreFailures": false
  *   },
  *   "healthCheck" : {
  *     "type" : "http",

@@ -282,7 +282,9 @@ public class JobCreateCommand extends ControlCommand {
     rolloutOptionsArg = parser.addArgument("--rollout-options")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .help("Rollout options to use during a rolling-update.");
+        .help("Rollout options to use during a rolling-update. Use this switch more than once to "
+              + "specify multiple options. Args should be of the form key=val. Valid keys are "
+              + "migrate, parallelism, timeout, overlap, token, and ignoreFailures.");
 
     this.envVarSupplier = envVarSupplier;
   }

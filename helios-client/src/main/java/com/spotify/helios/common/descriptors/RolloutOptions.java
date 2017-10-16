@@ -97,8 +97,11 @@ public class RolloutOptions {
         .setIgnoreFailures(ignoreFailures);
   }
 
-  // Return a new RolloutOptions with fields populated by coalescing this instance with another one.
-  // The other instance is assumed to have no null-valued fields.
+
+  /**
+   * Return a new RolloutOptions instance by merging this instance with another one.
+   * The other instance is assumed to have no null-valued fields.
+   */
   public RolloutOptions withFallback(final RolloutOptions that) {
     return RolloutOptions.newBuilder()
         .setTimeout(firstNonNull(timeout, that.timeout))
