@@ -139,7 +139,7 @@ public class DeploymentGroupTest {
         .setName(GROUP_NAME)
         .setHostSelectors(ImmutableList.of(HostSelector.parse("role=melmac")))
         .setJobId(job.getId())
-        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .setRolloutOptions(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS)
         .setRollingUpdateReason(MANUAL)
         .build();
     masterModel.addDeploymentGroup(dg);
@@ -220,7 +220,7 @@ public class DeploymentGroupTest {
         .setName(GROUP_NAME)
         .setHostSelectors(ImmutableList.of(HostSelector.parse("role=melmac")))
         .setJobId(job.getId())
-        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .setRolloutOptions(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS)
         .setRollingUpdateReason(HOSTS_CHANGED)
         .build();
     masterModel.addDeploymentGroup(dg);
@@ -273,7 +273,7 @@ public class DeploymentGroupTest {
         .setName(GROUP_NAME)
         .setHostSelectors(ImmutableList.of(HostSelector.parse("role=melmac")))
         .setJobId(job.getId())
-        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .setRolloutOptions(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS)
         .setRollingUpdateReason(MANUAL)
         .build();
     masterModel.addDeploymentGroup(dg);

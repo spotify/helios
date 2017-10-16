@@ -88,7 +88,7 @@ public class ZooKeeperMasterModelIntegrationTest {
       .setName(DEPLOYMENT_GROUP_NAME)
       .setHostSelectors(ImmutableList.of(HostSelector.parse("role=foo")))
       .setJobId(JOB_ID)
-      .setRolloutOptions(RolloutOptions.newBuilder().build())
+      .setRolloutOptions(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS)
       .build();
 
   private ZooKeeperMasterModel model;

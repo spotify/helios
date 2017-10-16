@@ -21,6 +21,7 @@
 package com.spotify.helios.rollingupdate;
 
 
+import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_ROLLOUT_OPTIONS;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
@@ -39,7 +40,7 @@ public class RollingUpdatePlannerTest {
   @Test
   public void testSerialRollout() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
-        .setRolloutOptions(RolloutOptions.newBuilder()
+        .setRolloutOptions(DEFAULT_ROLLOUT_OPTIONS.toBuilder()
             .setParallelism(1)
             .build())
         .build();
@@ -68,7 +69,7 @@ public class RollingUpdatePlannerTest {
   @Test
   public void testParallelRollout() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
-        .setRolloutOptions(RolloutOptions.newBuilder()
+        .setRolloutOptions(DEFAULT_ROLLOUT_OPTIONS.toBuilder()
             .setParallelism(2)
             .build())
         .build();
@@ -97,7 +98,7 @@ public class RollingUpdatePlannerTest {
   @Test
   public void testParallelRolloutWithRemainder() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
-        .setRolloutOptions(RolloutOptions.newBuilder()
+        .setRolloutOptions(DEFAULT_ROLLOUT_OPTIONS.toBuilder()
             .setParallelism(3)
             .build())
         .build();
@@ -126,7 +127,7 @@ public class RollingUpdatePlannerTest {
   @Test
   public void testOverlapRollout() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
-        .setRolloutOptions(RolloutOptions.newBuilder().setOverlap(true).build())
+        .setRolloutOptions(DEFAULT_ROLLOUT_OPTIONS.toBuilder().setOverlap(true).build())
         .build();
 
     final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
