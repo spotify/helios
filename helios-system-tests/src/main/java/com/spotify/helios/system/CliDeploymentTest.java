@@ -20,7 +20,6 @@
 
 package com.spotify.helios.system;
 
-import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.spotify.helios.Polling;
@@ -111,7 +111,7 @@ public class CliDeploymentTest extends SystemTestBase {
     final Job expectedCloned = expected.toBuilder()
         .setVersion(expected.getId().getVersion() + "-cloned")
         .build();
-    final JobId clonedJobId = JobId.parse(WHITESPACE.trimFrom(
+    final JobId clonedJobId = JobId.parse(CharMatcher.whitespace().trimFrom(
         cli("create", "-q", "-t",
             testJobName + ":" + testJobVersion,
             testJobName + ":" + testJobVersion + "-cloned")));

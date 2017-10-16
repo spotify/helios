@@ -20,7 +20,6 @@
 
 package com.spotify.helios.system;
 
-import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.concat;
@@ -47,6 +46,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
@@ -705,7 +705,7 @@ public abstract class SystemTestBase {
 
   protected JobId createJob(final Job job) throws Exception {
     final String createOutput = createJobRawOutput(job);
-    final String jobId = WHITESPACE.trimFrom(createOutput);
+    final String jobId = CharMatcher.whitespace().trimFrom(createOutput);
 
     return JobId.fromString(jobId);
   }
