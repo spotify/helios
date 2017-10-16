@@ -631,8 +631,9 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final RolloutOptions mergedRolloutOptions =
         options.withFallback(
-            job.getRolloutOptions().withFallback(
-                RolloutOptions.DEFAULT_ROLLOUT_OPTIONS));
+            job.getRolloutOptions() == null
+            ? RolloutOptions.DEFAULT_ROLLOUT_OPTIONS
+            : job.getRolloutOptions().withFallback(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS));
 
     log.info("preparing to initiate rolling-update on deployment-group: "
              + "name={}, jobId={}, options={}",

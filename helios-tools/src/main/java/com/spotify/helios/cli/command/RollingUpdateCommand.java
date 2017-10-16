@@ -113,12 +113,14 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     migrateArg = parser.addArgument("--migrate")
         .action(storeTrue())
+        .setDefault((Object) null)
         .help("When specified a rolling-update will undeploy not only jobs previously deployed "
               + "by the deployment-group but also jobs with the same job id. Use it ONCE when "
               + "migrating a service to using deployment-groups");
 
     overlapArg = parser.addArgument("--overlap")
         .action(storeTrue())
+        .setDefault((Object) null)
         .help("When specified a rolling-update will, for every host, first deploy the new "
               + "version of a job before undeploying the old one. Note that the command will fail "
               + "if the job contains static port assignments.");
@@ -130,6 +132,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     ignoreFailuresArg = parser.addArgument("--ignore-failures")
         .action(storeTrue())
+        .setDefault((Object) null)
         .help("When specified, the rolling-update will ignore *all* failures and will proceed "
               + "to deploying the job to all hosts in the deployment group. The rolling-update "
               + "will go through the normal rollout plan (respecting the --par and --overlap "
