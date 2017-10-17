@@ -80,8 +80,7 @@ If the update succeeds it is marked as ACTIVE. Helios will periodically recalcul
 agents that match the deployment group labels and make sure they are all running the specified job.
 This means new agents that match the labels will automatically be told to deploy the job.
 
-See more rolling-update options with `helios rolling-update -h`, e.g. parallel deployments and
-failure timeouts.
+See more rolling-update options with `helios rolling-update -h`, e.g. [parallel deployments](https://github.com/spotify/helios/blob/master/docs/parallelism.md) and failure timeouts.
 
 #### Overlap
 
