@@ -37,12 +37,14 @@ import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +111,32 @@ public class JobInspectCommand extends WildcardJobCommand {
     return str;
   }
 
+  private static String formatRolloutOptions(final RolloutOptions options) {
+    if (options == null) {
+      return "";
+    }
+    final List<String> output = new ArrayList<>();
+    if (options.getTimeout() != null) {
+      output.add(String.format("timeout: %d", options.getTimeout()));
+    }
+    if (options.getParallelism() != null) {
+      output.add(String.format("parallelism: %d", options.getParallelism()));
+    }
+    if (options.getMigrate() != null) {
+      output.add(String.format("migrate: %s", options.getMigrate()));
+    }
+    if (options.getOverlap() != null) {
+      output.add(String.format("overlap: %s", options.getOverlap()));
+    }
+    if (options.getToken() != null) {
+      output.add(String.format("token: %s", options.getToken()));
+    }
+    if (options.getIgnoreFailures() != null) {
+      output.add(String.format("ignoreFailures: %s", options.getIgnoreFailures()));
+    }
+    return Joiner.on(", ").join(output);
+  }
+
   public JobInspectCommand(final Subparser parser) {
     super(parser);
     parser.help("print the configuration of a job");
@@ -158,6 +186,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       printVolumes(out, job.getVolumes());
       out.printf("Add capabilities: %s%n", Joiner.on(", ").join(job.getAddCapabilities()));
       out.printf("Drop capabilities: %s%n", Joiner.on(", ").join(job.getDropCapabilities()));
+      out.printf("Rollout options: %s%n", formatRolloutOptions(job.getRolloutOptions()));
     }
 
     return 0;
