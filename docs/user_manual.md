@@ -147,6 +147,14 @@ example that uses all the available configuration keys with an explanation of ea
   },
   "expires" : "2014-06-01T12:00:00Z",
   "gracePeriod": 60,
+  "rolloutOptions": {
+    "migrate": false,
+    "parallelism": 2,
+    "timeout": 1000,
+    "overlap": true,
+    "token": "insecure-access-token",
+    "ignoreFailures": false
+  },
   "healthCheck" : {
     "type" : "http",
     "path" : "/healthcheck",
@@ -225,6 +233,13 @@ Optional, if not specified the job does not expire.
 If is specified, Helios will unregister from service discovery and wait the
 specified number of seconds before undeploying. Optional, defaults to `0` for
 no grace period.
+
+#### rolloutOptions
+When helios master runs a `rolling-update`, the RolloutOptions will be constructed from the
+request parameters and job configuration with the following precedence:
+* Parameters included in the API request (eg, flags passed on the command line)
+* Parameters defined in the job configuration (of the job being rolled out)
+* The default value for the parameter as defined in the RolloutOptions class
 
 #### healthCheck
 A health check Helios will execute on the container. See the health checks
