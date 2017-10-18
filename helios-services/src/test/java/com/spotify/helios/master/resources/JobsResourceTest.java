@@ -20,9 +20,12 @@
 
 package com.spotify.helios.master.resources;
 
+import static com.spotify.helios.common.protocol.CreateJobResponse.Status.OK;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
@@ -33,9 +36,12 @@ import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutOptions;
+import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.statistics.NoopMasterMetrics;
 import java.util.Map;
+import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Test;
 
 public class JobsResourceTest {
@@ -143,6 +149,77 @@ public class JobsResourceTest {
             jobId2, job2
         )
     ));
+  }
+
+  @Test
+  public void testCreateJobWithNoRolloutOptions() throws Exception {
+    final JobId jobId = JobId.parse("foobar:1");
+    final Job job = Job.newBuilder()
+        .setName("foobar")
+        .setVersion("1")
+        .setImage("busybox:latest")
+        .buildWithoutHash();
+
+    final CreateJobResponse jobResponse = resource.post(job, "user1");
+    assertThat(jobResponse,
+        new CustomTypeSafeMatcher<CreateJobResponse>("CreateJobResponse that is OK") {
+          @Override
+          protected boolean matchesSafely(final CreateJobResponse response) {
+            return response.getStatus() == OK
+                   && response.getErrors().isEmpty()
+                   && response.getId().contains(jobId.toString());
+          }
+        }
+    );
+
+    // Verify addJob() called with Job with fallbacks for all attributes
+    verify(model).addJob(argThat(new CustomTypeSafeMatcher<Job>("Job that matches") {
+      @Override
+      protected boolean matchesSafely(final Job job) {
+        return job.getRolloutOptions().equals(RolloutOptions.getDefault());
+      }
+    }));
+  }
+
+  @Test
+  public void testCreateJobWithPartialRolloutOptions() throws Exception {
+    final JobId jobId = JobId.parse("foobar:1");
+    final Job job = Job.newBuilder()
+        .setName("foobar")
+        .setVersion("1")
+        .setImage("busybox:latest")
+        .setRolloutOptions(RolloutOptions.newBuilder()
+            .setTimeout(null)
+            .setParallelism(2)
+            .setMigrate(null)
+            .setOverlap(true)
+            .setToken(null)
+            .setIgnoreFailures(null)
+            .build())
+        .buildWithoutHash();
+
+    final CreateJobResponse jobResponse = resource.post(job, "user1");
+    assertThat(jobResponse,
+        new CustomTypeSafeMatcher<CreateJobResponse>("CreateJobResponse that is OK") {
+          @Override
+          protected boolean matchesSafely(final CreateJobResponse response) {
+            return response.getStatus() == OK
+                   && response.getErrors().isEmpty()
+                   && response.getId().contains(jobId.toString());
+          }
+        }
+    );
+
+    // Verify addJob() called with Job with fallbacks for all attributes
+    verify(model).addJob(argThat(new CustomTypeSafeMatcher<Job>("Job that matches") {
+      @Override
+      protected boolean matchesSafely(final Job job) {
+        return job.getRolloutOptions().equals(RolloutOptions.getDefault().toBuilder()
+            .setParallelism(2)
+            .setOverlap(true)
+            .build());
+      }
+    }));
   }
 
   private static HostStatus mockHostStatus(Map<JobId, Deployment> jobs) {

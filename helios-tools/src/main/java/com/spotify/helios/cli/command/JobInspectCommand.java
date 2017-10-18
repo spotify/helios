@@ -129,7 +129,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       output.add(String.format("overlap: %s", options.getOverlap()));
     }
     if (options.getToken() != null) {
-      output.add(String.format("token: %s", options.getToken()));
+      output.add(String.format("token: '%s'", options.getToken()));
     }
     if (options.getIgnoreFailures() != null) {
       output.add(String.format("ignoreFailures: %s", options.getIgnoreFailures()));

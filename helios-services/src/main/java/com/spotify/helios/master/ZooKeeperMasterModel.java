@@ -617,6 +617,18 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Returns a {@link RolloutOptions} instance that will replace null attributes in options with
+   * values from two tiers of fallbacks. First fallback to job then
+   * {@link RolloutOptions#getDefault()}.
+   */
+  static RolloutOptions rolloutOptionsWithFallback(final RolloutOptions options, final Job job) {
+    return options.withFallback(
+        job.getRolloutOptions() == null
+        ? RolloutOptions.getDefault()
+        : job.getRolloutOptions().withFallback(RolloutOptions.getDefault()));
+  }
+
   @Override
   public void rollingUpdate(final DeploymentGroup deploymentGroup,
                             final JobId jobId,
@@ -629,20 +641,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new JobDoesNotExistException(jobId);
     }
 
-    final RolloutOptions mergedRolloutOptions =
-        options.withFallback(
-            job.getRolloutOptions() == null
-            ? RolloutOptions.DEFAULT_ROLLOUT_OPTIONS
-            : job.getRolloutOptions().withFallback(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS));
+    final RolloutOptions rolloutOptionsWithFallback = rolloutOptionsWithFallback(options, job);
 
     log.info("preparing to initiate rolling-update on deployment-group: "
              + "name={}, jobId={}, options={}",
-        deploymentGroup.getName(), jobId, mergedRolloutOptions);
-
+        deploymentGroup.getName(), jobId, rolloutOptionsWithFallback);
 
     final DeploymentGroup updated = deploymentGroup.toBuilder()
         .setJobId(jobId)
-        .setRolloutOptions(mergedRolloutOptions)
+        .setRolloutOptions(rolloutOptionsWithFallback)
         .setRollingUpdateReason(MANUAL)
         .build();
 

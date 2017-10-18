@@ -38,6 +38,7 @@ import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.master.JobDoesNotExistException;
@@ -165,6 +166,9 @@ public class JobsResource {
   public CreateJobResponse post(@Valid final Job job,
                                 @RequestUser final String username) {
     final Job.Builder clone = job.toBuilder()
+        .setRolloutOptions(job.getRolloutOptions() == null
+                           ? RolloutOptions.getDefault()
+                           : job.getRolloutOptions().withFallback(RolloutOptions.getDefault()))
         .setCreatingUser(username)
         .setCreated(clock.now().getMillis())
         // If the job had a hash coming in, preserve it

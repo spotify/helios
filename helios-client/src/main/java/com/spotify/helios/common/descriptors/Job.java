@@ -272,7 +272,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.labels = Optional.fromNullable(labels).or(EMPTY_LABELS);
     this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
     this.ramdisks = firstNonNull(ramdisks, EMPTY_RAMDISKS);
-    this.rolloutOptions = Optional.fromNullable(rolloutOptions).orNull();
+    this.rolloutOptions = rolloutOptions;
   }
 
   private Job(final JobId id, final Builder.Parameters pm) {

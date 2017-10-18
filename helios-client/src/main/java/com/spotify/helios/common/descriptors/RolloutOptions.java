@@ -46,21 +46,14 @@ import org.jetbrains.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RolloutOptions {
 
-  public static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
-  public static final int DEFAULT_PARALLELISM = 1;
-  public static final boolean DEFAULT_MIGRATE = false;
-  public static final boolean DEFAULT_OVERLAP = false;
-  public static final String DEFAULT_TOKEN = Job.EMPTY_TOKEN;
-  public static final boolean DEFAULT_IGNORE_FAILURES = false;
+  private static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
+  private static final int DEFAULT_PARALLELISM = 1;
+  static final boolean DEFAULT_MIGRATE = false;
+  private static final boolean DEFAULT_OVERLAP = false;
+  static final String DEFAULT_TOKEN = Job.EMPTY_TOKEN;
+  static final boolean DEFAULT_IGNORE_FAILURES = false;
 
-  public static final RolloutOptions DEFAULT_ROLLOUT_OPTIONS = RolloutOptions.newBuilder()
-      .setTimeout(DEFAULT_TIMEOUT)
-      .setParallelism(DEFAULT_PARALLELISM)
-      .setMigrate(DEFAULT_MIGRATE)
-      .setOverlap(DEFAULT_OVERLAP)
-      .setToken(DEFAULT_TOKEN)
-      .setIgnoreFailures(DEFAULT_IGNORE_FAILURES)
-      .build();
+  private static final RolloutOptions DEFAULT = RolloutOptions.newBuilder().build();
 
   private final Long timeout;
   private final Integer parallelism;
@@ -69,18 +62,22 @@ public class RolloutOptions {
   private final String token;
   private final Boolean ignoreFailures;
 
-  public RolloutOptions(@JsonProperty("timeout") @Nullable final Long timeout,
-                        @JsonProperty("parallelism") @Nullable final Integer parallelism,
-                        @JsonProperty("migrate") @Nullable final Boolean migrate,
-                        @JsonProperty("overlap") @Nullable final Boolean overlap,
-                        @JsonProperty("token") @Nullable final String token,
-                        @JsonProperty("ignoreFailures") @Nullable final Boolean ignoreFailures) {
+  private RolloutOptions(@JsonProperty("timeout") @Nullable final Long timeout,
+                         @JsonProperty("parallelism") @Nullable final Integer parallelism,
+                         @JsonProperty("migrate") @Nullable final Boolean migrate,
+                         @JsonProperty("overlap") @Nullable final Boolean overlap,
+                         @JsonProperty("token") @Nullable final String token,
+                         @JsonProperty("ignoreFailures") @Nullable final Boolean ignoreFailures) {
     this.timeout = timeout;
     this.parallelism = parallelism;
     this.migrate = migrate;
     this.overlap = overlap;
     this.token = token;
     this.ignoreFailures = ignoreFailures;
+  }
+
+  public static RolloutOptions getDefault() {
+    return DEFAULT;
   }
 
   public static Builder newBuilder() {
@@ -100,17 +97,15 @@ public class RolloutOptions {
 
   /**
    * Return a new RolloutOptions instance by merging this instance with another one.
-   * The other instance is assumed to have no null-valued fields.
    */
   public RolloutOptions withFallback(final RolloutOptions that) {
-    return RolloutOptions.newBuilder()
-        .setTimeout(firstNonNull(timeout, that.timeout))
-        .setParallelism(firstNonNull(parallelism, that.parallelism))
-        .setMigrate(firstNonNull(migrate, that.migrate))
-        .setOverlap(firstNonNull(overlap, that.overlap))
-        .setToken(firstNonNull(token, that.token))
-        .setIgnoreFailures(firstNonNull(ignoreFailures, that.ignoreFailures))
-        .build();
+    return new RolloutOptions(
+        firstNonNull(timeout, that.timeout),
+        firstNonNull(parallelism, that.parallelism),
+        firstNonNull(migrate, that.migrate),
+        firstNonNull(overlap, that.overlap),
+        firstNonNull(token, that.token),
+        firstNonNull(ignoreFailures, that.ignoreFailures));
   }
 
   public Long getTimeout() {
@@ -182,7 +177,14 @@ public class RolloutOptions {
     private String token;
     private Boolean ignoreFailures;
 
-    public Builder() { }
+    private Builder() {
+      this.timeout = DEFAULT_TIMEOUT;
+      this.parallelism = DEFAULT_PARALLELISM;
+      this.migrate = DEFAULT_MIGRATE;
+      this.overlap = DEFAULT_OVERLAP;
+      this.token = DEFAULT_TOKEN;
+      this.ignoreFailures = DEFAULT_IGNORE_FAILURES;
+    }
 
     public Builder setTimeout(final Long timeout) {
       this.timeout = timeout;

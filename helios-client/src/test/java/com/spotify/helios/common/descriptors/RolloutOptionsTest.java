@@ -99,14 +99,30 @@ public class RolloutOptionsTest {
 
   @Test
   public void testRolloutOptionsWithFallback() throws Exception {
-    final RolloutOptions allNull = new RolloutOptions(null, null, null, null, null, null);
-    assertThat(allNull.withFallback(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS),
-        equalTo(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS));
+    final RolloutOptions allNull = RolloutOptions.newBuilder()
+        .setTimeout(null)
+        .setParallelism(null)
+        .setMigrate(null)
+        .setOverlap(null)
+        .setToken(null)
+        .setIgnoreFailures(null)
+        .build();
+    assertThat(allNull.withFallback(RolloutOptions.getDefault()),
+        equalTo(RolloutOptions.getDefault()));
 
-    final RolloutOptions partial = new RolloutOptions(1000L, 2, null, true, null, null);
-    assertThat(
-        partial.withFallback(RolloutOptions.DEFAULT_ROLLOUT_OPTIONS),
-        equalTo(new RolloutOptions(
-            1000L, 2, DEFAULT_MIGRATE, true, DEFAULT_TOKEN, DEFAULT_IGNORE_FAILURES)));
+    final RolloutOptions partial = allNull.toBuilder()
+        .setTimeout(1000L)
+        .setParallelism(2)
+        .setOverlap(true)
+        .build();
+    assertThat(partial.withFallback(RolloutOptions.getDefault()),
+        equalTo(RolloutOptions.newBuilder()
+            .setTimeout(1000L)
+            .setParallelism(2)
+            .setMigrate(DEFAULT_MIGRATE)
+            .setOverlap(true)
+            .setToken(DEFAULT_TOKEN)
+            .setIgnoreFailures(DEFAULT_IGNORE_FAILURES)
+            .build()));
   }
 }

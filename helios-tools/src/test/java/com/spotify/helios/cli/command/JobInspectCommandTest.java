@@ -124,7 +124,7 @@ public class JobInspectCommandTest {
     assertThat(output, containsString("Ports: bar=0.0.0.0:123:456/tcp"));
     assertThat(output, containsString("foo=127.0.0.1:80:8080/udp"));
     assertThat(output, containsString("Rollout options: timeout: 250, parallelism: 2, "
-                                      + "migrate: true, overlap: true, token: foobar, "
+                                      + "migrate: true, overlap: true, token: 'foobar', "
                                       + "ignoreFailures: true"));
   }
 

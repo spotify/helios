@@ -117,7 +117,7 @@ public class RollingUpdateCommandTest {
             .setName(GROUP_NAME)
             .setHostSelectors(Collections.<HostSelector>emptyList())
             .setJobId(jobId)
-            .setRolloutOptions(RolloutOptions.newBuilder().build())
+            .setRolloutOptions(RolloutOptions.getDefault())
             .setRollingUpdateReason(MANUAL)
             .build(),
         status, error, Arrays.asList(args), null);
