@@ -20,11 +20,11 @@
 
 package com.spotify.helios.cli.command;
 
-import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Joiner.on;
 import static com.spotify.helios.cli.Output.table;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -173,7 +173,7 @@ public class JobListCommand extends ControlCommand {
   }
 
   private static String escape(final String arg) {
-    return WHITESPACE.matchesAnyOf(arg) ? '"' + arg + '"' : arg;
+    return CharMatcher.whitespace().matchesAnyOf(arg) ? '"' + arg + '"' : arg;
   }
 }
 

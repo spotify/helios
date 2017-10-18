@@ -20,9 +20,9 @@
 
 package com.spotify.helios.system;
 
-import static com.google.common.base.CharMatcher.WHITESPACE;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.collect.ImmutableMap;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -67,7 +67,7 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
     Files.write(file, Json.asBytes(configuration));
 
     final String output = cli("create", "-q", "-f", file.toAbsolutePath().toString());
-    final JobId jobId = JobId.parse(WHITESPACE.trimFrom(output));
+    final JobId jobId = JobId.parse(CharMatcher.whitespace().trimFrom(output));
 
     final Map<JobId, Job> jobs = client.jobs().get();
     final Job job = jobs.get(jobId);

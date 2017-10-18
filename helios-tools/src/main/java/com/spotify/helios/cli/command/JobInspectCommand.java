@@ -20,9 +20,9 @@
 
 package com.spotify.helios.cli.command;
 
-import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.spotify.helios.cli.Utils.printMap;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
@@ -191,7 +191,7 @@ public class JobInspectCommand extends WildcardJobCommand {
     if (str == null) {
       return "";
     }
-    return WHITESPACE.matchesAnyOf(str)
+    return CharMatcher.whitespace().matchesAnyOf(str)
            ? '"' + str + '"'
            : str;
   }
