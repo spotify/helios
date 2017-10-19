@@ -118,10 +118,20 @@ public class DeploymentGroupTest {
         "");
   }
 
+  @Test
+  public void testUpdateDeploymentGroupHostsPartialRolloutOptions() throws Exception {
+    testUpdateDeploymentGroupHosts(RolloutOptions.newBuilder().setOverlap(true).build());
+  }
+
   // A test that ensures healthy deployment groups will perform a rolling update when their hosts
   // change.
   @Test
-  public void testUpdateDeploymentGroupHosts() throws Exception {
+  public void testUpdateDeploymentGroupHostsFullRolloutOptions() throws Exception {
+    testUpdateDeploymentGroupHosts(RolloutOptions.getDefault());
+  }
+
+  private void testUpdateDeploymentGroupHosts(final RolloutOptions rolloutOptions)
+      throws Exception {
     final ZooKeeperClient client = spy(this.client);
     final ZooKeeperMasterModel masterModel = spy(newMasterModel(client));
 
@@ -139,7 +149,7 @@ public class DeploymentGroupTest {
         .setName(GROUP_NAME)
         .setHostSelectors(ImmutableList.of(HostSelector.parse("role=melmac")))
         .setJobId(job.getId())
-        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .setRolloutOptions(rolloutOptions)
         .setRollingUpdateReason(MANUAL)
         .build();
     masterModel.addDeploymentGroup(dg);
@@ -220,7 +230,7 @@ public class DeploymentGroupTest {
         .setName(GROUP_NAME)
         .setHostSelectors(ImmutableList.of(HostSelector.parse("role=melmac")))
         .setJobId(job.getId())
-        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .setRolloutOptions(RolloutOptions.getDefault())
         .setRollingUpdateReason(HOSTS_CHANGED)
         .build();
     masterModel.addDeploymentGroup(dg);
@@ -273,7 +283,7 @@ public class DeploymentGroupTest {
         .setName(GROUP_NAME)
         .setHostSelectors(ImmutableList.of(HostSelector.parse("role=melmac")))
         .setJobId(job.getId())
-        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .setRolloutOptions(RolloutOptions.getDefault())
         .setRollingUpdateReason(MANUAL)
         .build();
     masterModel.addDeploymentGroup(dg);

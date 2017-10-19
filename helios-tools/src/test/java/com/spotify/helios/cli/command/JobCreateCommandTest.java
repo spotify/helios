@@ -138,6 +138,9 @@ public class JobCreateCommandTest {
     doReturn(ImmutableList.of("cap1", "cap2")).when(options).getList("add_capability");
     doReturn(ImmutableList.of("cap3", "cap4")).when(options).getList("drop_capability");
 
+    when(options.getList("rollout_options"))
+        .thenReturn(Lists.<Object>newArrayList("overlap=true", "parallelism=2", "foo=bar"));
+
     final int ret = runCommand();
 
     assertEquals(0, ret);
@@ -156,6 +159,9 @@ public class JobCreateCommandTest {
     assertThat(output, containsString("\"addCapabilities\":[\"cap1\",\"cap2\"]"));
     assertThat(output, containsString("\"dropCapabilities\":[\"cap3\",\"cap4\"]"));
     assertThat(output, containsString("\"labels\":{\"a\":\"b\",\"c\":\"d\"}"));
+    assertThat(output,
+        containsString("rolloutOptions\":{\"ignoreFailures\":null,\"migrate\":null,"
+                       + "\"overlap\":true,\"parallelism\":2,\"timeout\":null,\"token\":null}"));
   }
 
   @Test
@@ -293,5 +299,4 @@ public class JobCreateCommandTest {
       }
     };
   }
-
 }

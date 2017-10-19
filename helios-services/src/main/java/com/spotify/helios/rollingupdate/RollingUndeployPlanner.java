@@ -45,6 +45,7 @@ public class RollingUndeployPlanner implements RolloutPlanner {
     // generate the rollout tasks
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
     final int parallelism = deploymentGroup.getRolloutOptions() != null
+                            && deploymentGroup.getRolloutOptions().getParallelism() != null
                             ? deploymentGroup.getRolloutOptions().getParallelism() : 1;
 
     Lists.partition(hosts, parallelism)

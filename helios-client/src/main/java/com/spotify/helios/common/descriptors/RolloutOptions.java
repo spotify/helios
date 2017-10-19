@@ -20,11 +20,11 @@
 
 package com.spotify.helios.common.descriptors;
 
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
+import static com.google.common.base.MoreObjects.firstNonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,28 +46,45 @@ import org.jetbrains.annotations.Nullable;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RolloutOptions {
 
-  public static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
-  public static final int DEFAULT_PARALLELISM = 1;
+  private static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
+  private static final int DEFAULT_PARALLELISM = 1;
+  static final boolean DEFAULT_MIGRATE = false;
+  private static final boolean DEFAULT_OVERLAP = false;
+  static final String DEFAULT_TOKEN = Job.EMPTY_TOKEN;
+  static final boolean DEFAULT_IGNORE_FAILURES = false;
 
-  private final long timeout;
-  private final int parallelism;
-  private final boolean migrate;
-  private final boolean overlap;
+  private static final RolloutOptions DEFAULT = RolloutOptions.newBuilder()
+      .setTimeout(DEFAULT_TIMEOUT)
+      .setParallelism(DEFAULT_PARALLELISM)
+      .setMigrate(DEFAULT_MIGRATE)
+      .setOverlap(DEFAULT_OVERLAP)
+      .setToken(DEFAULT_TOKEN)
+      .setIgnoreFailures(DEFAULT_IGNORE_FAILURES)
+      .build();
+
+  private final Long timeout;
+  private final Integer parallelism;
+  private final Boolean migrate;
+  private final Boolean overlap;
   private final String token;
-  private final boolean ignoreFailures;
+  private final Boolean ignoreFailures;
 
-  public RolloutOptions(@JsonProperty("timeout") final long timeout,
-                        @JsonProperty("parallelism") final int parallelism,
-                        @JsonProperty("migrate") final boolean migrate,
-                        @JsonProperty("overlap") boolean overlap,
-                        @JsonProperty("token") @Nullable String token,
-                        @JsonProperty("ignoreFailures") boolean ignoreFailures) {
+  private RolloutOptions(@JsonProperty("timeout") @Nullable final Long timeout,
+                         @JsonProperty("parallelism") @Nullable final Integer parallelism,
+                         @JsonProperty("migrate") @Nullable final Boolean migrate,
+                         @JsonProperty("overlap") @Nullable final Boolean overlap,
+                         @JsonProperty("token") @Nullable final String token,
+                         @JsonProperty("ignoreFailures") @Nullable final Boolean ignoreFailures) {
     this.timeout = timeout;
     this.parallelism = parallelism;
     this.migrate = migrate;
     this.overlap = overlap;
-    this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
+    this.token = token;
     this.ignoreFailures = ignoreFailures;
+  }
+
+  public static RolloutOptions getDefault() {
+    return DEFAULT;
   }
 
   public static Builder newBuilder() {
@@ -79,31 +96,54 @@ public class RolloutOptions {
         .setTimeout(timeout)
         .setParallelism(parallelism)
         .setMigrate(migrate)
+        .setOverlap(overlap)
         .setToken(token)
         .setIgnoreFailures(ignoreFailures);
   }
 
-  public long getTimeout() {
+
+  /**
+   * Return a new RolloutOptions instance by merging this instance with another one.
+   * The other instance is assumed to have no null-valued fields.
+   */
+  public RolloutOptions withFallback(final RolloutOptions that) {
+    return RolloutOptions.newBuilder()
+        .setTimeout(firstNonNull(timeout, that.timeout))
+        .setParallelism(firstNonNull(parallelism, that.parallelism))
+        .setMigrate(firstNonNull(migrate, that.migrate))
+        .setOverlap(firstNonNull(overlap, that.overlap))
+        .setToken(firstNonNull(token, that.token))
+        .setIgnoreFailures(firstNonNull(ignoreFailures, that.ignoreFailures))
+        .build();
+  }
+
+  @Nullable
+  public Long getTimeout() {
     return timeout;
   }
 
-  public int getParallelism() {
+  @Nullable
+  public Integer getParallelism() {
     return parallelism;
   }
 
-  public boolean getMigrate() {
+  @Nullable
+  public Boolean getMigrate() {
     return migrate;
   }
 
-  public boolean getOverlap() {
+  @Nullable
+  public Boolean getOverlap() {
     return overlap;
   }
 
+  @Nullable
   public String getToken() {
     return token;
   }
 
-  public boolean getIgnoreFailures() {
+  @Nullable
+  public Boolean getIgnoreFailures() {
     return ignoreFailures;
   }
 
@@ -118,37 +158,17 @@ public class RolloutOptions {
 
     final RolloutOptions that = (RolloutOptions) obj;
 
-    if (migrate != that.migrate) {
-      return false;
-    }
-    if (parallelism != that.parallelism) {
-      return false;
-    }
-    if (timeout != that.timeout) {
-      return false;
-    }
-    if (overlap != that.overlap) {
-      return false;
-    }
-    if (token != null ? !token.equals(that.token) : that.token != null) {
-      return false;
-    }
-    if (ignoreFailures != that.ignoreFailures) {
-      return false;
-    }
-
-    return true;
+    return Objects.equals(this.migrate, that.migrate)
+           && Objects.equals(this.parallelism, that.parallelism)
+           && Objects.equals(this.timeout, that.timeout)
+           && Objects.equals(this.overlap, that.overlap)
+           && Objects.equals(this.token, that.token)
+           && Objects.equals(this.ignoreFailures, that.ignoreFailures);
   }
 
   @Override
   public int hashCode() {
-    int result = (int) (timeout ^ (timeout >>> 32));
-    result = 31 * result + parallelism;
-    result = 31 * result + (migrate ? 1 : 0);
-    result = 31 * result + (overlap ? 1 : 0);
-    result = 31 * result + (token != null ? token.hashCode() : 0);
-    result = 31 * result + (ignoreFailures ? 1 : 0);
-    return result;
+    return Objects.hash(timeout, parallelism, migrate, overlap, token, ignoreFailures);
   }
 
   @Override
@@ -165,39 +185,31 @@ public class RolloutOptions {
 
   public static class Builder {
 
-    private long timeout;
-    private int parallelism;
-    private boolean migrate;
-    private boolean overlap;
+    private Long timeout;
+    private Integer parallelism;
+    private Boolean migrate;
+    private Boolean overlap;
     private String token;
-    private boolean ignoreFailures;
+    private Boolean ignoreFailures;
 
-    public Builder() {
-      this.timeout = DEFAULT_TIMEOUT;
-      this.parallelism = DEFAULT_PARALLELISM;
-      this.migrate = false;
-      this.overlap = false;
-      this.token = EMPTY_TOKEN;
-      this.ignoreFailures = false;
-    }
+    public Builder() { }
 
-
-    public Builder setTimeout(final long timeout) {
+    public Builder setTimeout(final Long timeout) {
       this.timeout = timeout;
       return this;
     }
 
-    public Builder setParallelism(final int parallelism) {
+    public Builder setParallelism(final Integer parallelism) {
       this.parallelism = parallelism;
       return this;
     }
 
-    public Builder setMigrate(final boolean migrate) {
+    public Builder setMigrate(final Boolean migrate) {
       this.migrate = migrate;
       return this;
     }
 
-    public Builder setOverlap(final boolean overlap) {
+    public Builder setOverlap(final Boolean overlap) {
       this.overlap = overlap;
       return this;
     }
@@ -207,7 +219,7 @@ public class RolloutOptions {
       return this;
     }
 
-    public Builder setIgnoreFailures(final boolean ignoreFailures) {
+    public Builder setIgnoreFailures(final Boolean ignoreFailures) {
       this.ignoreFailures = ignoreFailures;
       return this;
     }

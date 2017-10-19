@@ -88,7 +88,7 @@ public class ZooKeeperMasterModelIntegrationTest {
       .setName(DEPLOYMENT_GROUP_NAME)
       .setHostSelectors(ImmutableList.of(HostSelector.parse("role=foo")))
       .setJobId(JOB_ID)
-      .setRolloutOptions(RolloutOptions.newBuilder().build())
+      .setRolloutOptions(RolloutOptions.getDefault())
       .build();
 
   private ZooKeeperMasterModel model;
@@ -348,7 +348,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   public void testRollingUpdateSendsEvent() throws Exception {
     model.addDeploymentGroup(DEPLOYMENT_GROUP);
     model.addJob(JOB);
-    model.rollingUpdate(DEPLOYMENT_GROUP, JOB_ID, RolloutOptions.newBuilder().build());
+    model.rollingUpdate(DEPLOYMENT_GROUP, JOB_ID, RolloutOptions.getDefault());
     verify(eventSender, times(2)).send(eq(deploymentGroupEventTopic), any(byte[].class));
     verifyNoMoreInteractions(eventSender);
   }

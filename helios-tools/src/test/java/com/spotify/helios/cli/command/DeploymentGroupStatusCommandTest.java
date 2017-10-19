@@ -61,7 +61,7 @@ public class DeploymentGroupStatusCommandTest {
   private static final String GROUP_NAME = "foo-group";
   private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
       HostSelector.parse("a=b"), HostSelector.parse("foo=bar"));
-  private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder().build();
+  private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.getDefault();
   private static final DeploymentGroup DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
       .setName(GROUP_NAME)
       .setHostSelectors(HOST_SELECTORS)

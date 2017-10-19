@@ -21,6 +21,7 @@
 package com.spotify.helios.rollingupdate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -45,9 +46,10 @@ public class RollingUpdatePlanner implements RolloutPlanner {
     // generate the rollout tasks
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
     final int parallelism = deploymentGroup.getRolloutOptions() != null
+                            && deploymentGroup.getRolloutOptions().getParallelism() != null
                             ? deploymentGroup.getRolloutOptions().getParallelism() : 1;
     final boolean overlap = deploymentGroup.getRolloutOptions() != null
-                            && deploymentGroup.getRolloutOptions().getOverlap();
+                            && TRUE.equals(deploymentGroup.getRolloutOptions().getOverlap());
 
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
       rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition) : rolloutTasks(partition));
