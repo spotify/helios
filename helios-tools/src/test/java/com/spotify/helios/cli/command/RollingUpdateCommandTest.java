@@ -37,6 +37,7 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -65,6 +66,12 @@ public class RollingUpdateCommandTest {
   private static final int PARALLELISM = 1;
   private static final long TIMEOUT = 300;
   private static final String TOKEN = "my_token";
+
+  private static final Job JOB = Job.newBuilder()
+      .setName(JOB_ID.getName())
+      .setVersion(JOB_ID.getVersion())
+      .setHash(JOB_ID.getHash())
+      .build();
 
   private static final RolloutOptions OPTIONS = RolloutOptions.newBuilder()
       .setTimeout(TIMEOUT)
@@ -148,7 +155,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host3", JOB_ID, TaskStatus.State.RUNNING))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, false, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -175,7 +182,7 @@ public class RollingUpdateCommandTest {
 
     when(options.getBoolean("async")).thenReturn(true);
 
-    final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, false, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -208,7 +215,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, false, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -240,7 +247,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host2", null, null))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, false, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -271,7 +278,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host2", null, null))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, false, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -303,7 +310,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host3", JOB_ID, TaskStatus.State.RUNNING))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, true, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -327,7 +334,7 @@ public class RollingUpdateCommandTest {
 
     when(options.getBoolean("async")).thenReturn(true);
 
-    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, true, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -360,7 +367,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, true, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -392,7 +399,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host2", null, null))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, true, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -423,7 +430,7 @@ public class RollingUpdateCommandTest {
             makeHostStatus("host2", null, null))
     ));
 
-    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, true, JOB, null);
     final String output = baos.toString();
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
@@ -453,7 +460,7 @@ public class RollingUpdateCommandTest {
     ));
     when(options.getBoolean("migrate")).thenReturn(true);
 
-    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, true, JOB, null);
     final String output = baos.toString();
 
     // Verify that rollingUpdate() was called with migrate=true
@@ -490,7 +497,7 @@ public class RollingUpdateCommandTest {
     ));
     when(options.getBoolean("overlap")).thenReturn(true);
 
-    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final int ret = command.runWithJob(options, client, out, true, JOB, null);
     final String output = baos.toString();
 
     // Verify that rollingUpdate() was called with migrate=true

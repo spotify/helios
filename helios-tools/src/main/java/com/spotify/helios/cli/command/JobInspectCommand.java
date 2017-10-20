@@ -138,18 +138,10 @@ public class JobInspectCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client,
-                             final PrintStream out, final boolean json, final JobId jobId,
-                             final BufferedReader stdin)
+  protected int runWithJob(final Namespace options, final HeliosClient client,
+                           final PrintStream out, final boolean json, final Job job,
+                           final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
-
-    final Map<JobId, Job> jobs = client.jobs(jobId.toString()).get();
-    if (jobs.size() == 0) {
-      out.printf("Unknown job: %s%n", jobId);
-      return 1;
-    }
-
-    final Job job = Iterables.getOnlyElement(jobs.values());
 
     if (json) {
       out.println(Json.asPrettyStringUnchecked(job));

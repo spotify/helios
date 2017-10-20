@@ -22,6 +22,7 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import java.io.BufferedReader;
@@ -54,11 +55,12 @@ public class JobRemoveCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client,
-                             final PrintStream out, final boolean json, final JobId jobId,
-                             final BufferedReader stdin)
+  protected int runWithJob(final Namespace options, final HeliosClient client,
+                           final PrintStream out, final boolean json, final Job job,
+                           final BufferedReader stdin)
       throws IOException, ExecutionException, InterruptedException {
     final boolean yes = options.getBoolean(yesArg.getDest());
+    final JobId jobId = job.getId();
 
     if (!yes) {
       out.printf("This will remove the job %s%n", jobId);
