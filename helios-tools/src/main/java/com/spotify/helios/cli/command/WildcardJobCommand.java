@@ -81,13 +81,13 @@ abstract class WildcardJobCommand extends ControlCommand {
       return 1;
     }
 
-    final JobId jobId = Iterables.getOnlyElement(jobs.keySet());
+    final Job job = Iterables.getOnlyElement(jobs.values());
 
-    return runWithJobId(options, client, out, json, jobId, stdin);
+    return runWithJob(options, client, out, json, job, stdin);
   }
 
-  protected abstract int runWithJobId(final Namespace options, final HeliosClient client,
-                                      final PrintStream out, final boolean json, final JobId jobId,
-                                      final BufferedReader stdin)
+  protected abstract int runWithJob(final Namespace options, final HeliosClient client,
+                                    final PrintStream out, final boolean json, final Job job,
+                                    final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException;
 }
