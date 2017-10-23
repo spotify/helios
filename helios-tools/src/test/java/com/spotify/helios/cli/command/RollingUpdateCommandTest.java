@@ -22,6 +22,8 @@ package com.spotify.helios.cli.command;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -160,19 +162,6 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(0, ret);
-
-    final String expected =
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
-        + "\n"
-        + "host1 -> RUNNING (1/3)\n"
-        + "host2 -> RUNNING (2/3)\n"
-        + "host3 -> RUNNING (3/3)\n"
-        + "\n"
-        + "Done.\n"
-        + "Duration: 4.00 s\n";
-
-    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
 
   @Test
@@ -220,17 +209,6 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
-
-    final String expected =
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
-        + "\n"
-        + "host1 -> RUNNING (1/3)\n"
-        + "\n"
-        + "Failed: Deployment-group job id changed during rolling-update\n"
-        + "Duration: 2.00 s\n";
-
-    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
 
   @Test
@@ -252,16 +230,6 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
-
-    final String expected =
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
-        + "\n"
-        + "\n"
-        + "Timed out! (rolling-update still in progress)\n"
-        + "Duration: 601.00 s\n";
-
-    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
 
   @Test
@@ -283,17 +251,6 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, OPTIONS);
     assertEquals(1, ret);
-
-    final String expected =
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n"
-        + "\n"
-        + "host1 -> RUNNING (1/2)\n"
-        + "\n"
-        + "Failed: foobar\n"
-        + "Duration: 1.00 s\n";
-
-    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
 
   // ----------------------------
@@ -522,6 +479,110 @@ public class RollingUpdateCommandTest {
         .put("ignoreFailures", false)
         .build()
     );
+  }
+
+  @Test
+  public void testCommandLineOptions() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
+            makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING))
+    ));
+
+    String optionString = "(parallelism=1, timeout=300, overlap=false, token=my_token, "
+                          + "ignoreFailures=false)";
+
+    command.runWithJobId(options, client, out, false, JOB, null);
+
+    assertThat(baos.toString(), containsString(optionString));
+  }
+
+  @Test
+  public void testFallbackToJobOptions() throws Exception {
+    final Namespace cmdlineOptions = mock(Namespace.class);
+    when(cmdlineOptions.getString("deployment-group-name")).thenReturn(null);
+    when(cmdlineOptions.getInt("parallelism")).thenReturn(null);
+    when(cmdlineOptions.getLong("timeout")).thenReturn(null);
+    when(cmdlineOptions.getLong("rollout_timeout")).thenReturn(10L);
+    when(cmdlineOptions.getBoolean("async")).thenReturn(true);
+    when(cmdlineOptions.getBoolean("migrate")).thenReturn(null);
+    when(cmdlineOptions.getBoolean("overlap")).thenReturn(null);
+    when(cmdlineOptions.getString("token")).thenReturn(null);
+    when(cmdlineOptions.getBoolean("ignore_failures")).thenReturn(null);
+
+    RolloutOptions jobOptions = RolloutOptions.newBuilder()
+      .setParallelism(123)
+      .setTimeout(456L)
+      .setMigrate(true)
+      .setOverlap(true)
+      .setToken("789")
+      .setIgnoreFailures(true)
+      .build();
+
+    final Job job = Job.newBuilder()
+      .setName(JOB_ID.getName())
+      .setVersion(JOB_ID.getVersion())
+      .setHash(JOB_ID.getHash())
+      .setRolloutOptions(jobOptions)
+      .build();
+
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
+            makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING))
+    ));
+
+    String optionString = "(parallelism=123, timeout=456, overlap=true, token=789, "
+                          + "ignoreFailures=true)";
+
+    command.runWithJobId(cmdlineOptions, client, out, false, job, null);
+
+    assertThat(baos.toString(), containsString(optionString));
+  }
+
+  @Test
+  public void testRollingUpdateSuccessOutput() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
+            makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING))
+    ));
+
+    when(options.getBoolean("overlap")).thenReturn(true);
+
+    final String expectedSubstring = "host1 -> RUNNING (1/1)\n"
+        + "\n"
+        + "Done.\n"
+        + "Duration: 0.00 s\n";
+
+    command.runWithJobId(options, client, out, false, JOB, null);
+
+    assertThat(baos.toString(), containsString(expectedSubstring));
+  }
+
+  @Test
+  public void testRollingUpdateFailureOutput() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.FAILED, "mock failure",
+            makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING))
+    ));
+
+    when(options.getBoolean("overlap")).thenReturn(true);
+
+    final String expectedSubstring = "Failed: mock failure\n";
+
+    command.runWithJobId(options, client, out, false, JOB, null);
+
+    assertThat(baos.toString(), containsString(expectedSubstring));
   }
 
   private static class TimeUtil implements RollingUpdateCommand.SleepFunction, Supplier<Long> {
