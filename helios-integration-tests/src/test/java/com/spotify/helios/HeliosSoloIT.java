@@ -28,6 +28,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.base.Charsets;
 import com.google.common.net.HostAndPort;
 import com.spotify.helios.testing.HeliosDeploymentResource;
 import com.spotify.helios.testing.HeliosSoloDeployment;
@@ -121,7 +122,7 @@ public class HeliosSoloIT {
     // we know that helios properly registered the nginx service in SkyDNS.
     final Callable<String> socketResponse = () -> {
       try (final Socket s = new Socket(alpineAddress.getHostText(), alpineAddress.getPort())) {
-        return IOUtils.toString(s.getInputStream()).trim();
+        return IOUtils.toString(s.getInputStream(), Charsets.UTF_8).trim();
       }
     };
     // allow a few retries for a delay in the apk install of bind-tools
