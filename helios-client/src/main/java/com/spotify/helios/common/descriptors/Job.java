@@ -23,7 +23,6 @@ package com.spotify.helios.common.descriptors;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -912,7 +911,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       try {
         configHash = hex(Json.sha1digest(pm.withoutMetaParameters()));
       } catch (IOException e) {
-        throw propagate(e);
+        throw new RuntimeException(e);
       }
 
       final String hash;

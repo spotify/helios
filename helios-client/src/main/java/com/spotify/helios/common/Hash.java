@@ -20,8 +20,6 @@
 
 package com.spotify.helios.common;
 
-import static com.google.common.base.Throwables.propagate;
-
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -35,7 +33,7 @@ public class Hash {
     try {
       return MessageDigest.getInstance("SHA-1");
     } catch (NoSuchAlgorithmException e) {
-      throw propagate(e);
+      throw new RuntimeException(e);
     }
   }
 }

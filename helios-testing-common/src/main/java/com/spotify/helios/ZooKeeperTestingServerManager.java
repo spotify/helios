@@ -112,7 +112,7 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
     try {
       server.close();
     } catch (IOException e) {
-      Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
 
     stop();

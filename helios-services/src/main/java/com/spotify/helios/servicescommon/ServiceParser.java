@@ -22,7 +22,6 @@ package com.spotify.helios.servicescommon;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
@@ -316,7 +315,7 @@ public class ServiceParser {
       final Process process = Runtime.getRuntime().exec(command);
       return CharStreams.toString(new InputStreamReader(process.getInputStream(), UTF_8));
     } catch (IOException e) {
-      throw propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

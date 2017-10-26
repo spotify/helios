@@ -21,7 +21,6 @@
 package com.spotify.helios.agent;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Throwables.propagate;
 import static java.util.Objects.requireNonNull;
 
 import com.google.common.io.CharStreams;
@@ -134,7 +133,7 @@ public class HostInfoReporter extends SignalAwaitingService {
       final Process process = Runtime.getRuntime().exec(command);
       return CharStreams.toString(new InputStreamReader(process.getInputStream(), UTF_8));
     } catch (IOException e) {
-      throw propagate(e);
+      throw new RuntimeException(e);
     }
   }
 }
