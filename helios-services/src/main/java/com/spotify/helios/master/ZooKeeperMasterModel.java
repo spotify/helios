@@ -957,18 +957,27 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private boolean isRolloutTimedOut(final ZooKeeperClient client,
                                     final DeploymentGroup deploymentGroup) {
+    final String groupName = deploymentGroup.getName();
+    final long groupTimeoutSetting = deploymentGroup.getRolloutOptions().getTimeout();
+    final long secondsSinceDeploy;
     try {
-      final String statusPath = Paths.statusDeploymentGroupTasks(deploymentGroup.getName());
-      final long secondsSinceDeploy = MILLISECONDS.toSeconds(
+      final String statusPath = Paths.statusDeploymentGroupTasks(groupName);
+      secondsSinceDeploy = MILLISECONDS.toSeconds(
           System.currentTimeMillis() - client.getNode(statusPath).getStat().getMtime());
-      return secondsSinceDeploy > deploymentGroup.getRolloutOptions().getTimeout();
     } catch (KeeperException e) {
       // statusPath doesn't exist or some other ZK issue. probably this deployment group
       // was removed.
-      log.warn("error determining deployment group modification time: {} - {}",
-          deploymentGroup.getName(), e);
+      log.warn("error determining deployment group modification time: {}", groupName, e);
       return false;
     }
+
+    if (secondsSinceDeploy > groupTimeoutSetting) {
+      log.info("rolling-update on deployment-group name={} has timed out after "
+               + "{} seconds (rolloutOptions.timeout={})",
+          secondsSinceDeploy, groupTimeoutSetting);
+      return true;
+    }
+    return false;
   }
 
   private RollingUpdateOp rollingUpdateDeploy(final ZooKeeperClient client,
