@@ -26,7 +26,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -46,6 +45,7 @@ import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import java.security.SecureRandom;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -326,13 +326,13 @@ public class TaskConfig {
    *
    * @return A set of container volumes.
    */
-  private Set<String> volumes() {
-    final ImmutableSet.Builder<String> volumes = ImmutableSet.builder();
+  private Map<String, Map> volumes() {
+    final ImmutableMap.Builder<String, Map> volumes = ImmutableMap.builder();
     for (final Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
       final String path = entry.getKey();
       final String source = entry.getValue();
       if (Strings.isNullOrEmpty(source)) {
-        volumes.add(path);
+        volumes.put(path, new HashMap());
       }
     }
     return volumes.build();
