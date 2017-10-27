@@ -1036,7 +1036,7 @@ public abstract class SystemTestBase {
         try {
           dockerClient.killContainer(containerId);
         } catch (DockerRequestException e) {
-          if (e.message().contains("is not running")) {
+          if (e.getResponseBody().contains("is not running")) {
             // Container already isn't running. So we continue.
           } else {
             throw e;
@@ -1051,7 +1051,7 @@ public abstract class SystemTestBase {
           return true;
         } catch (DockerException e) {
           if ((e instanceof DockerRequestException)
-              && ((DockerRequestException) e).message().contains(
+              && ((DockerRequestException) e).getResponseBody().contains(
               "Driver btrfs failed to remove root filesystem")) {
             // Workaround btrfs issue where removing containers throws an exception,
             // but succeeds anyway.
