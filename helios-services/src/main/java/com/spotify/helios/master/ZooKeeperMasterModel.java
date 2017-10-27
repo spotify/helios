@@ -1652,7 +1652,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       updateDeployment(host, deployment, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
-      Throwables.propagate(e);
+      throw new RuntimeException(e);
     }
   }
 

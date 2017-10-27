@@ -21,7 +21,6 @@
 package com.spotify.helios;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Throwables.propagate;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -186,7 +185,7 @@ public class TemporaryPorts extends ExternalResource {
         p = Runtime.getRuntime().exec("lsof -i:" + port);
         p.waitFor();
       } catch (IOException | InterruptedException e) {
-        throw propagate(e);
+        throw new RuntimeException(e);
       }
       if (p.exitValue() == 1) {
         return true;

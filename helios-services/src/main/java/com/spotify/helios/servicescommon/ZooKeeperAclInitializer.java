@@ -20,8 +20,7 @@
 
 package com.spotify.helios.servicescommon;
 
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
@@ -100,8 +99,8 @@ public class ZooKeeperAclInitializer {
         initializeAclRecursive(client, path.replaceAll("/$", "") + "/" + child, aclProvider);
       }
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 }

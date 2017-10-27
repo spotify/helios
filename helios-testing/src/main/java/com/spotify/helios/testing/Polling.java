@@ -20,8 +20,7 @@
 
 package com.spotify.helios.testing;
 
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static java.lang.System.nanoTime;
 
 import java.util.concurrent.Callable;
@@ -49,8 +48,8 @@ class Polling {
     try {
       return await(timeout, timeUnit, message, callable);
     } catch (Throwable e) {
-      propagateIfInstanceOf(e, TimeoutException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, TimeoutException.class);
+      throw new RuntimeException(e);
     }
   }
 }

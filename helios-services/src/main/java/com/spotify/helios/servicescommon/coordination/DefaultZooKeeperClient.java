@@ -21,8 +21,7 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Throwables.propagate;
-import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.base.Throwables.throwIfInstanceOf;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.newLinkedList;
 import static com.google.common.collect.Lists.reverse;
@@ -149,8 +148,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       return client.getData().forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -162,8 +161,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       final byte[] bytes = client.getData().storingStatIn(stat).forPath(path);
       return new Node(path, bytes, stat);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -207,7 +206,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       field.setAccessible(true);
       field.set(node, client.create());
     } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw propagate(e);
+      throw new RuntimeException(e);
     }
 
     return node;
@@ -224,8 +223,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       return client.getZookeeperClient().getZooKeeper().getState();
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -235,8 +234,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       return client.getChildren().forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -254,8 +253,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       }
       t.commit();
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -288,8 +287,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       client.delete().forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -302,8 +301,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       client.getZookeeperClient().getZooKeeper().delete(namespacedPath, version);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -313,8 +312,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       client.create().forPath(path, data);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -324,8 +323,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       client.create().forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -335,8 +334,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       client.create().withMode(mode).forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -346,8 +345,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       client.setData().forPath(path, data);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -357,8 +356,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       return client.checkExists().forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -386,7 +385,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       try {
         operation.register(transaction);
       } catch (final Exception e) {
-        throw propagate(e);
+        throw new RuntimeException(e);
       }
     }
 
@@ -394,8 +393,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       return transaction.commit();
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -411,8 +410,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       client.setACL().withACL(aclList).forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
@@ -422,8 +421,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       return client.getACL().forPath(path);
     } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+      throwIfInstanceOf(e, KeeperException.class);
+      throw new RuntimeException(e);
     }
   }
 
