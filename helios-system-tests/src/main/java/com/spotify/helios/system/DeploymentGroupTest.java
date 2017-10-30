@@ -23,6 +23,7 @@ package com.spotify.helios.system;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.getLast;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -50,6 +51,7 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
@@ -130,7 +132,23 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     // create a deployment group and job
     cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
-    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    final Job job1 = Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(BUSYBOX)
+        .setHostname(null)
+        .setCommand(IDLE_COMMAND)
+        .setEnv(emptyMap())
+        .setPorts(emptyMap())
+        .setRegistration(emptyMap())
+        .setGracePeriod(null)
+        .setVolumes(emptyMap())
+        .setExpires(null)
+        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .build();
+
+    final JobId jobId = createJob(job1);
 
     // TODO: fix this!
     // Wait to make sure the host-update has run
@@ -152,7 +170,22 @@ public class DeploymentGroupTest extends SystemTestBase {
     // create a second job
     final String secondJobVersion = testJobVersion + "2";
     final String secondJobNameAndVersion = testJobNameAndVersion + "2";
-    final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    final Job job2 = Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(secondJobVersion)
+        .setImage(BUSYBOX)
+        .setHostname(null)
+        .setCommand(IDLE_COMMAND)
+        .setEnv(emptyMap())
+        .setPorts(emptyMap())
+        .setRegistration(emptyMap())
+        .setGracePeriod(null)
+        .setVolumes(emptyMap())
+        .setExpires(null)
+        .setRolloutOptions(RolloutOptions.newBuilder().build())
+        .build();
+    final JobId secondJobId = createJob(job2);
 
     // trigger a rolling update to replace the first job with the second job
     final String output = cli("rolling-update", secondJobNameAndVersion, TEST_GROUP);

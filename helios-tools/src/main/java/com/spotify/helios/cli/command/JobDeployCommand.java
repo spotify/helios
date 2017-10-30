@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import java.io.BufferedReader;
@@ -74,16 +75,17 @@ public class JobDeployCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client,
-                             final PrintStream out, final boolean json, final JobId jobId,
-                             final BufferedReader stdin)
+  protected int runWithJob(final Namespace options, final HeliosClient client,
+                           final PrintStream out, final boolean json, final Job job,
+                           final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
+    final JobId jobId = job.getId();
     final List<String> hosts = options.getList(hostsArg.getDest());
-    final Deployment job = Deployment.of(jobId,
+    final Deployment deployment = Deployment.of(jobId,
         options.getBoolean(noStartArg.getDest()) ? STOP : START);
 
     if (!json) {
-      out.printf("Deploying %s on %s%n", job, hosts);
+      out.printf("Deploying %s on %s%n", deployment, hosts);
     }
 
     int code = 0;
@@ -98,7 +100,7 @@ public class JobDeployCommand extends WildcardJobCommand {
         out.printf("%s: ", host);
       }
       final String token = options.getString(tokenArg.getDest());
-      final JobDeployResponse result = client.deploy(job, host, token).get();
+      final JobDeployResponse result = client.deploy(deployment, host, token).get();
       if (result.getStatus() == JobDeployResponse.Status.OK) {
         if (!json) {
           out.printf("done%n");
