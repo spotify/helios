@@ -147,14 +147,6 @@ example that uses all the available configuration keys with an explanation of ea
   },
   "expires" : "2014-06-01T12:00:00Z",
   "gracePeriod": 60,
-  "rolloutOptions": {
-    "migrate": false,
-    "parallelism": 2,
-    "timeout": 1000,
-    "overlap": true,
-    "token": "insecure-access-token",
-    "ignoreFailures": false
-  },
   "healthCheck" : {
     "type" : "http",
     "path" : "/healthcheck",
@@ -193,6 +185,14 @@ example that uses all the available configuration keys with an explanation of ea
     "memorySwap" : 10485760,
     "cpuset" : "0",
     "cpuShares" : 512
+  },
+  "rolloutOptions": {
+    "migrate": false,
+    "parallelism": 2,
+    "timeout": 1000,
+    "overlap": true,
+    "token": "insecure-access-token",
+    "ignoreFailures": false
   },
   "secondsToWaitBeforeKill": 120,
   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
@@ -233,13 +233,6 @@ Optional, if not specified the job does not expire.
 If is specified, Helios will unregister from service discovery and wait the
 specified number of seconds before undeploying. Optional, defaults to `0` for
 no grace period.
-
-#### rolloutOptions
-When helios master runs a `rolling-update`, the RolloutOptions will be constructed from the
-request parameters and job configuration with the following precedence:
-* Parameters included in the API request (eg, flags passed on the command line)
-* Parameters defined in the job configuration (of the job being rolled out)
-* The default value for the parameter as defined in the RolloutOptions class
 
 #### healthCheck
 A health check Helios will execute on the container. See the health checks
@@ -331,6 +324,45 @@ Sets the runtime constraints for a container. Available keys are "memory" (,
 These settings correspond to the ones in the [Docker docs][2].
 
 What is allowed here will vary based upon the discovery service plugin used.
+
+#### rolloutOptions
+When you run `helios rolling-update`, the rolling-update options will be constructed from the
+values you provide on the CLI and the job configuration (see above JSON for an example of a full job
+ config) with the following precedence:
+
+* Parameters included in the API request (eg, flags passed on the command line)
+* Parameters defined in the job configuration (of the job being rolled out)
+* The default value for the parameter as defined in the RolloutOptions class
+
+Example:
+
+`helios rolling-update --overlap --parallelism=3`
+
+with a job config containing
+
+```
+"rolloutOptions": {
+  "parallelism": 2,
+  "overlap": false,
+  "ignoreFailures": false
+}
+```
+
+Will ultimately have these options at `rolling-update` time.
+
+```
+"rolloutOptions": {
+  "migrate": false,
+  "parallelism": 3,
+  "timeout": 300,
+  "overlap": true,
+  "token": "",
+  "ignoreFailures": false
+}
+```
+
+Since timeout, migrate, and token weren't specified either via CLI or job config, they get their
+values from the defaults in `[RolloutOptions][rollout-options-code]`.
 
 #### secondsToWaitBeforeKill
 Optional. When a job is being stopped or undeployed, the helios-agent will ask
@@ -561,3 +593,4 @@ depending on what port was allocated when it was deployed.
 
   [1]: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
   [2]: https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
+  [rollout-options-code]: https://github.com/spotify/helios/blob/master/helios-client/src/main/java/com/spotify/helios/common/descriptors/RolloutOptions.java
