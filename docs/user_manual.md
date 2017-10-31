@@ -353,9 +353,9 @@ Will ultimately have these options at `rolling-update` time.
 ```
 "rolloutOptions": {
   "migrate": false,
-  "parallelism": 3,
+  "parallelism": 2,
   "timeout": 300,
-  "overlap": true,
+  "overlap": false,
   "token": "",
   "ignoreFailures": false
 }
