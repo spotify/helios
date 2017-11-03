@@ -63,14 +63,6 @@ import org.jetbrains.annotations.Nullable;
  *   },
  *   "expires" : null,
  *   "gracePeriod": 60,
- *   "rolloutOptions": {
- *     "migrate": false,
- *     "parallelism": 2,
- *     "timeout": 1000,
- *     "overlap": true,
- *     "token": "insecure-access-token",
- *     "ignoreFailures": false
- *   },
  *   "healthCheck" : {
  *     "type" : "http",
  *     "path" : "/healthcheck",
@@ -98,6 +90,9 @@ import org.jetbrains.annotations.Nullable;
  *       "protocol" : "tcp"
  *     }
  *   },
+ *   "ramdisks": {
+ *     "/mount/point/in/container": "mount-options"
+ *   },
  *   "registration" : {
  *     "service/http" : {
  *       "ports" : {
@@ -111,14 +106,19 @@ import org.jetbrains.annotations.Nullable;
  *     "memorySwap" : 10485760,
  *     "cpuset" : "0",
  *     "cpuShares" : 512
- *   }
+ *   },
+ *   "rolloutOptions": {
+ *     "migrate": false,
+ *     "parallelism": 2,
+ *     "timeout": 1000,
+ *     "overlap": true,
+ *     "token": "insecure-access-token",
+ *     "ignoreFailures": false
+ *   },
  *   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
  *   "token": "insecure-access-token",
  *   "volumes" : {
  *     "/destination/path/in/container.yaml:ro" : "/source/path/in/host.yaml"
- *   },
- *   "ramdisks": {
- *     "/mount/point/in/container": "mount-options"
  *   }
  * }
  * </pre>

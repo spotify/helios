@@ -172,6 +172,9 @@ example that uses all the available configuration keys with an explanation of ea
       "protocol" : "tcp"
     }
   },
+  "ramdisks": {
+    "/mount/point/in/container": "mount-options"
+  },
   "registration" : {
     "fooservice/http" : {
       "ports" : {
@@ -294,6 +297,28 @@ example `{"quic": {"internalPort": 80, "protocol": "udp"}}` or
 The name of the endpoint specified in the port mapping will be used if
 specifying service registration using the `registration` below.
 
+#### ramdisks
+Memory-backed (tmpfs) mounts that are created and mounted when the container is run. Optional.
+
+Format:
+```
+"ramdisks": {
+  "<mount-point>": "<mount-options>",
+  ...
+}
+```
+
+The mount point is the path where the ramdisk will be mounted in the container.
+The mount point must be an absolute path.
+
+Example:
+```
+"ramdisks": {
+  "/tmp": "rw,size=32m",
+  "/run": "rw,noexec,nosuid,size=65535k"
+}
+```
+
 #### registration
 Service discovery registration. Optional, by default no ports/services are
 registered. 
@@ -401,28 +426,6 @@ The container path can be suffixed with "rw" or "ro" to create a read-write or
 read-only volume, respectively.
 
 Format: `[container-path]:[rw|ro]:[host-path]`.
-
-### ramdisks
-Memory-backed (tmpfs) mounts. Optional.
-
-Format:
-```
-"ramdisks": {
-  "<mount-point>": "<mount-options>",
-  ...
-}
-```
-
-The mount point is the path where the ramdisk will be mounted in the container.
-The mount point must be an absolute path.
-
-Example:
-```
-"ramdisks": {
-  "/tmp": "rw,size=32m",
-  "/run": "rw,noexec,nosuid,size=65535k"
-}
-```
 
 ### Health Checks
 
