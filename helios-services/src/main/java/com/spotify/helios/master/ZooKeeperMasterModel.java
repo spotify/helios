@@ -36,7 +36,6 @@ import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
-import static java.lang.Boolean.TRUE;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -959,10 +958,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private boolean isRolloutTimedOut(final ZooKeeperClient client,
                                     final DeploymentGroup deploymentGroup) {
     final String groupName = deploymentGroup.getName();
-    final long groupTimeoutSetting = deploymentGroup.getRolloutOptions() != null
-                                     && deploymentGroup.getRolloutOptions().getTimeout() != null
-                                     ? deploymentGroup.getRolloutOptions().getTimeout()
-                                     : RolloutOptions.getDefault().getTimeout();
+    final long groupTimeoutSetting = deploymentGroup.getRolloutOptions().getTimeout();
     final long secondsSinceDeploy;
     try {
       final String statusPath = Paths.statusDeploymentGroupTasks(groupName);
@@ -1135,8 +1131,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private boolean isMigration(final Deployment deployment, final DeploymentGroup deploymentGroup) {
-    return (deploymentGroup.getRolloutOptions() != null
-            && TRUE.equals(deploymentGroup.getRolloutOptions().getMigrate())
+    return (deploymentGroup.getRolloutOptions().getMigrate()
             && deployment.getJobId().equals(deploymentGroup.getJobId()));
   }
 
