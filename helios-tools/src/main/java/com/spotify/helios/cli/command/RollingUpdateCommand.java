@@ -21,6 +21,7 @@
 package com.spotify.helios.cli.command;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -30,7 +31,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -144,12 +144,10 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJob(final Namespace options, final HeliosClient client,
-                           final PrintStream out, final boolean json, final Job job,
-                           final BufferedReader stdin)
+  protected int runWithJobId(final Namespace options, final HeliosClient client,
+                             final PrintStream out, final boolean json, final JobId jobId,
+                             final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
-    final JobId jobId = job.getId();
-
     final String name = options.getString(nameArg.getDest());
     final Long timeout = options.getLong(timeoutArg.getDest());
     final Integer parallelism = options.getInt(parallelismArg.getDest());
@@ -186,15 +184,6 @@ public class RollingUpdateCommand extends WildcardJobCommand {
       return 1;
     }
 
-    final RolloutOptions optionsFromJob = job.getRolloutOptions();
-    final Integer actualParallelism =
-        nullableWithFallback(parallelism, optionsFromJob.getParallelism());
-    final Long actualTimeout = nullableWithFallback(timeout, optionsFromJob.getTimeout());
-    final Boolean actualOverlap = nullableWithFallback(overlap, optionsFromJob.getOverlap());
-    final String actualToken = nullableWithFallback(token, optionsFromJob.getToken());
-    final Boolean actualIgnoreFailures =
-        nullableWithFallback(ignoreFailures, optionsFromJob.getIgnoreFailures());
-
     if (!json) {
       out.println(format("Rolling update%s started: %s -> %s "
                          + "(parallelism=%d, timeout=%d, overlap=%b, token=%s, "
@@ -202,20 +191,20 @@ public class RollingUpdateCommand extends WildcardJobCommand {
           async ? " (async)" : "",
           name,
           jobId.toShortString(),
-          actualParallelism,
-          actualTimeout,
-          actualOverlap,
-          actualToken,
-          actualIgnoreFailures,
+          parallelism,
+          timeout,
+          overlap,
+          token,
+          ignoreFailures,
           async ? "" : "\n"));
     }
 
     final Map<String, Object> jsonOutput = Maps.newHashMap();
-    jsonOutput.put("parallelism", actualParallelism);
-    jsonOutput.put("timeout", actualTimeout);
-    jsonOutput.put("overlap", actualOverlap);
-    jsonOutput.put("token", actualToken);
-    jsonOutput.put("ignoreFailures", actualIgnoreFailures);
+    jsonOutput.put("parallelism", parallelism);
+    jsonOutput.put("timeout", timeout);
+    jsonOutput.put("overlap", overlap);
+    jsonOutput.put("token", token);
+    jsonOutput.put("ignoreFailures", ignoreFailures);
 
     if (async) {
       if (json) {
@@ -309,12 +298,5 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   interface SleepFunction {
     void sleep(long millis) throws InterruptedException;
   }
-
-  /**
-   * Return first argument if not null. Otherwise return second argument.
-   */
-  private <T> T nullableWithFallback(final T first, final T second) {
-    return first != null ? first : second;
-  }
-
 }
+

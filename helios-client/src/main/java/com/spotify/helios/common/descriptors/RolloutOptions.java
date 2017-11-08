@@ -101,9 +101,10 @@ public class RolloutOptions {
         .setIgnoreFailures(ignoreFailures);
   }
 
+
   /**
    * Return a new RolloutOptions instance by merging this instance with another one.
-   * @throws NullPointerException if any attribute in both instances are null.
+   * The other instance is assumed to have no null-valued fields.
    */
   public RolloutOptions withFallback(final RolloutOptions that) {
     return RolloutOptions.newBuilder()
