@@ -27,6 +27,7 @@ import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
+import static java.lang.Boolean.TRUE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -160,7 +161,7 @@ public class RollingUpdateOpFactory {
 
   private boolean isIgnoreFailures() {
     return deploymentGroup.getRolloutOptions() != null
-           && deploymentGroup.getRolloutOptions().getIgnoreFailures();
+           && TRUE.equals(deploymentGroup.getRolloutOptions().getIgnoreFailures());
   }
 
   public RollingUpdateOp error(final String msg, final String host,
