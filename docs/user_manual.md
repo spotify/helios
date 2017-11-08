@@ -362,7 +362,7 @@ Will ultimately have these options at `rolling-update` time.
 ```
 
 Since timeout, migrate, and token weren't specified either via CLI or job config, they get their
-values from the defaults in [`RolloutOptions`][rollout-options-code].
+values from the defaults in `[RolloutOptions][rollout-options-code]`.
 
 #### secondsToWaitBeforeKill
 Optional. When a job is being stopped or undeployed, the helios-agent will ask
