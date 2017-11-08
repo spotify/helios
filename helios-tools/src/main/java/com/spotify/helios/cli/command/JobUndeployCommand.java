@@ -25,7 +25,6 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 import com.google.common.collect.ImmutableList;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
@@ -69,11 +68,11 @@ public class JobUndeployCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJob(final Namespace options, final HeliosClient client,
-                           final PrintStream out, final boolean json, final Job job,
-                           final BufferedReader stdin)
+  protected int runWithJobId(final Namespace options, final HeliosClient client,
+                             final PrintStream out, final boolean json, final JobId jobId,
+                             final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
-    final JobId jobId = job.getId();
+
     final boolean all = options.getBoolean(allArg.getDest());
     final boolean yes = options.getBoolean(yesArg.getDest());
     final List<String> hosts;

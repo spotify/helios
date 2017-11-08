@@ -24,7 +24,6 @@ import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -56,11 +55,11 @@ public class JobStartCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJob(final Namespace options, final HeliosClient client,
-                           final PrintStream out, final boolean json, final Job job,
-                           final BufferedReader stdin)
+  protected int runWithJobId(final Namespace options, final HeliosClient client,
+                             final PrintStream out, final boolean json, final JobId jobId,
+                             final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
-    final JobId jobId = job.getId();
+
     final List<String> hosts = options.getList(hostsArg.getDest());
 
     final Deployment deployment = new Deployment.Builder()
