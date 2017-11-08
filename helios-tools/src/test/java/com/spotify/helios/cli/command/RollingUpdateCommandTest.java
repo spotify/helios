@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -536,6 +537,28 @@ public class RollingUpdateCommandTest {
     command.runWithJob(cmdlineOptions, client, out, false, JOB, null);
 
     assertThat(baos.toString(), containsString(optionString));
+  }
+
+  @Test
+  public void testJobWithNoOptions() throws Exception {
+    final JobId jobId = new JobId("bar", "2", "1212121212121212121");
+    final Job job = Job.newBuilder()
+        .setName(jobId.getName())
+        .setVersion(jobId.getVersion())
+        .setHash(jobId.getHash())
+        .build();
+
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, jobId, null,
+            makeHostStatus("host1", jobId, TaskStatus.State.RUNNING))
+    ));
+
+    final int ret = command.runWithJob(options, client, out, false, job, null);
+
+    assertThat(ret, equalTo(0));
   }
 
   @Test

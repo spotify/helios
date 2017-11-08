@@ -25,6 +25,7 @@ import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -186,7 +187,8 @@ public class RollingUpdateCommand extends WildcardJobCommand {
       return 1;
     }
 
-    final RolloutOptions optionsFromJob = job.getRolloutOptions();
+    final RolloutOptions optionsFromJob =
+        MoreObjects.firstNonNull(job.getRolloutOptions(), RolloutOptions.getDefault());
     final Integer actualParallelism =
         nullableWithFallback(parallelism, optionsFromJob.getParallelism());
     final Long actualTimeout = nullableWithFallback(timeout, optionsFromJob.getTimeout());
