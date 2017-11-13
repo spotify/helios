@@ -31,6 +31,8 @@ Creating a deployment group with the same name and labels as an existing one wil
 "not modified" response. Creating a deployment group with the same name but different labels as an
 existing one will return an error stating that the deployment group already exists.
 
+Use `helios hosts` to see what labels hosts have.
+
 ### Updating the definition
 
 To change the definition of a deployment group, such as adding/removing host
