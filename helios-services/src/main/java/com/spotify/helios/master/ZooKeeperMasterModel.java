@@ -959,10 +959,11 @@ public class ZooKeeperMasterModel implements MasterModel {
   private boolean isRolloutTimedOut(final ZooKeeperClient client,
                                     final DeploymentGroup deploymentGroup) {
     final String groupName = deploymentGroup.getName();
-    final long groupTimeoutSetting = deploymentGroup.getRolloutOptions() != null
-                                     && deploymentGroup.getRolloutOptions().getTimeout() != null
-                                     ? deploymentGroup.getRolloutOptions().getTimeout()
-                                     : RolloutOptions.getDefault().getTimeout();
+    final RolloutOptions defaultOptions = RolloutOptions.getDefault();
+    final long groupTimeoutSetting =
+        deploymentGroup.getRolloutOptions() == null
+        ? defaultOptions.getTimeout()
+        : deploymentGroup.getRolloutOptions().withFallback(defaultOptions).getTimeout();
     final long secondsSinceDeploy;
     try {
       final String statusPath = Paths.statusDeploymentGroupTasks(groupName);
