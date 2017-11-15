@@ -321,6 +321,16 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>com.github.jnr</groupId>
+                <artifactId>jnr-unixsocket</artifactId>
+                <version>0.18</version>
+            </dependency>
+            <dependency>
+                <groupId>com.spotify</groupId>
+                <artifactId>ssh-agent-proxy</artifactId>
+                <version>0.1.6</version>
+            </dependency>
+            <dependency>
                 <groupId>com.spotify</groupId>
                 <artifactId>ssh-agent-tls</artifactId>
                 <version>0.0.2</version>
