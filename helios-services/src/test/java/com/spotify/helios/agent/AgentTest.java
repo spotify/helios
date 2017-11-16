@@ -47,6 +47,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Service;
+import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -370,5 +372,21 @@ public class AgentTest {
     verify(fooSupervisor).close();
     verify(fooSupervisor).join();
     verify(fooSupervisor, never()).setGoal(STOP);
+  }
+
+  @Test
+  public void test() throws Exception {
+    final DockerClient client = DefaultDockerClient.fromEnv().build();
+    client.ping();
+    System.out.println(client.version());
+  }
+
+  @Test
+  public void test2() throws Exception {
+    final DockerClient client = DefaultDockerClient.builder()
+        .uri("unix:///var/run/docker.sock")
+        .build();
+    client.ping();
+    System.out.println(client.version());
   }
 }
