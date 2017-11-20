@@ -81,7 +81,7 @@ import net.sourceforge.argparse4j.inf.Subparsers;
 public class CliParser {
 
   private static final String NAME_AND_VERSION = "Spotify Helios CLI " + Version.POM_VERSION;
-  private static final String TESTED_DOCKER_VERSION = "1.12.1";
+  private static final String TESTED_DOCKER_VERSION = "17.05.0-ce";
   private static final String HELP_ISSUES =
       "Report improvements/bugs at https://github.com/spotify/helios/issues";
   private static final String HELP_WIKI =
