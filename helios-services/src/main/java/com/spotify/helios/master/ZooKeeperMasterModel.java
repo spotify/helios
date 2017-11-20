@@ -972,14 +972,14 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (KeeperException e) {
       // statusPath doesn't exist or some other ZK issue. probably this deployment group
       // was removed.
-      log.warn("error determining deployment group modification time: {}", groupName, e);
+      log.warn("error determining deployment group modification time: name={}", groupName, e);
       return false;
     }
 
     if (secondsSinceDeploy > groupTimeoutSetting) {
       log.info("rolling-update on deployment-group name={} has timed out after "
                + "{} seconds (rolloutOptions.timeout={})",
-          secondsSinceDeploy, groupTimeoutSetting);
+          groupName, secondsSinceDeploy, groupTimeoutSetting);
       return true;
     }
     return false;
