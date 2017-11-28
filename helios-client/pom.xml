@@ -74,7 +74,6 @@
         <dependency>
             <groupId>com.spotify</groupId>
             <artifactId>ssh-agent-proxy</artifactId>
-            <version>0.1.5</version>
         </dependency>
         <dependency>
             <groupId>com.spotify</groupId>
