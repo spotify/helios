@@ -206,7 +206,9 @@ example that uses all the available configuration keys with an explanation of ea
 }
 ```
 
-All fields are optional except for `id` and `image`.
+All fields are optional except for `id` and `image`. Generally, you won't specify
+the `id` and `image` of a job directly in a job config file. Instead, those will
+be passed in via the CLI.
 
 Note that the recommended best practice is to save all your job creation
 parameters in version-controlled files in your project directory. This allows
