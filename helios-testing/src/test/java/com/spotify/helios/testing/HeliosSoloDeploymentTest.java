@@ -20,6 +20,7 @@
 
 package com.spotify.helios.testing;
 
+import static com.spotify.helios.testing.HeliosSoloDeployment.findFirstInet4Addr;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -35,6 +36,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.docker.client.DockerClient;
@@ -64,6 +66,9 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 import java.io.File;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -407,5 +412,17 @@ public class HeliosSoloDeploymentTest {
 
     verify(dockerClient, timeout(5000)).logs(eq(CONTAINER_ID),
         Matchers.<DockerClient.LogsParam>anyVararg());
+  }
+
+  @Test
+  public void testFindFirstInet4Addr() throws HeliosDeploymentException {
+    List addrs = new ArrayList<InetAddress>();
+    addrs.add(InetAddresses.forString("fe80:0:0:0:0:0:0:1"));
+    addrs.add(InetAddresses.forString("0:0:0:0:0:0:0:1"));
+    addrs.add(InetAddresses.forString("127.0.0.1"));
+    addrs.add(InetAddresses.forString("10.12.34.56"));
+    addrs.add(InetAddresses.forString("10.98.76.54"));
+
+    assertEquals("10.12.34.56", findFirstInet4Addr(addrs));
   }
 }
