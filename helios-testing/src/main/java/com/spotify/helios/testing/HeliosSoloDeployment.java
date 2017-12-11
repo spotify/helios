@@ -60,10 +60,10 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -194,12 +194,17 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       if (isDockerForMac(dockerInfo)) {
         log.info("determineHeliosHost: local environment appears to be Docker for Mac");
         try {
-          List<InetAddress> addrs = new ArrayList<InetAddress>();
-          for (NetworkInterface nic : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-            addrs.addAll(Collections.list(nic.getInetAddresses()));
+          InetAddress localhost = InetAddress.getLocalHost();
+          if (localhost.isLoopbackAddress()) {
+            List<InetAddress> addrs = new ArrayList();
+            for (NetworkInterface nic : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+              addrs.addAll(Collections.list(nic.getInetAddresses()));
+            }
+            return findFirstInet4Addr(addrs);
+          } else {
+            return localhost.getHostAddress();
           }
-          return findFirstInet4Addr(addrs);
-        } catch (SocketException e) {
+        } catch (SocketException | UnknownHostException e) {
           throw new HeliosDeploymentException("Cannot resolve local hostname", e);
         }
       }
