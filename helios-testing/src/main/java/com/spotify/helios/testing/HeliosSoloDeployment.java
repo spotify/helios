@@ -56,9 +56,14 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 import java.io.File;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -158,6 +163,20 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
+   * Return first found non-loopback ip from enumeration of network devices.
+   * InetAddress.getLocalHost() will not work, as it returns the loopback device
+   */
+  public static String findFirstInet4Addr(Collection<InetAddress> addrs)
+      throws HeliosDeploymentException {
+    for (InetAddress addr : addrs) {
+      if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
+        return addr.getHostAddress();
+      }
+    }
+    throw new HeliosDeploymentException("Cannot resolve inet address");
+  }
+
+  /**
    * Determine what address to use when attempting to communicate with containers deployed via the
    * helios-solo container. This will be passed into the helios-solo container as the HOST_ADDRESS
    * environment variable and is later used by TemporaryJob to figure out how to reach ports mapped
@@ -173,10 +192,19 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     if (dockerHostAddressIsLocalhost()) {
       if (isDockerForMac(dockerInfo)) {
+        log.info("determineHeliosHost: local environment appears to be Docker for Mac");
         try {
-          log.info("determineHeliosHost: local environment appears to be Docker for Mac");
-          return InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException e) {
+          InetAddress localhost = InetAddress.getLocalHost();
+          if (localhost.isLoopbackAddress()) {
+            List<InetAddress> addrs = new ArrayList();
+            for (NetworkInterface nic : Collections.list(NetworkInterface.getNetworkInterfaces())) {
+              addrs.addAll(Collections.list(nic.getInetAddresses()));
+            }
+            return findFirstInet4Addr(addrs);
+          } else {
+            return localhost.getHostAddress();
+          }
+        } catch (SocketException | UnknownHostException e) {
           throw new HeliosDeploymentException("Cannot resolve local hostname", e);
         }
       }
