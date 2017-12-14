@@ -24,6 +24,7 @@ import static java.util.Collections.unmodifiableList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * A list of endpoints to for service registration.
@@ -42,6 +43,30 @@ public class ServiceRegistration {
 
   public static Builder newBuilder() {
     return new Builder();
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    final ServiceRegistration that = (ServiceRegistration) obj;
+    return Objects.equals(endpoints, that.endpoints);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(endpoints);
+  }
+
+  @Override
+  public String toString() {
+    return "ServiceRegistration{"
+           + "endpoints=" + endpoints
+           + '}';
   }
 
   public static class Builder {
@@ -159,6 +184,29 @@ public class ServiceRegistration {
              + ", healthCheck=" + healthCheck
              + '}';
     }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final Endpoint endpoint = (Endpoint) obj;
+      return port == endpoint.port
+             && Objects.equals(name, endpoint.name)
+             && Objects.equals(protocol, endpoint.protocol)
+             && Objects.equals(domain, endpoint.domain)
+             && Objects.equals(host, endpoint.host)
+             && Objects.equals(tags, endpoint.tags)
+             && Objects.equals(healthCheck, endpoint.healthCheck);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, protocol, port, domain, host, tags, healthCheck);
+    }
   }
 
   public static class EndpointHealthCheck {
@@ -195,6 +243,24 @@ public class ServiceRegistration {
              + "type='" + type + '\''
              + ", path='" + path + '\''
              + '}';
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      final EndpointHealthCheck that = (EndpointHealthCheck) obj;
+      return Objects.equals(type, that.type)
+             && Objects.equals(path, that.path);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(type, path);
     }
   }
 }
