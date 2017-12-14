@@ -91,6 +91,6 @@ class GoogleCredentialsAccessTokenProvider {
   static AccessToken getAccessToken() throws IOException {
     // Google Service Account Credentials require an access scope before calling `refresh()`;
     // see https://cloud.google.com/compute/docs/access/service-accounts#accesscopesiam.
-    return getAccessToken(singletonList("https://www.googleapis.com/auth/cloud-platform"));
+    return getAccessToken(singletonList("https://www.googleapis.com/auth/cloud-platform.read-only"));
   }
 }
