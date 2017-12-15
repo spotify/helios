@@ -139,8 +139,8 @@ example that uses all the available configuration keys with an explanation of ea
 
 ```json
 {
- "addCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
- "dropCapabilities" : [ "SYS_BOOT", "KILL" ],
+  "addCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
+  "dropCapabilities" : [ "SYS_BOOT", "KILL" ],
   "command" : [ "server", "serverconfig.yaml" ],
   "env" : {
     "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
