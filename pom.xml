@@ -139,7 +139,7 @@
             <dependency>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-client</artifactId>
-                <version>8.9.2</version>
+                <version>8.9.0</version>
                 <classifier>shaded</classifier>
             </dependency>
 
@@ -319,16 +319,6 @@
                         <artifactId>netty-codec-http2</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.github.jnr</groupId>
-                <artifactId>jnr-unixsocket</artifactId>
-                <version>0.18</version>
-            </dependency>
-            <dependency>
-                <groupId>com.spotify</groupId>
-                <artifactId>ssh-agent-proxy</artifactId>
-                <version>0.2.0</version>
             </dependency>
             <dependency>
                 <groupId>com.spotify</groupId>
