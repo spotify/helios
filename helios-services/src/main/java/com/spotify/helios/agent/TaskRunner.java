@@ -196,6 +196,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
             final String err = "container " + containerId + " exited during health checking. "
                                + "Exit code: " + state.exitCode() + ", Config: " + config;
             log.warn(err);
+            listener.exited(state.exitCode());
             throw new RuntimeException(err);
           }
 
