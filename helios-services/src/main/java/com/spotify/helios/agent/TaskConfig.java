@@ -309,6 +309,7 @@ public class TaskConfig {
       builder.memorySwap(resources.getMemorySwap());
       builder.cpusetCpus(resources.getCpuset());
       builder.cpuShares(resources.getCpuShares());
+      builder.shmSize(resources.getShmSize());
     }
 
     builder.capAdd(ImmutableList.copyOf(job.getAddCapabilities()));

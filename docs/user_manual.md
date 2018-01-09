@@ -187,7 +187,8 @@ example that uses all the available configuration keys with an explanation of ea
     "memory" : 10485760,
     "memorySwap" : 10485760,
     "cpuset" : "0",
-    "cpuShares" : 512
+    "cpuShares" : 512,
+    "shmSize" : 67108864
   },
   "rolloutOptions": {
     "migrate": false,
@@ -342,11 +343,12 @@ occurs. Optional.
 
 #### resources
 Sets the runtime constraints for a container. Available keys are "memory" (,
-"memorySwap", "cpuset", and "cpuShares".
+"memorySwap", "cpuset", "cpuShares" and "shmSize".
 * "memory": a positive integer limiting the number of bytes of memory
 * "memorySwap": a positive integer limiting the number of bytes of total memory (memory + swap)
 * "cpuset": CPUs in which to allow execution, e.g. 0-3
 * "cpuShares": CPU shares (relative weight, defaults to 1024)
+* "shmSize": Shared memory size in bytes. (defaults to 67108864 bytes)
 
 These settings correspond to the ones in the [Docker docs][2].
 
