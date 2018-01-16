@@ -230,7 +230,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   private boolean isDockerForMac(final Info dockerInfo) {
-    return "moby".equals(dockerInfo.name());
+    final String name = dockerInfo.name();
+    return !isNullOrEmpty(name) && ("moby".equals(name) || name.contains("linuxkit-"));
   }
 
   private List<String> buildContainerEnvironmentVariables(final Builder builder) {
