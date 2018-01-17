@@ -21,11 +21,10 @@
 
 package com.spotify.helios.client;
 
-import static java.util.Collections.singletonList;
-
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,6 +35,11 @@ import org.slf4j.LoggerFactory;
 class GoogleCredentialsAccessTokenProvider {
   private static final Logger log =
       LoggerFactory.getLogger(GoogleCredentialsAccessTokenProvider.class);
+
+  public static final List<String> DEFAULT_SCOPES = ImmutableList.of(
+      "https://www.googleapis.com/auth/cloud-platform.read-only",
+      "https://www.googleapis.com/auth/userinfo.email"
+  );
 
   /**
    * Attempt to load an Access Token using Google Credentials.
@@ -86,11 +90,5 @@ class GoogleCredentialsAccessTokenProvider {
     newCredentials.refresh();
 
     return newCredentials.getAccessToken();
-  }
-
-  static AccessToken getAccessToken() throws IOException {
-    // Google Service Account Credentials require an access scope before calling `refresh()`;
-    // see https://cloud.google.com/compute/docs/access/service-accounts#accesscopesiam.
-    return getAccessToken(singletonList("https://www.googleapis.com/auth/cloud-platform.read-only"));
   }
 }

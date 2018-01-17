@@ -609,6 +609,8 @@ public class HeliosClient implements Closeable {
     private boolean sslHostnameVerification = true;
     private boolean googleCredentialsEnabled = true;
     private AccessToken googleAccessToken;
+    private List<String> googleAccessTokenScopes =
+        GoogleCredentialsAccessTokenProvider.DEFAULT_SCOPES;
     private ListeningScheduledExecutorService executorService;
     private boolean shutDownExecutorOnClose = true;
     private int httpTimeout = 10000;
@@ -667,6 +669,11 @@ public class HeliosClient implements Closeable {
 
     public Builder setGoogleAccessToken(final AccessToken accessToken) {
       this.googleAccessToken = accessToken;
+      return this;
+    }
+
+    public Builder setGoogleAccessTokenScopes(final List<String> scopes) {
+      this.googleAccessTokenScopes = scopes;
       return this;
     }
 
@@ -753,7 +760,8 @@ public class HeliosClient implements Closeable {
           accessTokenOpt = Optional.of(googleAccessToken);
         } else {
           try {
-            accessTokenOpt = Optional.of(GoogleCredentialsAccessTokenProvider.getAccessToken());
+            accessTokenOpt = Optional.of(
+                GoogleCredentialsAccessTokenProvider.getAccessToken(googleAccessTokenScopes));
           } catch (IOException | RuntimeException e) {
             // As with AgentProxy below, defer actually enforcing authorization to the masters
             log.debug("Exception (possibly benign) while loading Google Credentials", e);
