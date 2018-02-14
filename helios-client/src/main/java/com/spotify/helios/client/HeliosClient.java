@@ -754,18 +754,25 @@ public class HeliosClient implements Closeable {
       final DefaultHttpConnector connector =
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
-      Optional<AccessToken> accessTokenOpt = Optional.absent();
+      Supplier<Optional<AccessToken>> accessTokenSupplier =
+          Suppliers.ofInstance(Optional.<AccessToken>absent());
       if (googleCredentialsEnabled) {
         if (googleAccessToken != null) {
-          accessTokenOpt = Optional.of(googleAccessToken);
+          accessTokenSupplier = Suppliers.ofInstance(Optional.of(googleAccessToken));
         } else {
-          try {
-            accessTokenOpt = Optional.of(
-                GoogleCredentialsAccessTokenProvider.getAccessToken(googleAccessTokenScopes));
-          } catch (IOException | RuntimeException e) {
-            // As with AgentProxy below, defer actually enforcing authorization to the masters
-            log.debug("Exception (possibly benign) while loading Google Credentials", e);
-          }
+          accessTokenSupplier = new Supplier<Optional<AccessToken>>() {
+            @Override
+            public Optional<AccessToken> get() {
+              try {
+                return Optional.of(
+                    GoogleCredentialsAccessTokenProvider.getAccessToken(googleAccessTokenScopes));
+              } catch (IOException | RuntimeException e) {
+                // As with AgentProxy below, defer actually enforcing authorization to the masters
+                log.debug("Exception (possibly benign) while loading Google Credentials", e);
+              }
+              return Optional.absent();
+            }
+          };
         }
       }
 
@@ -797,7 +804,7 @@ public class HeliosClient implements Closeable {
       }
 
       return new AuthenticatingHttpConnector(user,
-          accessTokenOpt,
+          accessTokenSupplier,
           agentProxyOpt,
           Optional.fromNullable(certKeyPaths),
           endpointIterator,

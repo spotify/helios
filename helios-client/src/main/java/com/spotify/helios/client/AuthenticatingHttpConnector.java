@@ -27,6 +27,7 @@ import static java.util.Collections.singletonList;
 import com.google.auth.oauth2.AccessToken;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.sshagentproxy.AgentProxy;
@@ -47,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import javax.security.auth.x500.X500Principal;
-import javax.ws.rs.HEAD;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +60,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
   private static final Logger log = LoggerFactory.getLogger(AuthenticatingHttpConnector.class);
 
   private final String user;
-  private final Optional<AccessToken> accessTokenOpt;
+  private final Supplier<Optional<AccessToken>> accessTokenSupplier;
   private final Optional<AgentProxy> agentProxy;
   private final Optional<CertKeyPaths> clientCertificatePath;
   private final List<Identity> identities;
@@ -69,25 +69,25 @@ public class AuthenticatingHttpConnector implements HttpConnector {
   private final DefaultHttpConnector delegate;
 
   public AuthenticatingHttpConnector(final String user,
-                                     final Optional<AccessToken> accessTokenOpt,
+                                     final Supplier<Optional<AccessToken>> accessTokenSupplier,
                                      final Optional<AgentProxy> agentProxyOpt,
                                      final Optional<CertKeyPaths> clientCertificatePath,
                                      final EndpointIterator endpointIterator,
                                      final DefaultHttpConnector delegate) {
-    this(user, accessTokenOpt, agentProxyOpt, clientCertificatePath, endpointIterator,
+    this(user, accessTokenSupplier, agentProxyOpt, clientCertificatePath, endpointIterator,
         delegate, getSshIdentities(agentProxyOpt));
   }
 
   @VisibleForTesting
   AuthenticatingHttpConnector(final String user,
-                              final Optional<AccessToken> accessTokenOpt,
+                              final Supplier<Optional<AccessToken>> accessTokenSupplier,
                               final Optional<AgentProxy> agentProxyOpt,
                               final Optional<CertKeyPaths> clientCertificatePath,
                               final EndpointIterator endpointIterator,
                               final DefaultHttpConnector delegate,
                               final List<Identity> identities) {
     this.user = user;
-    this.accessTokenOpt = accessTokenOpt;
+    this.accessTokenSupplier = accessTokenSupplier;
     this.agentProxy = agentProxyOpt;
     this.clientCertificatePath = clientCertificatePath;
     this.endpointIterator = endpointIterator;
@@ -112,6 +112,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     try {
       log.debug("connecting to {}", ipUri);
 
+      final Optional<AccessToken> accessTokenOpt = accessTokenSupplier.get();
       if (accessTokenOpt.isPresent()) {
         final String token = accessTokenOpt.get().getTokenValue();
         headers.put("Authorization", singletonList("Bearer " + token));
