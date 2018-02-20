@@ -24,6 +24,8 @@ package com.spotify.helios.client;
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,17 +34,68 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class GoogleCredentialsAccessTokenProvider {
-  private static final Logger log =
-      LoggerFactory.getLogger(GoogleCredentialsAccessTokenProvider.class);
+class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessToken>> {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(GoogleCredentialsAccessTokenSupplier.class);
 
   public static final List<String> DEFAULT_SCOPES = ImmutableList.of(
       "https://www.googleapis.com/auth/cloud-platform.read-only",
       "https://www.googleapis.com/auth/userinfo.email"
   );
 
+  private boolean enabled;
+  private AccessToken staticToken;
+  private List<String> tokenScopes;
+  private GoogleCredentials credentials;
+  private final Object lock = new byte[0];
+
+  GoogleCredentialsAccessTokenSupplier(final boolean enabled,
+                                       final AccessToken staticToken,
+                                       final List<String> tokenScopes) {
+    this(enabled, staticToken, tokenScopes, null);
+  }
+
+  @VisibleForTesting
+  GoogleCredentialsAccessTokenSupplier(final boolean enabled,
+                                       final AccessToken staticToken,
+                                       final List<String> tokenScopes,
+                                       final GoogleCredentials credentials) {
+    this.enabled = enabled;
+    this.staticToken = staticToken;
+    this.tokenScopes = tokenScopes;
+    this.credentials = credentials;
+  }
+
+  @Override
+  public Optional<AccessToken> get() {
+    Optional<AccessToken> tokenOpt = Optional.absent();
+
+    if (enabled) {
+      if (staticToken != null) {
+        tokenOpt = Optional.of(staticToken);
+      } else {
+        try {
+          synchronized (lock) {
+            if (credentials == null) {
+              credentials = getCredentialsWithScopes(tokenScopes);
+            }
+            credentials.getRequestMetadata(null);
+          }
+
+          tokenOpt = Optional.of(credentials.getAccessToken());
+        } catch (IOException | RuntimeException e) {
+          LOG.debug("Exception (possibly benign) while loading Google Credentials", e);
+          return Optional.absent();
+        }
+      }
+    }
+
+    return tokenOpt;
+  }
+
   /**
-   * Attempt to load an Access Token using Google Credentials.
+   * Attempt to load Google Credentials with specified scopes.
    * <ol>
    * <li>First check to see if the environment variable HELIOS_GOOGLE_CREDENTIALS is set
    * and points to a readable file</li>
@@ -53,9 +106,10 @@ class GoogleCredentialsAccessTokenProvider {
    * variable that the ADC loading uses (GOOGLE_APPLICATION_CREDENTIALS) in case there is a need
    * for the user to use the latter env var for some other purpose.
    *
-   * @return Return an AccessToken or null
+   * @return Return a {@link GoogleCredentials}
    */
-  static AccessToken getAccessToken(final List<String> scopes) throws IOException {
+  private static GoogleCredentials getCredentialsWithScopes(final List<String> scopes)
+      throws IOException {
     GoogleCredentials credentials = null;
 
     // first check whether the environment variable is set
@@ -65,30 +119,16 @@ class GoogleCredentialsAccessTokenProvider {
       if (file.exists()) {
         final FileInputStream s = new FileInputStream(file);
         credentials = GoogleCredentials.fromStream(s);
-        log.debug("Using Google Credentials from file: " + file.getAbsolutePath());
+        LOG.debug("Using Google Credentials from file: " + file.getAbsolutePath());
       }
     }
 
     // fallback to application default credentials
     if (credentials == null) {
       credentials = GoogleCredentials.getApplicationDefault();
-      log.debug("Using Google Application Default Credentials");
+      LOG.debug("Using Google Application Default Credentials");
     }
 
-    return getAccessToken(credentials, scopes);
-  }
-
-  @VisibleForTesting
-  static AccessToken getAccessToken(final GoogleCredentials credentials,
-                                    final List<String> scopes) throws IOException {
-    if (credentials == null) {
-      return null;
-    }
-
-    final GoogleCredentials newCredentials =
-        scopes.isEmpty() ? credentials : credentials.createScoped(scopes);
-    newCredentials.refresh();
-
-    return newCredentials.getAccessToken();
+    return scopes.isEmpty() ? credentials : credentials.createScoped(scopes);
   }
 }
