@@ -34,8 +34,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.common.base.Optional;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
@@ -65,8 +65,6 @@ public class AuthenticatingHttpConnectorTest {
   private final String method = "GET";
   private final byte[] entity = new byte[0];
   private final Map<String, List<String>> headers = new HashMap<>();
-  private final ImmutableMap<String, List<String>> headersWithAuthorization =
-      ImmutableMap.of("Authorization", Collections.singletonList("Bearer <token>"));
 
   private List<Endpoint> endpoints;
 
@@ -83,7 +81,7 @@ public class AuthenticatingHttpConnectorTest {
 
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
     return new AuthenticatingHttpConnector(USER,
-        Optional.<AccessToken>absent(),
+        Suppliers.ofInstance(Optional.<AccessToken>absent()),
         proxy,
         Optional.<CertKeyPaths>absent(),
         endpointIterator,
@@ -99,7 +97,7 @@ public class AuthenticatingHttpConnectorTest {
         CertKeyPaths.create(CERTIFICATE_PATH, KEY_PATH);
 
     return new AuthenticatingHttpConnector(USER,
-        Optional.<AccessToken>absent(),
+        Suppliers.ofInstance(Optional.<AccessToken>absent()),
         Optional.<AgentProxy>absent(),
         Optional.of(clientCertificatePath),
         endpointIterator,
@@ -112,7 +110,7 @@ public class AuthenticatingHttpConnectorTest {
     final AccessToken accessToken = new AccessToken("<token>", null);
 
     return new AuthenticatingHttpConnector(USER,
-        Optional.<AccessToken>of(accessToken),
+        Suppliers.ofInstance(Optional.of(accessToken)),
         proxy,
         Optional.<CertKeyPaths>absent(),
         endpointIterator,
