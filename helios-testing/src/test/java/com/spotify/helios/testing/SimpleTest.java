@@ -118,8 +118,8 @@ public class SimpleTest extends TemporaryJobsTestBase {
       }
 
       //verify address and addresses return valid HostAndPort objects
-      assertEquals("wrong host", testHost1, job1.address("echo").getHostText());
-      assertEquals("wrong host", testHost1, getOnlyElement(job1.addresses("echo")).getHostText());
+      assertEquals("wrong host", testHost1, job1.address("echo").getHost());
+      assertEquals("wrong host", testHost1, getOnlyElement(job1.addresses("echo")).getHost());
 
       ping(DOCKER_HOST.address(), job1.port(testHost1, "echo"));
     }

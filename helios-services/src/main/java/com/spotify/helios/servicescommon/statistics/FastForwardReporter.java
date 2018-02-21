@@ -105,7 +105,7 @@ public class FastForwardReporter implements Managed {
 
     final FastForward ff;
     if (address.isPresent()) {
-      ff = FastForward.setup(address.get().getHostText(), address.get().getPort());
+      ff = FastForward.setup(address.get().getHost(), address.get().getPort());
     } else {
       ff = FastForward.setup();
     }
