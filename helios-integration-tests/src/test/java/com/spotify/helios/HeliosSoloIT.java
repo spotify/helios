@@ -121,7 +121,7 @@ public class HeliosSoloIT {
     // Connect to alpine container to get the curl response. If we get back the nginx welcome page
     // we know that helios properly registered the nginx service in SkyDNS.
     final Callable<String> socketResponse = () -> {
-      try (final Socket s = new Socket(alpineAddress.getHostText(), alpineAddress.getPort())) {
+      try (final Socket s = new Socket(alpineAddress.getHost(), alpineAddress.getPort())) {
         return IOUtils.toString(s.getInputStream(), Charsets.UTF_8).trim();
       }
     };

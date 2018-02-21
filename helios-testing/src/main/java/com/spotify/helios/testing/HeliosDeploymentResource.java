@@ -69,7 +69,7 @@ public class HeliosDeploymentResource extends ExternalResource {
           @Override
           public Boolean call() throws Exception {
             final HostAndPort hap = deployment.address();
-            final SocketAddress address = new InetSocketAddress(hap.getHostText(), hap.getPort());
+            final SocketAddress address = new InetSocketAddress(hap.getHost(), hap.getPort());
             log.debug("attempting to connect to {}", address);
 
             try {

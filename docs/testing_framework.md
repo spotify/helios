@@ -106,7 +106,7 @@ public class ServiceIT {
     // allocated port of the job
     HostAndPort port = temporaryJob.address("wiggum");
     String pingUri = String.format("http://%s:%d/ping",
-                                   port.getHostText(),
+                                   port.getHost(),
                                    port.getPort());
 
     HttpResponse response = client.execute(new HttpGet(pingUri));
@@ -166,7 +166,7 @@ public class SystemIT {
 
     final HostAndPort address = cassandra.address("cassandra");
     final CassandraClient cassandraClient = new CassandraClient();
-    cassandraClient.connect(address.getHostText(), address.getPort());
+    cassandraClient.connect(address.getHost(), address.getPort());
     cassandraClient.populateTestData();
   }
 
