@@ -117,16 +117,17 @@ class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessTo
     if (googleCredentialsPath != null) {
       final File file = new File(googleCredentialsPath);
       if (file.exists()) {
-        final FileInputStream s = new FileInputStream(file);
-        credentials = GoogleCredentials.fromStream(s);
-        LOG.debug("Using Google Credentials from file: " + file.getAbsolutePath());
+        try (final FileInputStream s = new FileInputStream(file)) {
+          credentials = GoogleCredentials.fromStream(s);
+          LOG.info("Using Google Credentials from file: " + file.getAbsolutePath());
+        }
       }
     }
 
     // fallback to application default credentials
     if (credentials == null) {
       credentials = GoogleCredentials.getApplicationDefault();
-      LOG.debug("Using Google Application Default Credentials");
+      LOG.info("Using Google Application Default Credentials");
     }
 
     return scopes.isEmpty() ? credentials : credentials.createScoped(scopes);
