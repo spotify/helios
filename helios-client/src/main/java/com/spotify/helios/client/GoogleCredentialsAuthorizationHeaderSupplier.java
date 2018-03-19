@@ -27,14 +27,18 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class GoogleCredentialsAccessTokenSupplier implements AuthorizationHeaderSupplier {
+/**
+ * AuthorizationHeaderSupplier instance that uses Google OAuth2 credentials to set the header
+ * value.
+ */
+class GoogleCredentialsAuthorizationHeaderSupplier implements AuthorizationHeaderSupplier {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(GoogleCredentialsAccessTokenSupplier.class);
+      LoggerFactory.getLogger(GoogleCredentialsAuthorizationHeaderSupplier.class);
 
   private final GoogleCredentials credentials;
 
-  GoogleCredentialsAccessTokenSupplier(final GoogleCredentials credentials) {
+  GoogleCredentialsAuthorizationHeaderSupplier(final GoogleCredentials credentials) {
     this.credentials = credentials;
   }
 

@@ -674,7 +674,7 @@ public class HeliosClient implements Closeable {
      * Customize the AuthorizationHeaderSupplier instance used to determine what Authorization
      * header value (if any) to send in API requests. If not set, and
      * {@link #setGoogleCredentialsEnabled(boolean)} is not disabled, then an instance of
-     * {@link GoogleCredentialsAccessTokenSupplier} is used.
+     * {@link GoogleCredentialsAuthorizationHeaderSupplier} is used.
      */
     public Builder setAuthorizationHeaderSupplier(final AuthorizationHeaderSupplier supplier) {
       this.authorizationHeaderSupplier = supplier;
@@ -773,12 +773,14 @@ public class HeliosClient implements Closeable {
       final DefaultHttpConnector connector =
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
-      if (this.authorizationHeaderSupplier == null) {
+      AuthorizationHeaderSupplier authorizationSupplier = this.authorizationHeaderSupplier;
+
+      if (authorizationSupplier == null) {
         if (googleCredentialsEnabled) {
           final GoogleCredentials credentials = loadGoogleCredentials();
-          this.authorizationHeaderSupplier = new GoogleCredentialsAccessTokenSupplier(credentials);
+          authorizationSupplier = new GoogleCredentialsAuthorizationHeaderSupplier(credentials);
         } else {
-          this.authorizationHeaderSupplier = new AuthorizationHeaderSupplier() {
+          authorizationSupplier = new AuthorizationHeaderSupplier() {
             @Override
             public Optional<String> get() {
               return Optional.absent();
@@ -815,7 +817,7 @@ public class HeliosClient implements Closeable {
       }
 
       return new AuthenticatingHttpConnector(user,
-          this.authorizationHeaderSupplier,
+          authorizationSupplier,
           agentProxyOpt,
           Optional.fromNullable(certKeyPaths),
           endpointIterator,
