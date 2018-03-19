@@ -25,9 +25,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.common.base.Optional;
 import java.io.IOException;
 import java.net.URI;
@@ -39,7 +41,7 @@ public class GoogleCredentialsAccessTokenSupplierTest {
   public void testGetWhenDisabled() {
     final GoogleCredentialsAccessTokenSupplier supplier =
         new GoogleCredentialsAccessTokenSupplier(false, null, null);
-    assertThat(supplier.get(), equalTo(Optional.<AccessToken>absent()));
+    assertThat(supplier.get(), equalTo(Optional.<String>absent()));
   }
 
   @Test
@@ -47,15 +49,20 @@ public class GoogleCredentialsAccessTokenSupplierTest {
     final AccessToken token = new AccessToken("token", null);
     final GoogleCredentialsAccessTokenSupplier supplier =
         new GoogleCredentialsAccessTokenSupplier(true, token, null);
-    assertThat(supplier.get(), equalTo(Optional.of(token)));
+    assertThat(supplier.get(), equalTo(Optional.of("Bearer token")));
   }
 
   @Test
   public void testGetWithCredentials() throws IOException {
-    final GoogleCredentials credentials = mock(GoogleCredentials.class);
+    final AccessToken accessToken = new AccessToken("foobar", null);
+
+    // instantiating the GoogleCredentials class directly is a big hack to workaround the fact that
+    // we cannot stub the final method getAccessToken()
+    final GoogleCredentials credentials = new GoogleCredentials(accessToken);
+
     final GoogleCredentialsAccessTokenSupplier supplier = new GoogleCredentialsAccessTokenSupplier(
         true, null, null, credentials);
-    supplier.get();
-    verify(credentials).getRequestMetadata(any(URI.class));
+
+    assertThat(supplier.get(), equalTo(Optional.of("Bearer foobar")));
   }
 }

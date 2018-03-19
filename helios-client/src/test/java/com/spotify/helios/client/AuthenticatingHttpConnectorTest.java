@@ -32,9 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.auth.oauth2.AccessToken;
 import com.google.common.base.Optional;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 import com.spotify.sshagentproxy.AgentProxy;
@@ -62,6 +60,8 @@ public class AuthenticatingHttpConnectorTest {
   private static final Path KEY_PATH = Paths.get(getResource("UIDCACert.key").getPath());
 
   private final DefaultHttpConnector connector = mock(DefaultHttpConnector.class);
+  private final AuthorizationHeaderSupplier authorizationHeaderSupplier =
+      mock(AuthorizationHeaderSupplier.class);
   private final String method = "GET";
   private final byte[] entity = new byte[0];
   private final Map<String, List<String>> headers = new HashMap<>();
@@ -80,8 +80,11 @@ public class AuthenticatingHttpConnectorTest {
       final Optional<AgentProxy> proxy, final List<Identity> identities) {
 
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
+
+    when(authorizationHeaderSupplier.get()).thenReturn(Optional.<String>absent());
+
     return new AuthenticatingHttpConnector(USER,
-        Suppliers.ofInstance(Optional.<AccessToken>absent()),
+        authorizationHeaderSupplier,
         proxy,
         Optional.<CertKeyPaths>absent(),
         endpointIterator,
@@ -96,8 +99,10 @@ public class AuthenticatingHttpConnectorTest {
     final CertKeyPaths clientCertificatePath =
         CertKeyPaths.create(CERTIFICATE_PATH, KEY_PATH);
 
+    when(authorizationHeaderSupplier.get()).thenReturn(Optional.<String>absent());
+
     return new AuthenticatingHttpConnector(USER,
-        Suppliers.ofInstance(Optional.<AccessToken>absent()),
+        authorizationHeaderSupplier,
         Optional.<AgentProxy>absent(),
         Optional.of(clientCertificatePath),
         endpointIterator,
@@ -106,11 +111,13 @@ public class AuthenticatingHttpConnectorTest {
 
   private AuthenticatingHttpConnector createAuthenticatingConnectorWithAccessToken(
       final Optional<AgentProxy> proxy, final List<Identity> identities) {
+
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
-    final AccessToken accessToken = new AccessToken("<token>", null);
+
+    when(authorizationHeaderSupplier.get()).thenReturn(Optional.of("Bearer <token>"));
 
     return new AuthenticatingHttpConnector(USER,
-        Suppliers.ofInstance(Optional.of(accessToken)),
+        authorizationHeaderSupplier,
         proxy,
         Optional.<CertKeyPaths>absent(),
         endpointIterator,

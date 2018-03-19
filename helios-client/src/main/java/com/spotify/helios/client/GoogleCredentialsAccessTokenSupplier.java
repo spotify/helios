@@ -25,7 +25,6 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,7 +33,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessToken>> {
+class GoogleCredentialsAccessTokenSupplier implements AuthorizationHeaderSupplier {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(GoogleCredentialsAccessTokenSupplier.class);
@@ -44,11 +43,11 @@ class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessTo
       "https://www.googleapis.com/auth/userinfo.email"
   );
 
-  private boolean enabled;
-  private AccessToken staticToken;
-  private List<String> tokenScopes;
+  private final boolean enabled;
+  private final AccessToken staticToken;
+  private final List<String> tokenScopes;
+  private final Object lock = new Object();
   private GoogleCredentials credentials;
-  private final Object lock = new byte[0];
 
   GoogleCredentialsAccessTokenSupplier(final boolean enabled,
                                        final AccessToken staticToken,
@@ -68,30 +67,29 @@ class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessTo
   }
 
   @Override
-  public Optional<AccessToken> get() {
-    Optional<AccessToken> tokenOpt = Optional.absent();
-
-    if (enabled) {
-      if (staticToken != null) {
-        tokenOpt = Optional.of(staticToken);
-      } else {
-        try {
-          synchronized (lock) {
-            if (credentials == null) {
-              credentials = getCredentialsWithScopes(tokenScopes);
-            }
-            credentials.getRequestMetadata(null);
-          }
-
-          tokenOpt = Optional.of(credentials.getAccessToken());
-        } catch (IOException | RuntimeException e) {
-          LOG.debug("Exception (possibly benign) while loading Google Credentials", e);
-          return Optional.absent();
-        }
-      }
+  public Optional<String> get() {
+    if (!enabled) {
+      return Optional.absent();
     }
 
-    return tokenOpt;
+    if (staticToken != null) {
+      return Optional.of("Bearer " + staticToken.getTokenValue());
+    }
+
+    try {
+      synchronized (lock) {
+        if (credentials == null) {
+          credentials = getCredentialsWithScopes(tokenScopes);
+        }
+        // call getRequestMetadata to kick the if-expired-then-renew check
+        credentials.getRequestMetadata(null);
+      }
+
+      return Optional.of("Bearer " + credentials.getAccessToken().getTokenValue());
+    } catch (IOException | RuntimeException e) {
+      LOG.debug("Exception (possibly benign) while loading Google Credentials", e);
+      return Optional.absent();
+    }
   }
 
   /**

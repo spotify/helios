@@ -66,7 +66,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
-import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
@@ -754,9 +753,9 @@ public class HeliosClient implements Closeable {
       final DefaultHttpConnector connector =
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
-      Supplier<Optional<AccessToken>> accessTokenSupplier = new
-          GoogleCredentialsAccessTokenSupplier(googleCredentialsEnabled, googleAccessToken,
-          googleAccessTokenScopes);
+      AuthorizationHeaderSupplier authorizationHeaderSupplier =
+          new GoogleCredentialsAccessTokenSupplier(googleCredentialsEnabled, googleAccessToken,
+              googleAccessTokenScopes);
 
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
       try {
@@ -786,7 +785,7 @@ public class HeliosClient implements Closeable {
       }
 
       return new AuthenticatingHttpConnector(user,
-          accessTokenSupplier,
+          authorizationHeaderSupplier,
           agentProxyOpt,
           Optional.fromNullable(certKeyPaths),
           endpointIterator,
