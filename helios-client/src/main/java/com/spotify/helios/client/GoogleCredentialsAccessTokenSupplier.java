@@ -43,37 +43,37 @@ class GoogleCredentialsAccessTokenSupplier implements AuthorizationHeaderSupplie
       "https://www.googleapis.com/auth/userinfo.email"
   );
 
-  private final boolean enabled;
-  private final AccessToken staticToken;
+  private final Optional<AccessToken> staticToken;
   private final List<String> tokenScopes;
   private final Object lock = new Object();
   private GoogleCredentials credentials;
 
-  GoogleCredentialsAccessTokenSupplier(final boolean enabled,
-                                       final AccessToken staticToken,
+  GoogleCredentialsAccessTokenSupplier() {
+    this(null, DEFAULT_SCOPES);
+  }
+
+  GoogleCredentialsAccessTokenSupplier(final AccessToken staticToken) {
+    this(staticToken, DEFAULT_SCOPES);
+  }
+
+  GoogleCredentialsAccessTokenSupplier(final AccessToken staticToken,
                                        final List<String> tokenScopes) {
-    this(enabled, staticToken, tokenScopes, null);
+    this(staticToken, tokenScopes, null);
   }
 
   @VisibleForTesting
-  GoogleCredentialsAccessTokenSupplier(final boolean enabled,
-                                       final AccessToken staticToken,
+  GoogleCredentialsAccessTokenSupplier(final AccessToken staticToken,
                                        final List<String> tokenScopes,
                                        final GoogleCredentials credentials) {
-    this.enabled = enabled;
-    this.staticToken = staticToken;
+    this.staticToken = Optional.fromNullable(staticToken);
     this.tokenScopes = tokenScopes;
     this.credentials = credentials;
   }
 
   @Override
   public Optional<String> get() {
-    if (!enabled) {
-      return Optional.absent();
-    }
-
-    if (staticToken != null) {
-      return Optional.of("Bearer " + staticToken.getTokenValue());
+    if (staticToken.isPresent()) {
+      return Optional.of("Bearer " + staticToken.get().getTokenValue());
     }
 
     try {

@@ -66,6 +66,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
+import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
@@ -607,9 +608,7 @@ public class HeliosClient implements Closeable {
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
     private boolean googleCredentialsEnabled = true;
-    private AccessToken googleAccessToken;
-    private List<String> googleAccessTokenScopes =
-        GoogleCredentialsAccessTokenSupplier.DEFAULT_SCOPES;
+    private AuthorizationHeaderSupplier authorizationHeaderSupplier = null;
     private ListeningScheduledExecutorService executorService;
     private boolean shutDownExecutorOnClose = true;
     private int httpTimeout = 10000;
@@ -661,18 +660,18 @@ public class HeliosClient implements Closeable {
       return this;
     }
 
+    /** Customize the AuthorizationHeaderSupplier instance used to determine what Authorization
+     * header value (if any) to send in API requests. If not set, and
+     * {@link #setGoogleCredentialsEnabled(boolean)} is not disabled, then an instance of
+     * {@link GoogleCredentialsAccessTokenSupplier} is used.
+     */
+    public Builder setAuthorizationHeaderSupplier(final AuthorizationHeaderSupplier supplier) {
+      this.authorizationHeaderSupplier = supplier;
+      return this;
+    }
+
     public Builder setGoogleCredentialsEnabled(final boolean enabled) {
       this.googleCredentialsEnabled = enabled;
-      return this;
-    }
-
-    public Builder setGoogleAccessToken(final AccessToken accessToken) {
-      this.googleAccessToken = accessToken;
-      return this;
-    }
-
-    public Builder setGoogleAccessTokenScopes(final List<String> scopes) {
-      this.googleAccessTokenScopes = scopes;
       return this;
     }
 
@@ -753,9 +752,19 @@ public class HeliosClient implements Closeable {
       final DefaultHttpConnector connector =
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
-      AuthorizationHeaderSupplier authorizationHeaderSupplier =
-          new GoogleCredentialsAccessTokenSupplier(googleCredentialsEnabled, googleAccessToken,
-              googleAccessTokenScopes);
+      if (this.authorizationHeaderSupplier == null) {
+        if (googleCredentialsEnabled) {
+          this.authorizationHeaderSupplier =
+              new GoogleCredentialsAccessTokenSupplier();
+        } else {
+          this.authorizationHeaderSupplier = new AuthorizationHeaderSupplier() {
+            @Override
+            public Optional<String> get() {
+              return Optional.absent();
+            }
+          };
+        }
+      }
 
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
       try {
@@ -785,7 +794,7 @@ public class HeliosClient implements Closeable {
       }
 
       return new AuthenticatingHttpConnector(user,
-          authorizationHeaderSupplier,
+          this.authorizationHeaderSupplier,
           agentProxyOpt,
           Optional.fromNullable(certKeyPaths),
           endpointIterator,

@@ -22,17 +22,11 @@ package com.spotify.helios.client;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.auth.oauth2.OAuth2Credentials;
 import com.google.common.base.Optional;
 import java.io.IOException;
-import java.net.URI;
 import org.junit.Test;
 
 public class GoogleCredentialsAccessTokenSupplierTest {
@@ -40,7 +34,7 @@ public class GoogleCredentialsAccessTokenSupplierTest {
   @Test
   public void testGetWhenDisabled() {
     final GoogleCredentialsAccessTokenSupplier supplier =
-        new GoogleCredentialsAccessTokenSupplier(false, null, null);
+        new GoogleCredentialsAccessTokenSupplier(null, null);
     assertThat(supplier.get(), equalTo(Optional.<String>absent()));
   }
 
@@ -48,7 +42,7 @@ public class GoogleCredentialsAccessTokenSupplierTest {
   public void testGetWithStaticToken() {
     final AccessToken token = new AccessToken("token", null);
     final GoogleCredentialsAccessTokenSupplier supplier =
-        new GoogleCredentialsAccessTokenSupplier(true, token, null);
+        new GoogleCredentialsAccessTokenSupplier(token, null);
     assertThat(supplier.get(), equalTo(Optional.of("Bearer token")));
   }
 
@@ -61,7 +55,7 @@ public class GoogleCredentialsAccessTokenSupplierTest {
     final GoogleCredentials credentials = new GoogleCredentials(accessToken);
 
     final GoogleCredentialsAccessTokenSupplier supplier = new GoogleCredentialsAccessTokenSupplier(
-        true, null, null, credentials);
+        null, null, credentials);
 
     assertThat(supplier.get(), equalTo(Optional.of("Bearer foobar")));
   }
