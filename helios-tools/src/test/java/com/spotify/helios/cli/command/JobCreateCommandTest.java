@@ -61,6 +61,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
@@ -258,6 +259,37 @@ public class JobCreateCommandTest {
     verify(client).createJob(argThat(hasCapabilities(ImmutableSet.of("cap_one", "cap_two"),
         ImmutableSet.of("cap_three", "cap_four"))
     ));
+  }
+
+  /**
+   * Check that metadata from JSON file and CLI switch is merged correctly. Metadata from CLI
+   * switch takes precedence over those from JSON file.
+   */
+  @Test
+  public void testAddMetadataFromJsonFile() throws Exception {
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("foobar");
+
+    when(options.get("file"))
+        .thenReturn(new File("src/test/resources/job_config_extra_metadata.json"));
+
+    final List<Object> value = new ArrayList<>();
+    value.add("baz=qux2");
+    when(options.getList("metadata")).thenReturn(value);
+
+    assertEquals(0, runCommand());
+
+    final Map<String, String> of = ImmutableMap.of("foo", "bar", "baz", "qux2");
+    verify(client).createJob(argThat(hasMetadata(equalTo(of))));
+  }
+
+  private Matcher<Job> hasMetadata(final Matcher<Map<String, String>> matcher) {
+    return new FeatureMatcher<Job, Map<String, String>>(matcher, "metadata", "metadata") {
+      @Override
+      protected Map<String, String> featureValueOf(final Job actual) {
+        return actual.getMetadata();
+      }
+    };
   }
 
   private Matcher<Job> hasCapabilities(final Set<String> added, final Set<String> dropped) {
