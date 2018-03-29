@@ -402,11 +402,9 @@ public class JobCreateCommand extends ControlCommand {
 
     final Map<String, String> metadata = Maps.newHashMap();
     metadata.putAll(defaultMetadata());
+    metadata.putAll(builder.getMetadata());
     final List<String> metadataList = options.getList(metadataArg.getDest());
-    if (!metadataList.isEmpty()) {
-      // TODO (mbrown): values from job conf file (which maybe involves dereferencing env vars?)
-      metadata.putAll(parseListOfPairs(metadataList, "metadata"));
-    }
+    metadata.putAll(parseListOfPairs(metadataList, "metadata"));
     builder.setMetadata(metadata);
 
     // Parse port mappings
