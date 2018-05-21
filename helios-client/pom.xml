@@ -59,12 +59,10 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-debug-jdk15on</artifactId>
-            <version>1.53</version>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15on</artifactId>
-            <version>1.53</version>
         </dependency>
         <dependency>
             <groupId>com.eaio.uuid</groupId>
@@ -74,7 +72,6 @@
         <dependency>
             <groupId>com.spotify</groupId>
             <artifactId>ssh-agent-proxy</artifactId>
-            <version>0.1.5</version>
         </dependency>
         <dependency>
             <groupId>com.spotify</groupId>
