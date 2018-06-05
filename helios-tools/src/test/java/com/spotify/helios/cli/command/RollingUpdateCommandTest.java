@@ -190,7 +190,7 @@ public class RollingUpdateCommandTest {
 
     final String expected =
         "Rolling update (async) started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false)\n";
+        + "overlap=false, token=" + TOKEN + ", ignoreFailures=false, migrate=false)\n";
 
     assertEquals(expected, output);
   }
@@ -292,6 +292,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", false)
         .put("token", TOKEN)
         .put("ignoreFailures", false)
+        .put("migrate", false)
         .build());
   }
 
@@ -315,6 +316,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", false)
         .put("token", TOKEN)
         .put("ignoreFailures", false)
+        .put("migrate", false)
         .build()
     );
   }
@@ -350,6 +352,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", false)
         .put("token", TOKEN)
         .put("ignoreFailures", false)
+        .put("migrate", false)
         .build());
   }
 
@@ -381,6 +384,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", false)
         .put("token", TOKEN)
         .put("ignoreFailures", false)
+        .put("migrate", false)
         .build());
   }
 
@@ -413,6 +417,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", false)
         .put("token", TOKEN)
         .put("ignoreFailures", false)
+        .put("migrate", false)
         .build()
     );
   }
@@ -451,6 +456,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", false)
         .put("token", TOKEN)
         .put("ignoreFailures", false)
+        .put("migrate", true)
         .build());
   }
 
@@ -488,6 +494,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", true)
         .put("token", TOKEN)
         .put("ignoreFailures", false)
+        .put("migrate", false)
         .build()
     );
   }
@@ -503,7 +510,7 @@ public class RollingUpdateCommandTest {
     ));
 
     String optionString = "(parallelism=1, timeout=300, overlap=false, token=my_token, "
-                          + "ignoreFailures=false)";
+                          + "ignoreFailures=false, migrate=false)";
 
     command.runWithJob(options, client, out, false, JOB, null);
 
@@ -532,7 +539,7 @@ public class RollingUpdateCommandTest {
     ));
 
     String optionString = "(parallelism=123, timeout=456, overlap=true, "
-        + "token=cli_token, ignoreFailures=true)";
+        + "token=cli_token, ignoreFailures=true, migrate=true)";
 
     command.runWithJob(cmdlineOptions, client, out, false, JOB, null);
 

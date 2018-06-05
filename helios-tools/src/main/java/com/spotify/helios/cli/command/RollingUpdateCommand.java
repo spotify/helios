@@ -196,11 +196,12 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final String actualToken = nullableWithFallback(token, optionsFromJob.getToken());
     final Boolean actualIgnoreFailures =
         nullableWithFallback(ignoreFailures, optionsFromJob.getIgnoreFailures());
+    final Boolean actualMigrate = nullableWithFallback(migrate, optionsFromJob.getMigrate());
 
     if (!json) {
       out.println(format("Rolling update%s started: %s -> %s "
                          + "(parallelism=%d, timeout=%d, overlap=%b, token=%s, "
-                         + "ignoreFailures=%b)%s",
+                         + "ignoreFailures=%b, migrate=%b)%s",
           async ? " (async)" : "",
           name,
           jobId.toShortString(),
@@ -209,6 +210,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
           actualOverlap,
           actualToken,
           actualIgnoreFailures,
+          actualMigrate,
           async ? "" : "\n"));
     }
 
@@ -218,6 +220,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     jsonOutput.put("overlap", actualOverlap);
     jsonOutput.put("token", actualToken);
     jsonOutput.put("ignoreFailures", actualIgnoreFailures);
+    jsonOutput.put("migrate", actualMigrate);
 
     if (async) {
       if (json) {
