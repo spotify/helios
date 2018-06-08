@@ -1,0 +1,7 @@
+{
+  "id": "foobar:1:253df2150e8993ba14086c106961377ebeae0185",
+  "image": "example.net/foo/bar",
+  "volumes": {
+    "/some/path:ro": "/another/path"
+  }
+}

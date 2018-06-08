@@ -23,6 +23,7 @@ package com.spotify.helios.common;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
 import static java.util.regex.Pattern.compile;
 
 import com.google.common.base.Joiner;
@@ -208,7 +209,18 @@ public class JobValidator {
       }
     }
 
+    errors.addAll(validateGracePeriodAndExternalPorts(job));
+
     return errors;
+  }
+
+  private Set<String> validateGracePeriodAndExternalPorts(final Job job) {
+    final Integer gracePeriod = job.getGracePeriod();
+    if (gracePeriod != null && gracePeriod > 0 && job.hasExternalPorts()) {
+      return singleton("This configuration will prevent new containers from deploying during the "
+                       + "gracePeriod because of port conflicts.");
+    }
+    return emptySet();
   }
 
   /**

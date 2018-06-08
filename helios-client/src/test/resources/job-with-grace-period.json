@@ -1,0 +1,21 @@
+{
+  "id": "foobar:1:854145e9a5e09a8c635c0f584f45d5f26342bef7",
+  "image": "example.net/foo/bar",
+  "gracePeriod": 10,
+  "ports": {
+    "http": {
+      "internalPort": 8080,
+      "protocol": "tcp"
+    }
+  },
+  "registration": {
+    "my-cool-service/http": {
+      "ports": {
+        "http": {}
+      }
+    }
+  },
+  "volumes": {
+    "/some/path:ro": "/another/path"
+  }
+}
