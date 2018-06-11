@@ -404,6 +404,18 @@ public class Job extends Descriptor implements Comparable<Job> {
     return rolloutOptions;
   }
 
+  /**
+   * Returns true if any of the Job's {@link PortMapping}s has an external port.
+   */
+  public boolean hasExternalPorts() {
+    for (final PortMapping pm : ports.values()) {
+      if (pm.hasExternalPort()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }

@@ -21,6 +21,7 @@
 package com.spotify.helios.common;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static com.google.common.io.Resources.getResource;
 import static com.spotify.helios.common.descriptors.Job.DEFAULT_NETWORK_MODE;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
@@ -43,10 +44,12 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_SECONDS_TO_WAIT;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_SECURITY_OPT;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -65,9 +68,11 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Set;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class JobValidatorTest {
@@ -596,4 +601,34 @@ public class JobValidatorTest {
         contains("registration for 'volumes' is malformed: does not have a port mapping"));
   }
 
+  /**
+   * Tests that Jobs cannot have both grace period and external ports.
+   */
+  @Test
+  public void testValidateGracePeriodAndExternalPorts() throws Exception {
+    final Job noPorts = Json.read(stringFromResource("job-with-no-ports.json"), Job.class);
+    assertThat(validator.validate(noPorts), Matchers.<String>empty());
+
+    final Job noExternalPorts = Json.read(
+        stringFromResource("job-with-no-external-ports.json"), Job.class);
+    assertThat(validator.validate(noExternalPorts), Matchers.<String>empty());
+
+    final Job externalPorts = Json.read(
+        stringFromResource("job-with-external-ports.json"), Job.class);
+    assertThat(validator.validate(externalPorts), Matchers.<String>empty());
+
+    final Job gracePeriod = Json.read(
+        stringFromResource("job-with-grace-period.json"), Job.class);
+    assertThat(validator.validate(gracePeriod), Matchers.<String>empty());
+
+    final Job externalPortsAndGracePeriod = Json.read(
+        stringFromResource("job-with-external-ports-and-grace-period.json"), Job.class);
+    assertThat(validator.validate(externalPortsAndGracePeriod),
+        hasItem("This configuration will prevent new containers from deploying during the "
+                + "gracePeriod because of port conflicts."));
+  }
+
+  private String stringFromResource(final String resourceFile) throws IOException {
+    return Resources.toString(getResource(resourceFile), UTF_8).trim();
+  }
 }

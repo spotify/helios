@@ -24,6 +24,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -546,5 +547,29 @@ public class JobTest {
 
     assertNull(builder.buildWithoutHash().getId().getHash());
     assertNotNull(builder.build().getId().getHash());
+  }
+
+  @Test
+  public void testHasExternalPorts() {
+    final Job.Builder builder = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar");
+
+    final Job noPorts = builder.build();
+    assertThat(noPorts.hasExternalPorts(), equalTo(false));
+
+    final Job noExternalPorts = builder
+        .setPorts(ImmutableMap.of(
+            "add_ports1", PortMapping.of(1234),
+            "add_ports2", PortMapping.of(2345)
+        ))
+        .build();
+    assertThat(noExternalPorts.hasExternalPorts(), equalTo(false));
+
+    final Job externalPorts = builder
+        .setPorts(ImmutableMap.of(
+            "add_ports1", PortMapping.of(1234),
+            "add_ports2", PortMapping.of(2345, 9090)
+        ))
+        .build();
+    assertThat(externalPorts.hasExternalPorts(), equalTo(true));
   }
 }
