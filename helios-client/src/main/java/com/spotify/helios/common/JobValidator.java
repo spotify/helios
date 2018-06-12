@@ -217,8 +217,9 @@ public class JobValidator {
   private Set<String> validateGracePeriodAndExternalPorts(final Job job) {
     final Integer gracePeriod = job.getGracePeriod();
     if (gracePeriod != null && gracePeriod > 0 && job.hasExternalPorts()) {
-      return singleton("This configuration will prevent new containers from deploying during the "
-                       + "gracePeriod because of port conflicts.");
+      return singleton("Job has both grace period and static/external ports. External ports will "
+                + "prevent new containers from deploying during the gracePeriod because of port "
+                + "conflicts. Please choose one or the other.");
     }
     return emptySet();
   }

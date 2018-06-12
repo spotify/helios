@@ -624,8 +624,9 @@ public class JobValidatorTest {
     final Job externalPortsAndGracePeriod = Json.read(
         stringFromResource("job-with-external-ports-and-grace-period.json"), Job.class);
     assertThat(validator.validate(externalPortsAndGracePeriod),
-        hasItem("This configuration will prevent new containers from deploying during the "
-                + "gracePeriod because of port conflicts."));
+        hasItem("Job has both grace period and static/external ports. External ports will "
+                + "prevent new containers from deploying during the gracePeriod because of port "
+                + "conflicts. Please choose one or the other."));
   }
 
   private String stringFromResource(final String resourceFile) throws IOException {
