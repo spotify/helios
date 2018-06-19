@@ -123,23 +123,6 @@ Note that the Helios master and agent services both try to connect to ZooKeeper 
 by default. We recommend reading [the Helios configuration & deployment guide](https://github.com/spotify/helios/blob/master/docs/how_to_deploy.md)
 before starting a production cluster.
 
-#### Whatever, just get me running
-
-This will install and start the Helios master and Helios agent on a single machine with default
-configuration:
-
-```bash
-# install prereqs
-$ sudo apt-get install zookeeperd docker.io
-
-# install helios
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-$ sudo apt-get install helios helios-agent helios-master
-
-# check if it worked and the local agent is registered
-$ helios -z http://localhost:5801 hosts
-```
-
 ### Manual approach
 
 The launcher scripts are in [bin/](bin). After you've built Helios following the
