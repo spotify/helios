@@ -29,26 +29,28 @@ jobs:
     # https://circleci.com/docs/2.0/circleci-images/
     machine: true
     steps:
+    - run: docker --version
+    - run: sudo service docker start
 
-    - run:
+#    - run:
 #        command: |
 #         set -x
 #         VER="18.03.1-ce"
 #         curl -L -o ~/docker.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
 #         tar -xz -f ~/docker.tgz > ~/docker
 #         chmod +x ~/docker
-#         sudo mv ~/docker /usr/local/bin/docker
-          working_directory: ~/spotify/docker
-          command: |
-            curl -fsSL get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
-
-    - run:
-        command: |
-          sudo groupadd docker
-          sudo usermod -aG docker $(whoami)
-          newgrp -
-          sudo service docker restart
+##         sudo mv ~/docker /usr/local/bin/docker
+#          working_directory: ~/spotify/docker
+#          command: |
+#            curl -fsSL get.docker.com -o get-docker.sh
+#            sudo sh get-docker.sh
+#
+#    - run:
+#        command: |
+#          sudo groupadd docker
+#          sudo usermod -aG docker $(whoami)
+#          newgrp -
+#          sudo service docker restart
 
     - run:
         command: env
