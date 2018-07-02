@@ -33,12 +33,17 @@ jobs:
         command: echo $PATH
 
     - run:
-        command: |
-         set -x
-         VER="18.03.1-ce"
-         curl -L https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz > ~/docker
-         chmod +x ~/docker
-         sudo mv ~/docker /usr/local/bin/docker
+#        command: |
+#         set -x
+#         VER="18.03.1-ce"
+#         curl -L -o ~/docker.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
+#         tar -xz -f ~/docker.tgz > ~/docker
+#         chmod +x ~/docker
+#         sudo mv ~/docker /usr/local/bin/docker
+          working_directory: ~/spotify/helios
+          command: |
+            curl -fsSL get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
     - run:
         command: docker --version
 #        command: |
