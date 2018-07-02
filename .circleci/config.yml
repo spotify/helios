@@ -27,9 +27,7 @@ jobs:
     # VM instead of a container) see https://circleci.com/docs/2.0/executor-types/
     # To see the list of pre-built images that CircleCI provides for most common languages see
     # https://circleci.com/docs/2.0/circleci-images/
-    docker:
-    - image: circleci/build-image:ubuntu-14.04-XXL-upstart-1189-5614f37
-      command: /sbin/init
+    machine: true
     steps:
     # Machine Setup
     #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
