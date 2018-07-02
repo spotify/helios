@@ -40,7 +40,7 @@ jobs:
 #         tar -xz -f ~/docker.tgz > ~/docker
 #         chmod +x ~/docker
 #         sudo mv ~/docker /usr/local/bin/docker
-          working_directory: ~/spotify/helios
+          working_directory: ~/spotify/docker
           command: |
             curl -fsSL get.docker.com -o get-docker.sh
             sudo sh get-docker.sh
