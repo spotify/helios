@@ -29,9 +29,9 @@ jobs:
     # https://circleci.com/docs/2.0/circleci-images/
     machine: true
     steps:
-    - run: whoami
-    - run : mkdir -p /home/ubuntu/.m2
-    - run: chown -R $USER:$USER /home/ubuntu/.m2
+#    - run: whoami
+#    - run : mkdir -p /home/ubuntu/.m2
+#    - run: chown -R $USER:$USER /home/ubuntu/.m2
     # Machine Setup
     #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
     # The following `checkout` command checks out your code to your working directory. In 1.0 we did this implicitly. In 2.0 you can choose where in the course of a job your code should be checked out.
@@ -58,32 +58,32 @@ jobs:
     # Dependencies
     #   This would typically go in either a build or a build-and-test job when using workflows
     # Restore the dependency cache
-    - restore_cache:
-        keys:
-        # This branch if available
-        - v1-dep-{{ .Branch }}-
-        # Default branch if not
-        - v1-dep-master-
-        # Any branch if there are none on the default branch - this should be unnecessary if you have your default branch configured correctly
-        - v1-dep-
+#    - restore_cache:
+#        keys:
+#        # This branch if available
+#        - v1-dep-{{ .Branch }}-
+#        # Default branch if not
+#        - v1-dep-master-
+#        # Any branch if there are none on the default branch - this should be unnecessary if you have your default branch configured correctly
+#        - v1-dep-
     # This is based on your 1.0 configuration file or project settings
     - run:
         working_directory: ~/spotify/helios
         command: ./circle.sh dependencies
     # Save dependency cache
-    - save_cache:
-        key: v1-dep-{{ .Branch }}-{{ epoch }}
-        paths:
-        # This is a broad list of cache paths to include many possible development environments
-        # You can probably delete some of these entries
-        - vendor/bundle
-        - ~/virtualenvs
-        - ~/.m2
-        - ~/.ivy2
-        - ~/.bundle
-        - ~/.go_workspace
-        - ~/.gradle
-        - ~/.cache/bower
+#    - save_cache:
+#        key: v1-dep-{{ .Branch }}-{{ epoch }}
+#        paths:
+#        # This is a broad list of cache paths to include many possible development environments
+#        # You can probably delete some of these entries
+#        - vendor/bundle
+#        - ~/virtualenvs
+#        - ~/.m2
+#        - ~/.ivy2
+#        - ~/.bundle
+#        - ~/.go_workspace
+#        - ~/.gradle
+#        - ~/.cache/bower
     # Test
     #   This would typically be a build job when using workflows, possibly combined with build
     # This is based on your 1.0 configuration file or project settings
