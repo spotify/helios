@@ -30,6 +30,8 @@ jobs:
     machine: true
     steps:
     - run: docker --version
+    - run: sudo service docker stop
+    - run: sudo dockerd
     - run: ps aux | grep docker
     - run: sudo env
 
