@@ -30,8 +30,8 @@ jobs:
     machine: true
     steps:
     - run: docker --version
-    - run: sudo service docker stop
-    - run: sudo nohop dockerd &
+    - run: sudo service docker restart
+#    - run: sudo nohop dockerd &
     - run: ps aux | grep docker
     - run: sudo env
 
