@@ -29,8 +29,9 @@ jobs:
     # https://circleci.com/docs/2.0/circleci-images/
     machine: true
     steps:
+    - run: sudo env
     - run: docker --version
-    - run: sudo service docker start
+    - run: sudo service docker restart
 
 #    - run:
 #        command: |
