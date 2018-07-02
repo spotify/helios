@@ -44,6 +44,13 @@ jobs:
             sudo sh get-docker.sh
 
     - run:
+        command: |
+          sudo groupadd docker
+          sudo usermod -aG docker $(whoami)
+          newgrp -
+          sudo service docker restart
+
+    - run:
         command: env
     - run:
         command: docker --version
