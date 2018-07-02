@@ -35,7 +35,8 @@ jobs:
     - run:
         command: |
          set -x
-         VER="18.03.1-ce"curl -L https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz > ~/docker
+         VER="18.03.1-ce"
+         curl -L https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz > ~/docker
          chmod +x ~/docker
          sudo mv ~/docker /usr/local/bin/docker
     - run:
