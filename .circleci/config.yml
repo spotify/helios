@@ -44,7 +44,7 @@ jobs:
             sudo sh get-docker.sh
 
     - run:
-        command: sudo dockerd
+        command: env
     - run:
         command: docker --version
 #        command: |
