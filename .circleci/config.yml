@@ -29,8 +29,6 @@ jobs:
     # https://circleci.com/docs/2.0/circleci-images/
     machine: true
     steps:
-    - run:
-        command: echo $PATH
 
     - run:
 #        command: |
@@ -44,6 +42,9 @@ jobs:
           command: |
             curl -fsSL get.docker.com -o get-docker.sh
             sudo sh get-docker.sh
+
+    - run:
+        command: dockerd
     - run:
         command: docker --version
 #        command: |
