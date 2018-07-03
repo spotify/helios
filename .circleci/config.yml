@@ -1,3 +1,8 @@
+jdk_180_version: &jdk_180_version jdk1.8.0
+
+####################
+# Jobs
+####################
 version: 2
 jobs:
   build:
@@ -8,6 +13,7 @@ jobs:
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
       MAVEN_OPTS: -Xmx128m
+      JAVA_VERSION: *jdk_180_version
 
     machine: true
     steps:
@@ -25,7 +31,8 @@ jobs:
         command: |
          apt-get -y -qq update
          apt-get -y -qq install jq
-         update-alternatives --set java /usr/lib/jvm/jdk1.8.0/bin/java; sudo update-alternatives --set javac /usr/lib/jvm/jdk1.8.0/bin/javac; echo -e "export JAVA_HOME=/usr/lib/jvm/jdk1.8.0" >> $BASH_ENV
+         update-alternatives --set java /usr/lib/jvm/$JAVA_VERSION/bin/java; sudo update-alternatives --set javac /usr/lib/jvm/$JAVA_VERSION/bin/javac; echo -e "export JAVA_HOME=/usr/lib/jvm/$JAVA_VERSION" >> $BASH_ENV
+        # tells CircleCI that we want virtualenv so that we can pip install codecov without errors
          if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
 
     # Configuring Docker to accept remote connections
