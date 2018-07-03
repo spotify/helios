@@ -80,7 +80,7 @@ jobs:
     - run:
         working_directory: ~/spotify/helios
         command: ./circle.sh pre_machine
-    - run: echo "{\"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://127.0.0.1:2375\"]}" > /etc/docker/daemon.json
+#    - run: echo "{\"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://127.0.0.1:2375\"]}" > /etc/docker/daemon.json
 
 
 
