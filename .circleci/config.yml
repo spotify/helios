@@ -31,7 +31,7 @@ jobs:
          if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
 
     - run: ./circle.sh pre_machine
-    - run: service docker restart
+    - run: sudo service docker restart
 
     - run: ./circle.sh post_machine
 
