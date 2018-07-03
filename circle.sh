@@ -76,8 +76,6 @@ case "$1" in
         ;;
 
       5)
-        sudo apt-get install -y jq
-
         # build images for integration tests
         mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
           -B -V -pl helios-services

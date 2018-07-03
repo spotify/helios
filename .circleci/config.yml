@@ -95,13 +95,19 @@ jobs:
 #    - run: sudo systemctl restart docker.service
     - run: sudo netstat -lntp | grep dockerd
 
+    - run: sudo apt
+
     # This is based on your 1.0 configuration file or project settings
     - run:
         working_directory: ~/spotify/helios
         command: sudo update-alternatives --set java /usr/lib/jvm/jdk1.8.0/bin/java; sudo update-alternatives --set javac /usr/lib/jvm/jdk1.8.0/bin/javac; echo -e "export JAVA_HOME=/usr/lib/jvm/jdk1.8.0" >> $BASH_ENV
     - run:
+        name: Install dependencies
         working_directory: ~/spotify/helios
-        command: if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
+        command: |
+        apt-get -y -qq update
+        apt-get -y -qq install jq
+        if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
     # This is based on your 1.0 configuration file or project settings
     - run:
         working_directory: ~/spotify/helios
