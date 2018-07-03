@@ -80,12 +80,19 @@ jobs:
     - run:
         working_directory: ~/spotify/helios
         command: ./circle.sh pre_machine
-    - run: sudo sh -c "systemctl edit <<EOM >docker.service [Service]
-                                                                 ExecStart=
-                                                                 ExecStart=/usr/bin/dockerd -H fd:// -H tcp://127.0.0.1:2375 EOM"
+    - run: echo "{\"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://127.0.0.1:2375\"]}" > /etc/docker/daemon.json
 
-    - run: sudo systemctl daemon-reload
-    - run: sudo systemctl restart docker.service
+
+
+
+#    - run: sudo apt-get install systemd
+#    - run: sudo sh -c "vim <<EOM >/etc/docker/daemon.json {
+#                                                               \"hosts\": [\"unix:///var/run/docker.sock\", \"tcp://127.0.0.1:2375\"]
+#                                                               } EOM"
+
+#    - run: sudo systemctl daemon-reload
+    - run: sudo service docker restart
+#    - run: sudo systemctl restart docker.service
     - run: sudo netstat -lntp | grep dockerd
 
     # This is based on your 1.0 configuration file or project settings
