@@ -30,10 +30,10 @@ jobs:
     machine: true
     steps:
     - run: docker --version
-    - run: sudo service docker restart
-#    - run: sudo nohop dockerd &
-    - run: ps aux | grep docker
-    - run: sudo env
+#    - run: sudo service docker restart
+##    - run: sudo nohop dockerd &
+#    - run: ps aux | grep docker
+#    - run: sudo env
 
 #    - run:
 #        command: |
@@ -42,7 +42,7 @@ jobs:
 #         curl -L -o ~/docker.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
 #         tar -xz -f ~/docker.tgz > ~/docker
 #         chmod +x ~/docker
-##         sudo mv ~/docker /usr/local/bin/docker
+#         sudo mv ~/docker /usr/local/bin/docker
 #          working_directory: ~/spotify/docker
 #          command: |
 #            curl -fsSL get.docker.com -o get-docker.sh
@@ -80,6 +80,14 @@ jobs:
     - run:
         working_directory: ~/spotify/helios
         command: ./circle.sh pre_machine
+    - run: sudo sh -c "sudo systemctl edit <<EOM >docker.service [Service]
+                                                                 ExecStart=
+                                                                 ExecStart=/usr/bin/dockerd -H fd:// -H tcp://127.0.0.1:2375 EOM"
+
+    - run: sudo systemctl daemon-reload
+    - run: sudo systemctl restart docker.service
+    - run: sudo netstat -lntp | grep dockerd
+
     # This is based on your 1.0 configuration file or project settings
     - run:
         working_directory: ~/spotify/helios
