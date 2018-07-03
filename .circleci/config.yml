@@ -105,9 +105,9 @@ jobs:
         name: Install dependencies
         working_directory: ~/spotify/helios
         command: |
-        apt-get -y -qq update
-        apt-get -y -qq install jq
-        if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
+         apt-get -y -qq update
+         apt-get -y -qq install jq
+         if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
     # This is based on your 1.0 configuration file or project settings
     - run:
         working_directory: ~/spotify/helios
