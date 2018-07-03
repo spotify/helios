@@ -76,15 +76,15 @@ case "$1" in
         ;;
 
       5)
-        sudo apt-get install -y jq
-
         # build images for integration tests
         mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
           -B -V -pl helios-services
 
         # tag the helios-solo image we just built
         solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
-        docker tag -f $solo_image spotify/helios-solo:latest
+        # docker tag -f deprecated in docker 1.10
+        # https://github.com/marcuslonnberg/sbt-docker/issues/39
+        docker tag $solo_image spotify/helios-solo:latest
 
         mvn verify -B -pl helios-integration-tests
         ;;
