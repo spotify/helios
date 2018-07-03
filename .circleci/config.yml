@@ -80,7 +80,7 @@ jobs:
     - run:
         working_directory: ~/spotify/helios
         command: ./circle.sh pre_machine
-    - run: sudo sh -c "sudo systemctl edit <<EOM >docker.service [Service]
+    - run: sudo sh -c "systemctl edit <<EOM >docker.service [Service]
                                                                  ExecStart=
                                                                  ExecStart=/usr/bin/dockerd -H fd:// -H tcp://127.0.0.1:2375 EOM"
 
