@@ -26,6 +26,7 @@ jobs:
     # 'See docs on artifact collection here https://circleci.com/docs/2.0/artifacts/'
     - run: mkdir -p $CIRCLE_ARTIFACTS $CIRCLE_TEST_REPORTS
 
+    # tells CircleCI that we want virtualenv so that we can pip install codecov without errors
     - run:
         name: Install dependencies
         working_directory: ~/spotify/helios
@@ -33,7 +34,6 @@ jobs:
          apt-get -y -qq update
          apt-get -y -qq install jq
          update-alternatives --set java /usr/lib/jvm/$JAVA_VERSION/bin/java; sudo update-alternatives --set javac /usr/lib/jvm/$JAVA_VERSION/bin/javac; echo -e "export JAVA_HOME=/usr/lib/jvm/$JAVA_VERSION" >> $BASH_ENV
-        # tells CircleCI that we want virtualenv so that we can pip install codecov without errors
          if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
 
     # Configuring Docker to accept remote connections
