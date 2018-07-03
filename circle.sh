@@ -82,7 +82,7 @@ case "$1" in
 
         # tag the helios-solo image we just built
         solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
-        docker tag $solo_image spotify/helios-solo:latest"
+        docker tag $solo_image spotify/helios-solo:latest
 
         mvn verify -B -pl helios-integration-tests
         ;;
