@@ -112,7 +112,7 @@ public class TaskConfig {
     builder.hostname(job.getHostname());
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
-    builder.volumes(volumes());
+    builder.volumes(volumes().keySet());
     builder.labels(job.getLabels());
 
     for (final ContainerDecorator decorator : containerDecorators) {

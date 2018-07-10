@@ -61,13 +61,17 @@ public class VolumeTest extends SystemTestBase {
         .setName(testJobName)
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
-        .addVolume("/volume")
+        .addVolume("/random-vol")
+        .addVolume("/named-vol", "my-volume")
         .addVolume("/hostname", "/etc/hostname")
-        .setCommand(asList("sh", "-c", "echo foo > /volume/bar; "
-                                       + "nc -p 4711 -le dd if=/volume/bar;"
-                                       + "nc -p 4712 -lle dd if=/hostname"))
-        .addPort("bar", PortMapping.of(4711))
-        .addPort("hostname", PortMapping.of(4712))
+        .setCommand(asList("sh", "-c", "echo foo > /random-vol/foo; "
+                                       + "echo foo > /named-vol/foo;"
+                                       + "nc -p 4711 -le dd if=/random-vol/foo;"
+                                       + "nc -p 4712 -le dd if=/named-vol/foo;"
+                                       + "nc -p 4713 -le dd if=/hostname"))
+        .addPort("random", PortMapping.of(4711))
+        .addPort("named", PortMapping.of(4712))
+        .addPort("hostname", PortMapping.of(4713))
         .setCreatingUser(TEST_USER)
         .build();
   }
@@ -100,15 +104,17 @@ public class VolumeTest extends SystemTestBase {
         client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
     assertJobEquals(job, taskStatus.getJob());
 
-    final Integer barPort = taskStatus.getPorts().get("bar").getExternalPort();
+    final Integer randomVolPort = taskStatus.getPorts().get("random").getExternalPort();
+    final Integer namedVolPort = taskStatus.getPorts().get("named").getExternalPort();
     final Integer hostnamePort = taskStatus.getPorts().get("hostname").getExternalPort();
 
-    assert barPort != null;
+    assert randomVolPort != null;
+    assert namedVolPort != null;
     assert hostnamePort != null;
 
-    // Read "foo" from /volume/bar
-    final String foo = recvUtf8(barPort, 3);
-    assertEquals("foo", foo);
+    // Read "foo" from /volume/bar and /mnt/my-volume/bar
+    assertEquals("foo", recvUtf8(randomVolPort, 3));
+    assertEquals("foo", recvUtf8(namedVolPort, 3));
 
     // Read hostname from /hostname
     final String hostname = getNewDockerClient().info().name();
