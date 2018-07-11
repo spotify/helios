@@ -428,7 +428,7 @@ see [volumes][] in the Docker reference for full details. The container path can
 be suffixed with "rw" or "ro" to create a read-write or read-only volume mount,
 respectively.
 
-Format: `[container-path]:[rw|ro]:[host-path|volume-name]`.
+Format: `"[container-path]:[rw|ro]": "[host-path|volume-name]"`.
 
 Examples:
 

@@ -161,6 +161,10 @@ public class JobValidator {
         errors.add("Volume path is not absolute: " + path);
         continue;
       }
+      if (source.contains("/") && !source.startsWith("/")) {
+        errors.add("Volume source is not absolute: " + source);
+        continue;
+      }
       final String[] parts = path.split(":", 3);
       if (path.isEmpty()
           || path.equals("/")
