@@ -421,13 +421,22 @@ container.
 #### volumes
 Container volumes. Optional. 
 
-Specify either a single path to create a data volume, or a source path and a
-container path to mount a file or directory from the host. 
-  
-The container path can be suffixed with "rw" or "ro" to create a read-write or
-read-only volume, respectively.
+Specify a single path to create a data volume, a container path and a source
+path to mount a directory from the host, or a container path and a name to mount
+a named volume. The named volume will be created by docker if it does not exist;
+see [volumes][] in the Docker reference for full details. The container path can
+be suffixed with "rw" or "ro" to create a read-write or read-only volume mount,
+respectively.
 
-Format: `[container-path]:[rw|ro]:[host-path]`.
+Format: `"[container-path]:[rw|ro]": "[host-path|volume-name]"`.
+
+Examples:
+
+  * Mount a new data volume (name assigned by docker) to `/foo` in the container: `"volumes": {"/foo": ""}`
+  * Mount `/src` from the host to `/dst` in the container: `"volumes": {"/dst": "/src"}`
+  * Mount a volume named `my-vol` to `/dst` in the container: `"volumes": {"/dst": "my-vol"}`
+
+[volumes]: https://docs.docker.com/engine/reference/run/#volume-shared-filesystems
 
 ### Health Checks
 

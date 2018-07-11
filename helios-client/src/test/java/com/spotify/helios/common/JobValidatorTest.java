@@ -169,6 +169,7 @@ public class JobValidatorTest {
   @Test
   public void testValidVolumesPass() {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
+    assertThat(validator.validate(j.toBuilder().addVolume("/foo", "bar").build()), is(empty()));
     assertThat(validator.validate(j.toBuilder().addVolume("/foo").build()), is(empty()));
     assertThat(validator.validate(j.toBuilder().addVolume("/foo", "/").build()), is(empty()));
     assertThat(validator.validate(j.toBuilder().addVolume("/foo:ro", "/").build()), is(empty()));
@@ -421,8 +422,8 @@ public class JobValidatorTest {
     assertEquals(newHashSet("Volume path is not absolute: foo"),
         validator.validate(j.toBuilder().addVolume("foo", "/bar").build()));
 
-    assertEquals(newHashSet("Volume source is not absolute: bar"),
-        validator.validate(j.toBuilder().addVolume("/foo", "bar").build()));
+    assertEquals(newHashSet("Volume source is not absolute: bar/baz"),
+        validator.validate(j.toBuilder().addVolume("/foo", "bar/baz").build()));
   }
 
   @Test
