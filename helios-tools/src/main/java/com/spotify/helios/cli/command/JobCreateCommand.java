@@ -226,7 +226,7 @@ public class JobCreateCommand extends ControlCommand {
         .help("Container volumes. Specify either a single path to create a data volume, "
               + "or a source path and a container path to mount a file or directory from the host. "
               + "The container path can be suffixed with \"rw\" or \"ro\" to create a read-write "
-              + "or read-only volume, respectively. Format: [container-path]:[host-path]:[rw|ro].");
+              + "or read-only volume, respectively. Format: [host-path]:[container-path]:[rw|ro].");
 
     argsArg = parser.addArgument("args")
         .nargs("*")
