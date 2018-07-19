@@ -22,7 +22,6 @@ package com.spotify.helios.client;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -30,7 +29,6 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.base.Optional;
 import java.io.IOException;
-import java.net.URI;
 import org.junit.Test;
 
 public class GoogleCredentialsAccessTokenSupplierTest {
@@ -56,6 +54,6 @@ public class GoogleCredentialsAccessTokenSupplierTest {
     final GoogleCredentialsAccessTokenSupplier supplier = new GoogleCredentialsAccessTokenSupplier(
         true, null, null, credentials);
     supplier.get();
-    verify(credentials).getRequestMetadata(any(URI.class));
+    verify(credentials).refreshAccessToken();
   }
 }
