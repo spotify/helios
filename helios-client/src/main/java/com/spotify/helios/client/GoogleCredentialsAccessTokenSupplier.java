@@ -39,7 +39,7 @@ class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessTo
   private static final Logger LOG =
       LoggerFactory.getLogger(GoogleCredentialsAccessTokenSupplier.class);
 
-  public static final List<String> DEFAULT_SCOPES = ImmutableList.of(
+  static final List<String> DEFAULT_SCOPES = ImmutableList.of(
       "https://www.googleapis.com/auth/cloud-platform.read-only",
       "https://www.googleapis.com/auth/userinfo.email"
   );
@@ -80,7 +80,7 @@ class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessTo
             if (credentials == null) {
               credentials = getCredentialsWithScopes(tokenScopes);
             }
-            credentials.getRequestMetadata(null);
+            credentials.refreshAccessToken();
           }
 
           tokenOpt = Optional.of(credentials.getAccessToken());
