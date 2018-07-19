@@ -42,13 +42,14 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.auth.oauth2.AccessToken;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -92,6 +93,8 @@ import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagenttls.CertKeyPaths;
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -597,6 +600,8 @@ public class HeliosClient implements Closeable {
 
   public static class Builder {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Builder.class);
+
     private static final String HELIOS_CERT_PATH = "HELIOS_CERT_PATH";
     // used in the name format of the Client's executor's ThreadFactory to differentiate between
     // different instances of HeliosClient. this way we avoid having multiple threads named
@@ -608,9 +613,12 @@ public class HeliosClient implements Closeable {
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
     private boolean googleCredentialsEnabled = true;
-    private AccessToken googleAccessToken;
-    private List<String> googleAccessTokenScopes =
-        GoogleCredentialsAccessTokenSupplier.DEFAULT_SCOPES;
+    private AuthorizationHeaderSupplier authorizationHeaderSupplier = null;
+    private GoogleCredentials googleCredentials;
+    private List<String> googleScopes = ImmutableList.of(
+        "https://www.googleapis.com/auth/cloud-platform.read-only",
+        "https://www.googleapis.com/auth/userinfo.email"
+    );
     private ListeningScheduledExecutorService executorService;
     private boolean shutDownExecutorOnClose = true;
     private int httpTimeout = 10000;
@@ -662,18 +670,29 @@ public class HeliosClient implements Closeable {
       return this;
     }
 
+    /**
+     * Customize the AuthorizationHeaderSupplier instance used to determine what Authorization
+     * header value (if any) to send in API requests. If not set, and
+     * {@link #setGoogleCredentialsEnabled(boolean)} is not disabled, then an instance of
+     * {@link GoogleCredentialsAuthorizationHeaderSupplier} is used.
+     */
+    public Builder setAuthorizationHeaderSupplier(final AuthorizationHeaderSupplier supplier) {
+      this.authorizationHeaderSupplier = supplier;
+      return this;
+    }
+
     public Builder setGoogleCredentialsEnabled(final boolean enabled) {
       this.googleCredentialsEnabled = enabled;
       return this;
     }
 
-    public Builder setGoogleAccessToken(final AccessToken accessToken) {
-      this.googleAccessToken = accessToken;
+    public Builder setGoogleCredentials(final GoogleCredentials credentials) {
+      this.googleCredentials = credentials;
       return this;
     }
 
     public Builder setGoogleAccessTokenScopes(final List<String> scopes) {
-      this.googleAccessTokenScopes = scopes;
+      this.googleScopes = scopes;
       return this;
     }
 
@@ -754,9 +773,21 @@ public class HeliosClient implements Closeable {
       final DefaultHttpConnector connector =
           new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
-      Supplier<Optional<AccessToken>> accessTokenSupplier = new
-          GoogleCredentialsAccessTokenSupplier(googleCredentialsEnabled, googleAccessToken,
-          googleAccessTokenScopes);
+      AuthorizationHeaderSupplier authorizationSupplier = this.authorizationHeaderSupplier;
+
+      if (authorizationSupplier == null) {
+        if (googleCredentialsEnabled) {
+          final GoogleCredentials credentials = loadGoogleCredentials();
+          authorizationSupplier = new GoogleCredentialsAuthorizationHeaderSupplier(credentials);
+        } else {
+          authorizationSupplier = new AuthorizationHeaderSupplier() {
+            @Override
+            public Optional<String> get() {
+              return Optional.absent();
+            }
+          };
+        }
+      }
 
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
       try {
@@ -786,11 +817,39 @@ public class HeliosClient implements Closeable {
       }
 
       return new AuthenticatingHttpConnector(user,
-          accessTokenSupplier,
+          authorizationSupplier,
           agentProxyOpt,
           Optional.fromNullable(certKeyPaths),
           endpointIterator,
           connector);
+    }
+
+    private GoogleCredentials loadGoogleCredentials() {
+      try {
+        GoogleCredentials credentials = null;
+
+        if (googleCredentials != null) {
+          credentials = googleCredentials;
+        } else if (System.getenv("HELIOS_GOOGLE_CREDENTIALS") != null) {
+          final String path = System.getenv("HELIOS_GOOGLE_CREDENTIALS");
+          final File file = new File(path);
+          try (final FileInputStream s = new FileInputStream(file)) {
+            credentials = GoogleCredentials.fromStream(s);
+            LOG.info("Using Google Credentials from file: " + file.getAbsolutePath());
+          }
+        }
+
+        // if not specified and no environment variable set, fallback to application default
+        // credentials
+        if (credentials == null) {
+          credentials = GoogleCredentials.getApplicationDefault();
+          LOG.info("Using Google Application Default Credentials");
+        }
+
+        return googleScopes.isEmpty() ? credentials : credentials.createScoped(googleScopes);
+      } catch (IOException ex) {
+        throw new RuntimeException("IOException loading Google Credentials", ex);
+      }
     }
   }
 
