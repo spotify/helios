@@ -239,6 +239,11 @@ If is specified, Helios will unregister from service discovery and wait the
 specified number of seconds before undeploying. Optional, defaults to `0` for
 no grace period.
 
+The CLI will prevent you from creating a job that contains both a grace period and
+a static port, as these two options conflict with each other (the new container 
+cannot be started if the external port is in use by the old container) and often
+cause `rolling-update` timeouts.
+
 #### healthCheck
 A health check Helios will execute on the container. See the health checks
 section below. Optional.
@@ -298,6 +303,11 @@ example `{"quic": {"internalPort": 80, "protocol": "udp"}}` or
 
 The name of the endpoint specified in the port mapping will be used if
 specifying service registration using the `registration` below.
+
+The CLI will prevent you from creating a job that contains both a grace period and
+a static port, as these two options conflict with each other (the new container 
+cannot be started if the external port is in use by the old container) and often
+cause `rolling-update` timeouts.
 
 #### ramdisks
 Memory-backed (tmpfs) mounts that are created and mounted when the container is run. Optional.
