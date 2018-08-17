@@ -80,7 +80,7 @@ class GoogleCredentialsAccessTokenSupplier implements Supplier<Optional<AccessTo
             if (credentials == null) {
               credentials = getCredentialsWithScopes(tokenScopes);
             }
-            credentials.refreshAccessToken();
+            credentials.refreshIfExpired();
           }
 
           tokenOpt = Optional.of(credentials.getAccessToken());

@@ -54,6 +54,6 @@ public class GoogleCredentialsAccessTokenSupplierTest {
     final GoogleCredentialsAccessTokenSupplier supplier = new GoogleCredentialsAccessTokenSupplier(
         true, null, null, credentials);
     supplier.get();
-    verify(credentials).refreshAccessToken();
+    verify(credentials).refreshIfExpired();
   }
 }
