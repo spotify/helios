@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,22 +34,29 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.MasterModel;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.joda.time.Instant;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 public class OldJobReaperTest {
+
+  @Rule
+  public TestName name = new TestName();
 
   private static final long RETENTION_DAYS = 1;
   private static final Job DUMMY_JOB = Job.newBuilder().build();
@@ -60,16 +67,19 @@ public class OldJobReaperTest {
     private final List<TaskStatusEvent> history;
     private final Map<String, Deployment> deployments;
     private final JobStatus jobStatus;
-    private final boolean expectReap;
 
-    private Datapoint(final String jobName, final Map<String, Deployment> deployments,
-                      final List<TaskStatusEvent> history, final boolean expectReap) {
-      this(jobName, deployments, history, null, expectReap);
+    private Datapoint(
+        final String jobName,
+        final Map<String, Deployment> deployments,
+        final List<TaskStatusEvent> history) {
+      this(jobName, deployments, history, null);
     }
 
-    private Datapoint(final String jobName, final Map<String, Deployment> deployments,
-                      final List<TaskStatusEvent> history, final Long created,
-                      final boolean expectReap) {
+    private Datapoint(
+        final String jobName,
+        final Map<String, Deployment> deployments,
+        final List<TaskStatusEvent> history,
+        final Long created) {
       final Job.Builder builder = Job.newBuilder().setName(jobName);
       if (created != null) {
         builder.setCreated(created);
@@ -78,22 +88,21 @@ public class OldJobReaperTest {
       this.history = ImmutableList.copyOf(history);
       this.deployments = ImmutableMap.copyOf(deployments);
       this.jobStatus = JobStatus.newBuilder().setDeployments(this.deployments).build();
-      this.expectReap = expectReap;
     }
 
     public Job getJob() {
       return job;
     }
 
-    public JobId getJobId() {
+    JobId getJobId() {
       return job.getId();
     }
 
-    public List<TaskStatusEvent> getHistory() {
+    List<TaskStatusEvent> getHistory() {
       return this.history;
     }
 
-    public JobStatus getJobStatus() {
+    JobStatus getJobStatus() {
       return this.jobStatus;
     }
   }
@@ -126,55 +135,176 @@ public class OldJobReaperTest {
     return builder.build();
   }
 
+  /**
+   * A job not deployed, with history, and last used too long ago should BE reaped.
+   */
   @Test
-  public void testOldJobReaper() throws Exception {
+  public void jobNotDeployedWithHistoryLastUsedTooLongAgoReaped() throws Exception {
     final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        emptyMap(),
+        events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))));
+    testReap(datapoint, masterModel, true);
+  }
+
+  /**
+   * A job not deployed, with history, and last used recently should NOT BE reaped.
+   */
+  @Test
+  public void jobNotDeployedWithHistoryLastUsedRecentlyNotReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        emptyMap(),
+        events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))));
+    testReap(datapoint, masterModel, false);
+  }
+
+  /**
+   * A job not deployed, without history, and without a creation date should BE reaped.
+   */
+  @Test
+  public void jobNotDeployedWithoutHistoryWithCreateDateReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(name.getMethodName(), emptyMap(), emptyList());
+    testReap(datapoint, masterModel, true);
+  }
+
+  /**
+   * A job not deployed, without history, and created before retention time should BE reaped.
+   */
+  @Test
+  public void jobNotDeployedWithoutHistoryCreateBeforeRetentionReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        emptyMap(),
+        emptyList(),
+        HOURS.toMillis(23));
+    testReap(datapoint, masterModel, true);
+  }
+
+  /**
+   * A job not deployed, without history, created after retention time should NOT BE reaped.
+   */
+  @Test
+  public void jobNotDeployedWithoutHistoryCreateAfterRetentionNotReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        emptyMap(),
+        emptyList(),
+        HOURS.toMillis(25));
+    testReap(datapoint, masterModel, false);
+  }
+
+  /**
+   * A job deployed and without history should NOT BE reaped.
+   */
+  @Test
+  public void jobDeployedWithoutHistoryNotReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        deployments(JobId.fromString(name.getMethodName()), 2),
+        emptyList());
+    testReap(datapoint, masterModel, false);
+  }
+
+  /**
+   * A job deployed, with history, and last used too long ago should NOT BE reaped.
+   */
+  @Test
+  public void jobDeployedWithHistoryLastUsedTooLongAgoNotReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        deployments(JobId.fromString(name.getMethodName()), 3),
+        events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))));
+    testReap(datapoint, masterModel, false);
+  }
+
+  /**
+   * A job deployed, with history, and last used recently should NOT BE reaped.
+   */
+  @Test
+  public void jobDeployedWithHistoryLastUsedRecentlyNotReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        deployments(JobId.fromString(name.getMethodName()), 3),
+        events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))));
+    testReap(datapoint, masterModel, false);
+  }
+
+  /**
+   * A job not deployed, with history, last used too long ago and part of a deployment group
+   * should NOT BE reaped.
+   */
+  @Test
+  public void jobDeployedWithHistoryLastUsedTooLongAgoInDgNotReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+
+    when(masterModel.getDeploymentGroups())
+        .thenReturn(ImmutableMap.of(
+            "testdg",
+            new DeploymentGroup("name", new ArrayList<>(), JobId.fromString(name.getMethodName()),
+                RolloutOptions.getDefault(), DeploymentGroup.RollingUpdateReason.MANUAL)));
+
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        emptyMap(),
+        events(ImmutableList.of(HOURS.toMillis(2), HOURS.toMillis(3))));
+
+    testReap(datapoint, masterModel, false);
+  }
+
+  /**
+   * A job not deployed, with history, last used too long ago and part of a deployment group
+   * should BE reaped.
+   */
+  @Test
+  public void jobDeployedWithHistoryLastUsedTooLongAgoNotInDgReaped() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+
+    when(masterModel.getDeploymentGroups())
+        .thenReturn(ImmutableMap.of(
+            "testdg",
+            new DeploymentGroup("name", new ArrayList<>(), JobId.fromString("framazama"),
+                RolloutOptions.getDefault(), DeploymentGroup.RollingUpdateReason.MANUAL)));
+
+    final Datapoint datapoint = new Datapoint(
+        name.getMethodName(),
+        emptyMap(),
+        events(ImmutableList.of(HOURS.toMillis(2), HOURS.toMillis(3))));
+
+    testReap(datapoint, masterModel, true);
+  }
+
+  private void testReap(
+      final Datapoint datapoint,
+      final MasterModel masterModel,
+      final boolean expectReap) throws Exception {
     final Clock clock = mock(Clock.class);
     when(clock.now()).thenReturn(new Instant(HOURS.toMillis(48)));
 
-    final List<Datapoint> datapoints = Lists.newArrayList(
-        // A job not deployed, with history, and last used too long ago should BE reaped
-        new Datapoint("job1", emptyMap(),
-            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), true),
-        // A job not deployed, with history, and last used recently should NOT BE reaped
-        new Datapoint("job2", emptyMap(),
-            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false),
-        // A job not deployed, without history, and without a creation date should BE reaped
-        new Datapoint("job3", emptyMap(), emptyList(), true),
-        // A job not deployed, without history, and created before retention time should BE reaped
-        new Datapoint("job4", emptyMap(), emptyList(), HOURS.toMillis(23), true),
-        // A job not deployed, without history, created after retention time should NOT BE reaped
-        new Datapoint("job5", emptyMap(), emptyList(), HOURS.toMillis(25), false),
-        // A job deployed and without history should NOT BE reaped
-        new Datapoint("job6", deployments(JobId.fromString("job6"), 2), emptyList(), false),
-        // A job deployed, with history, and last used too long ago should NOT BE reaped
-        new Datapoint("job7", deployments(JobId.fromString("job7"), 3),
-            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), false),
-        // A job deployed, with history, and last used recently should NOT BE reaped
-        new Datapoint("job8", deployments(JobId.fromString("job8"), 3),
-            events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false)
-    );
+    when(masterModel.getJobs())
+        .thenReturn(ImmutableMap.of(datapoint.getJobId(), datapoint.getJob()));
 
-    when(masterModel.getJobs()).thenReturn(
-        datapoints.stream().collect(Collectors.toMap(Datapoint::getJobId, Datapoint::getJob)));
-
-    for (final Datapoint datapoint : datapoints) {
-      when(masterModel.getJobHistory(datapoint.getJobId())).thenReturn(datapoint.getHistory());
-      when(masterModel.getJobStatus(datapoint.getJobId())).thenReturn(datapoint.getJobStatus());
-    }
+    when(masterModel.getJobHistory(datapoint.getJobId())).thenReturn(datapoint.getHistory());
+    when(masterModel.getJobStatus(datapoint.getJobId())).thenReturn(datapoint.getJobStatus());
 
     final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock, 100, 0);
     reaper.startAsync().awaitRunning();
 
-    // Wait one second to give the reaper enough time to process all the jobs before verifying :(
-    Thread.sleep(1000);
+    // Wait 100ms to give the reaper enough time to process all the jobs before verifying :(
+    Thread.sleep(100);
 
-    for (final Datapoint datapoint : datapoints) {
-      if (datapoint.expectReap) {
-        verify(masterModel, timeout(500)).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
-      } else {
-        verify(masterModel, never()).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
-      }
+    if (expectReap) {
+      verify(masterModel, timeout(500)).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
+    } else {
+      verify(masterModel, never()).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
     }
   }
 }

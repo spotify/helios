@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -34,7 +35,9 @@ import com.spotify.helios.master.MasterModel;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -46,16 +49,16 @@ import org.slf4j.LoggerFactory;
  * event, its creation date, and the specified number of retention days.
  *
  * <p>1. A job that is deployed should NOT BE reaped, regardless of its history or creation date.
- *    2. A job that is not deployed, with history, and an event *before* the number of retention
- *       days, should BE reaped.
- *    3. A job that is not deployed, with history, and an event *after* the number of retention
- *       days should NOT BE reaped. For example: a job created long ago but deployed recently.
- *    4. A job that is not deployed, without history, and without a creation date should BE
- *       reaped. Only really old versions of Helios create jobs without dates.
- *    5. A job that is not deployed, without history, but with a creation date before the number of
- *       retention days should BE reaped.
- *    6. A job that is not deployed, without history, and with a creation date after the number of
- *       retention days should NOT BE reaped.
+ * 2. A job that is not deployed, with history, and an event *before* the number of retention
+ * days, should BE reaped.
+ * 3. A job that is not deployed, with history, and an event *after* the number of retention
+ * days should NOT BE reaped. For example: a job created long ago but deployed recently.
+ * 4. A job that is not deployed, without history, and without a creation date should BE
+ * reaped. Only really old versions of Helios create jobs without dates.
+ * 5. A job that is not deployed, without history, but with a creation date before the number of
+ * retention days should BE reaped only if the job is NOT part of a deployment group.
+ * 6. A job that is not deployed, without history, and with a creation date after the number of
+ * retention days should NOT BE reaped.
  *
  * <p>Note that the --disable-job-history flag in {@link com.spotify.helios.agent.AgentParser}
  * controls whether the Helios agent should write job history to the data store. If this is
@@ -79,6 +82,8 @@ public class OldJobReaper extends RateLimitedService<Job> {
   private final long retentionMillis;
   private final Clock clock;
 
+  private Set<JobId> jobsInDeploymentGroups;
+
   public OldJobReaper(final MasterModel masterModel, final long retentionDays) {
     this(masterModel, retentionDays, SYSTEM_CLOCK, PERMITS_PER_SECOND, new Random().nextInt(DELAY));
   }
@@ -100,6 +105,15 @@ public class OldJobReaper extends RateLimitedService<Job> {
   @Override
   Iterable<Job> collectItems() {
     return masterModel.getJobs().values();
+  }
+
+  @Override
+  protected void beforeIteration() {
+    jobsInDeploymentGroups = masterModel.getDeploymentGroups()
+        .values()
+        .stream()
+        .map(DeploymentGroup::getJobId)
+        .collect(Collectors.toSet());
   }
 
   @Override
@@ -138,9 +152,11 @@ public class OldJobReaper extends RateLimitedService<Job> {
           // Calculate the amount of time in milliseconds that has elapsed since the last event
           final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
 
-          // A job not deployed, with history, and last used too long ago should BE reaped
-          // A job not deployed, with history, and last used recently should NOT BE reaped
-          if (unusedDurationMillis > retentionMillis) {
+          // A job not deployed, with history, job is not part of a deployment group, and last used
+          //  too long ago should BE reaped
+          // A job not deployed, with history, job is part of a deployment group, or last used
+          //  recently should NOT BE reaped
+          if (unusedDurationMillis > retentionMillis && !jobsInDeploymentGroups.contains(jobId)) {
             log.info("Marked job '{}' for reaping (not deployed, has history whose last event "
                      + "on {} was before the retention time of {} days)",
                 jobId, eventDate, retentionDays);
