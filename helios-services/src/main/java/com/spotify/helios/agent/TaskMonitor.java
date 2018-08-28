@@ -172,7 +172,7 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
   }
 
   @Override
-  public void exited(final int code) {
+  public void exited(final long code) {
     flapController.exited();
     updateThrottle();
     updateState(EXITED);
