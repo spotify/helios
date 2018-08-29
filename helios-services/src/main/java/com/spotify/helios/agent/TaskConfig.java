@@ -297,6 +297,7 @@ public class TaskConfig {
         .portBindings(portBindings())
         .dns(dns)
         .securityOpt(securityOpt.toArray(new String[securityOpt.size()]))
+        .runtime(job.getRuntime())
         .networkMode(job.getNetworkMode());
 
     if (!job.getRamdisks().isEmpty()) {

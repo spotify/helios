@@ -65,7 +65,7 @@ public class ExecHealthCheckerTest {
     when(version.apiVersion()).thenReturn("1.18");
 
     final ExecState execState = mock(ExecState.class);
-    when(execState.exitCode()).thenReturn(0);
+    when(execState.exitCode()).thenReturn(0L);
 
     final LogStream log = mock(LogStream.class);
     when(log.readFully()).thenReturn("");
@@ -90,7 +90,7 @@ public class ExecHealthCheckerTest {
   @Test
   public void testHealthCheckFailure() throws Exception {
     final ExecState execState = mock(ExecState.class);
-    when(execState.exitCode()).thenReturn(2);
+    when(execState.exitCode()).thenReturn(2L);
     when(docker.execInspect(EXEC_ID)).thenReturn(execState);
 
     assertThat(checker.check(CONTAINER_ID), is(false));

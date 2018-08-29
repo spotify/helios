@@ -105,7 +105,7 @@ public final class HealthCheckerFactory {
           handleExecStartConnectionReset(e);
         }
 
-        final int exitCode = docker.execInspect(execId).exitCode();
+        final long exitCode = docker.execInspect(execId).exitCode();
         if (exitCode != 0) {
           log.warn("exec healthcheck containerId={} cmd={} failed with exitCode={} output={}",
               containerId, Arrays.toString(cmd), exitCode, output);
