@@ -200,6 +200,7 @@ example that uses all the available configuration keys with an explanation of ea
   "secondsToWaitBeforeKill": 120,
   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
   "token": "insecure-access-token",
+  "runtime": "nvidia",
   "volumes" : {
     "/destination/path/in/container.yaml:ro" : "/source/path/in/host.yaml"
   }
@@ -400,6 +401,13 @@ Will ultimately have these options at `rolling-update` time.
 
 Since timeout, migrate, and token weren't specified either via CLI or job config, they get their
 values from the defaults in [`RolloutOptions`][rollout-options-code].
+
+#### runtime
+Optional. Container runtime to use. When specifying a runtime, you will need to ensure that 
+the docker daemon knows about the specified runtime. For example, to enable nvidia runtime,
+you will need to configure the host to install runtime.
+
+[Puppet example](https://ghe.spotify.net/puppet/spotify-puppet/blob/d2c2d8da25299ec591a7fd67d70037b5cfbb8713/modules/nvidia_docker2/manifests/init.pp).
 
 #### secondsToWaitBeforeKill
 Optional. When a job is being stopped or undeployed, the helios-agent will ask
