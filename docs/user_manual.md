@@ -407,7 +407,7 @@ Optional. Container runtime to use. When specifying a runtime, you will need to 
 the docker daemon knows about the specified runtime. For example, to enable nvidia runtime,
 you will need to configure the host to install runtime.
 
-[Puppet example](https://ghe.spotify.net/puppet/spotify-puppet/blob/d2c2d8da25299ec591a7fd67d70037b5cfbb8713/modules/nvidia_docker2/manifests/init.pp).
+[Example of setting up nvidia container runtime.](https://github.com/NVIDIA/nvidia-docker) 
 
 #### secondsToWaitBeforeKill
 Optional. When a job is being stopped or undeployed, the helios-agent will ask
