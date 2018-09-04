@@ -149,7 +149,7 @@ public class HeliosSoloDeploymentTest {
     when(containerInfo.networkSettings()).thenReturn(networkSettings);
     when(this.dockerClient.inspectContainer(CONTAINER_ID)).thenReturn(containerInfo);
 
-    when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(ContainerExit.create(0));
+    when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(ContainerExit.create(0L));
   }
 
   private HeliosSoloDeployment buildHeliosSoloDeployment() {

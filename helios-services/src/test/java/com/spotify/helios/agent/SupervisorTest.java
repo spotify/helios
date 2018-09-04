@@ -345,7 +345,7 @@ public class SupervisorTest {
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(createResponse2);
     when(docker.inspectContainer(eq(containerId2))).thenReturn(runningResponse);
-    waitFuture1.set(ContainerExit.create(1));
+    waitFuture1.set(ContainerExit.create(1L));
 
     // Verify that the container was restarted
     verify(docker, timeout(30000)).createContainer(any(ContainerConfig.class), any(String.class));

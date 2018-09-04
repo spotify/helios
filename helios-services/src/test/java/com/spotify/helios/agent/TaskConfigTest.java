@@ -130,6 +130,21 @@ public class TaskConfigTest {
   }
 
   @Test
+  public void testRuntimeHostConfig() throws Exception {
+
+    Job nvidiaRuntimeJob = JOB.toBuilder().setRuntime("nvidia").build();
+
+    final TaskConfig taskConfig = TaskConfig.builder()
+        .namespace("test")
+        .host(HOST)
+        .job(nvidiaRuntimeJob)
+        .build();
+
+    final HostConfig hostConfig = taskConfig.hostConfig(Optional.absent());
+    assertThat(hostConfig.runtime(), equalTo("nvidia"));
+  }
+
+  @Test
   public void testContainerConfig() throws Exception {
     final TaskConfig taskConfig = TaskConfig.builder()
         .namespace("test")

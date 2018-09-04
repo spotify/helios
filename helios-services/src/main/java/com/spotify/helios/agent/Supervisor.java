@@ -318,7 +318,7 @@ public class Supervisor {
       }
 
       // Check if the runner exited normally or threw an exception
-      final Result<Integer> result = runner.result();
+      final Result<Long> result = runner.result();
       if (!result.isSuccess()) {
         // Runner threw an exception, inspect it.
         final Throwable t = result.getException();

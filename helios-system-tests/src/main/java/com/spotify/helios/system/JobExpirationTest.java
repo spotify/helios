@@ -88,6 +88,6 @@ public class JobExpirationTest extends SystemTestBase {
 
     // Wait for the agent to kill the container
     final ContainerExit exit = docker.waitContainer(taskStatus.getContainerId());
-    assertThat(exit.statusCode(), is(0));
+    assertThat(exit.statusCode(), is(0L));
   }
 }

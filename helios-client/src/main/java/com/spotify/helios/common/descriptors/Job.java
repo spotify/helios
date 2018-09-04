@@ -115,6 +115,7 @@ import org.jetbrains.annotations.Nullable;
  *     "token": "insecure-access-token",
  *     "ignoreFailures": false
  *   },
+ *   "runtime" : "nvidia",
  *   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
  *   "token": "insecure-access-token",
  *   "volumes" : {
@@ -149,6 +150,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Integer EMPTY_SECONDS_TO_WAIT = null;
   public static final Map<String, String> EMPTY_RAMDISKS = emptyMap();
   public static final RolloutOptions EMPTY_ROLLOUT_OPTIONS = null;
+  public static final String EMPTY_RUNTIME = null;
 
   private final JobId id;
   private final String image;
@@ -175,6 +177,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Integer secondsToWaitBeforeKill;
   private final Map<String, String> ramdisks;
   private final RolloutOptions rolloutOptions;
+  private final String runtime;
 
   /**
    * Create a Job.
@@ -215,6 +218,7 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param ramdisks                Ramdisks (tmpfs) partitions created and mounted when the
    *                                container is run.
    * @param rolloutOptions          The options to use for a rolling-update.
+   * @param runtime                 Runtime to use with this container.
    *
    * @see <a href="https://docs.docker.com/engine/reference/run">Docker run reference</a>
    */
@@ -243,7 +247,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("labels") @Nullable final Map<String, String> labels,
       @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill,
       @JsonProperty("ramdisks") @Nullable final Map<String, String> ramdisks,
-      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
+      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions,
+      @JsonProperty("runtime") @Nullable final String runtime) {
     this.id = id;
     this.image = image;
 
@@ -272,6 +277,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
     this.ramdisks = firstNonNull(ramdisks, EMPTY_RAMDISKS);
     this.rolloutOptions = rolloutOptions;
+    this.runtime = Optional.fromNullable(runtime).orNull();
   }
 
   private Job(final JobId id, final Builder.Parameters pm) {
@@ -302,6 +308,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.labels = ImmutableMap.copyOf(pm.labels);
     this.ramdisks = ImmutableMap.copyOf(pm.ramdisks);
     this.rolloutOptions = pm.rolloutOptions;
+    this.runtime = pm.runtime;
   }
 
   public JobId getId() {
@@ -404,6 +411,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     return rolloutOptions;
   }
 
+  public String getRuntime() {
+    return runtime;
+  }
+
   /**
    * Returns true if any of the Job's {@link PortMapping}s has an external port.
    */
@@ -460,7 +471,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            && Objects.equals(this.labels, that.labels)
            && Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill)
            && Objects.equals(this.ramdisks, that.ramdisks)
-           && Objects.equals(this.rolloutOptions, that.rolloutOptions);
+           && Objects.equals(this.rolloutOptions, that.rolloutOptions)
+           && Objects.equals(this.runtime, that.runtime);
   }
 
   @Override
@@ -469,7 +481,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         id, image, hostname, expires, created, command, env, resources,
         ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
         token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
-        dropCapabilities, labels, secondsToWaitBeforeKill, ramdisks, rolloutOptions);
+        dropCapabilities, labels, secondsToWaitBeforeKill, ramdisks, rolloutOptions, runtime);
   }
 
   @Override
@@ -500,6 +512,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            + ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill
            + ", ramdisks=" + ramdisks
            + ", rolloutOptions=" + rolloutOptions
+           + ", runtime=" + runtime
            + '}';
   }
 
@@ -534,7 +547,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setLabels(labels)
         .setSecondsToWaitBeforeKill(secondsToWaitBeforeKill)
         .setRamdisks(ramdisks)
-        .setRolloutOptions(rolloutOptions);
+        .setRolloutOptions(rolloutOptions)
+        .setRuntime(runtime);
   }
 
   public static class Builder implements Cloneable {
@@ -579,6 +593,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Integer secondsToWaitBeforeKill;
       public Map<String, String> ramdisks;
       public RolloutOptions rolloutOptions;
+      public String runtime;
 
       private Parameters() {
         this.created = EMPTY_CREATED;
@@ -600,6 +615,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.labels = EMPTY_LABELS;
         this.ramdisks = Maps.newHashMap(EMPTY_RAMDISKS);
         this.rolloutOptions = EMPTY_ROLLOUT_OPTIONS;
+        this.runtime = EMPTY_RUNTIME;
       }
 
       private Parameters(final Parameters pm) {
@@ -629,6 +645,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.secondsToWaitBeforeKill = pm.secondsToWaitBeforeKill;
         this.ramdisks = Maps.newHashMap(pm.ramdisks);
         this.rolloutOptions = pm.rolloutOptions;
+        this.runtime = pm.runtime;
       }
 
       private Parameters withoutMetaParameters() {
@@ -815,6 +832,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setRuntime(final String runtime) {
+      pm.runtime = runtime;
+      return this;
+    }
+
     public String getName() {
       return pm.name;
     }
@@ -909,6 +931,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public RolloutOptions getRolloutOptions() {
       return pm.rolloutOptions;
+    }
+
+    public String getRuntime() {
+      return pm.runtime;
     }
 
     @SuppressWarnings({ "CloneDoesntDeclareCloneNotSupportedException",

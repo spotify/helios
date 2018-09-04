@@ -189,7 +189,7 @@ public class TaskRunnerFactory {
     }
 
     @Override
-    public void exited(final int code) {
+    public void exited(final long code) {
       for (final TaskRunner.Listener l : listeners) {
         l.exited(code);
       }

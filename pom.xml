@@ -139,7 +139,7 @@
             <dependency>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-client</artifactId>
-                <version>8.11.3</version>
+                <version>8.13.0</version>
                 <classifier>shaded</classifier>
             </dependency>
 

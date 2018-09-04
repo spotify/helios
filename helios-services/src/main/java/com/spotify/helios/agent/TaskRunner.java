@@ -56,7 +56,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
 
   private final long delayMillis;
-  private final SettableFuture<Integer> result = SettableFuture.create();
+  private final SettableFuture<Long> result = SettableFuture.create();
   private final TaskConfig config;
   private final DockerClient docker;
   private final String existingContainerId;
@@ -83,11 +83,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.containerId = Optional.absent();
   }
 
-  public Result<Integer> result() {
+  public Result<Long> result() {
     return Result.of(result);
   }
 
-  public ListenableFuture<Integer> resultFuture() {
+  public ListenableFuture<Long> resultFuture() {
     return result;
   }
 
@@ -152,7 +152,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   @Override
   protected void run() {
     try {
-      final int exitCode = run0();
+      final long exitCode = run0();
       result.set(exitCode);
     } catch (Exception e) {
       listener.failed(e, getContainerError());
@@ -160,7 +160,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
-  private int run0() throws InterruptedException, DockerException {
+  private long run0() throws InterruptedException, DockerException {
     // Delay
     Thread.sleep(delayMillis);
 
@@ -375,7 +375,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     void running();
 
-    void exited(int code);
+    void exited(long code);
   }
 
   public static Builder builder() {
@@ -494,7 +494,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
 
     @Override
-    public void exited(final int code) {
+    public void exited(final long code) {
 
     }
   }
