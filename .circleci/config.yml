@@ -33,6 +33,7 @@ jobs:
         command: |
          apt-get -y -qq update
          apt-get -y -qq install jq
+         update-alternatives --list java
          update-alternatives --set java /usr/lib/jvm/$JAVA_VERSION/bin/java; sudo update-alternatives --set javac /usr/lib/jvm/$JAVA_VERSION/bin/javac; echo -e "export JAVA_HOME=/usr/lib/jvm/$JAVA_VERSION" >> $BASH_ENV
          if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
 
