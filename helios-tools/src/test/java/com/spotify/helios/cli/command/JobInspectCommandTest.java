@@ -85,6 +85,7 @@ public class JobInspectCommandTest {
               .externalPort(456)
               .build()
       ))
+      .setRuntime("nvidia")
       .setRolloutOptions(ROLLOUT_OPTIONS)
       .build();
 
@@ -123,6 +124,7 @@ public class JobInspectCommandTest {
     assertThat(output, containsString("Drop capabilities: cap3, cap4"));
     assertThat(output, containsString("Ports: bar=0.0.0.0:123:456/tcp"));
     assertThat(output, containsString("foo=127.0.0.1:80:8080/udp"));
+    assertThat(output, containsString("Runtime: nvidia"));
     assertThat(output, containsString("Rollout options (null options will fallback to defaults "
                                       + "at rolling-update time): timeout: 250, parallelism: 2, "
                                       + "migrate: true, overlap: true, token: foobar, "

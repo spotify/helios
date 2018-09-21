@@ -138,6 +138,7 @@ public class JobCreateCommandTest {
     when(options.getList("labels")).thenReturn(Lists.<Object>newArrayList("a=b", "c=d"));
     doReturn(ImmutableList.of("cap1", "cap2")).when(options).getList("add_capability");
     doReturn(ImmutableList.of("cap3", "cap4")).when(options).getList("drop_capability");
+    when(options.getString("runtime")).thenReturn("nvidia");
 
     when(options.getList("rollout_options"))
         .thenReturn(Lists.<Object>newArrayList("overlap=true", "parallelism=2", "foo=bar"));
@@ -160,6 +161,7 @@ public class JobCreateCommandTest {
     assertThat(output, containsString("\"addCapabilities\":[\"cap1\",\"cap2\"]"));
     assertThat(output, containsString("\"dropCapabilities\":[\"cap3\",\"cap4\"]"));
     assertThat(output, containsString("\"labels\":{\"a\":\"b\",\"c\":\"d\"}"));
+    assertThat(output, containsString("\"runtime\":\"nvidia\""));
     assertThat(output,
         containsString("rolloutOptions\":{\"ignoreFailures\":null,\"migrate\":null,"
                        + "\"overlap\":true,\"parallelism\":2,\"timeout\":null,\"token\":null}"));
@@ -328,6 +330,45 @@ public class JobCreateCommandTest {
       @Override
       protected boolean matchesSafely(final Job actual) {
         return Objects.equals(labels, actual.getLabels());
+      }
+    };
+  }
+
+  @Test
+  public void testRuntimeFromJsonFile() throws Exception {
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("foobar");
+
+    when(options.get("file"))
+        .thenReturn(new File("src/test/resources/job_config_with_runtime.json"));
+
+    assertEquals(0, runCommand());
+
+    verify(client).createJob(argThat(hasRuntime("nvidia")));
+  }
+
+  @Test
+  public void testRuntimeFromCliOverridesJsonFile() throws Exception {
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("foobar");
+
+    when(options.get("file"))
+        .thenReturn(new File("src/test/resources/job_config_with_runtime.json"));
+
+    when(options.getString("runtime")).thenReturn("rkt");
+
+    assertEquals(0, runCommand());
+
+    verify(client).createJob(argThat(hasRuntime("rkt")));
+  }
+
+  private Matcher<Job> hasRuntime(final String runtime) {
+    final String description = "Job with runtime=" + runtime;
+
+    return new CustomTypeSafeMatcher<Job>(description) {
+      @Override
+      protected boolean matchesSafely(final Job actual) {
+        return Objects.equals(runtime, actual.getRuntime());
       }
     };
   }

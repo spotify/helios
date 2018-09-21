@@ -26,7 +26,6 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.spotify.helios.client.HeliosClient;
@@ -35,7 +34,6 @@ import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.ServicePorts;
@@ -167,6 +165,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       printVolumes(out, job.getVolumes());
       out.printf("Add capabilities: %s%n", Joiner.on(", ").join(job.getAddCapabilities()));
       out.printf("Drop capabilities: %s%n", Joiner.on(", ").join(job.getDropCapabilities()));
+      out.printf("Runtime: %s%n", job.getRuntime());
       out.printf("Rollout options (null options will fallback to defaults at "
                  + "rolling-update time): %s%n", formatRolloutOptions(job.getRolloutOptions()));
     }

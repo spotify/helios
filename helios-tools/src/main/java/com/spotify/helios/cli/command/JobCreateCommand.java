@@ -125,6 +125,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument dropCapabilityArg;
   private final Argument labelsArg;
   private final Argument rolloutOptionsArg;
+  private final Argument runtimeArg;
   private final Supplier<Map<String, String>> envVarSupplier;
 
   public JobCreateCommand(final Subparser parser) {
@@ -285,6 +286,10 @@ public class JobCreateCommand extends ControlCommand {
         .help("Rollout options to use during a rolling-update. Use this switch more than once to "
               + "specify multiple options. Args should be of the form key=val. Valid keys are "
               + "migrate, parallelism, timeout, overlap, token, and ignoreFailures.");
+
+    runtimeArg = parser.addArgument("--runtime")
+        .nargs("?")
+        .help("Runtime to use with this container.");
 
     this.envVarSupplier = envVarSupplier;
   }
@@ -566,6 +571,11 @@ public class JobCreateCommand extends ControlCommand {
       rolloutOptionsMap.putAll(parseListOfPairs(rolloutOptionsList, "rollout_options"));
       final RolloutOptions rolloutOptions = Json.convert(rolloutOptionsMap, RolloutOptions.class);
       builder.setRolloutOptions(rolloutOptions);
+    }
+
+    final String runtime = options.getString(runtimeArg.getDest());
+    if (!isNullOrEmpty(runtime)) {
+      builder.setRuntime(runtime);
     }
 
     // We build without a hash here because we want the hash to be calculated server-side.
