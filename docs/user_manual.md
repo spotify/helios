@@ -405,7 +405,7 @@ values from the defaults in [`RolloutOptions`][rollout-options-code].
 #### runtime
 Optional. Container runtime to use. When specifying a runtime, you will need to ensure that 
 the docker daemon knows about the specified runtime. For example, to enable nvidia runtime,
-you will need to configure the host to install runtime.
+you will need to ensure that the host has the nvidia runtime libraries the container needs.
 
 [Example of setting up nvidia container runtime.](https://github.com/NVIDIA/nvidia-docker) 
 
