@@ -52,7 +52,7 @@ Most probably the [User Manual](docs/user_manual.md) is what you're looking for.
 
 If you're looking for how to download, build, install and run Helios, keep reading.
 
-Prerequisities
+Prerequisites
 --------------
 
 The binary release of Helios is built for Ubuntu 14.04.1 LTS, but Helios should
