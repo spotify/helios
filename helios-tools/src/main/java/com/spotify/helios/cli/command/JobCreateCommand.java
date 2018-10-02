@@ -398,7 +398,8 @@ public class JobCreateCommand extends ControlCommand {
     }
   }
 
-  private void mergeJobConfigurationWIthCommandLineArgs(Namespace options, Job.Builder builder, String imageIdentifier) {
+  private void mergeJobConfigurationWIthCommandLineArgs(Namespace options, Job.Builder builder,
+                                                        String imageIdentifier) {
     if (imageIdentifier != null) {
       builder.setImage(imageIdentifier);
     }
@@ -431,7 +432,8 @@ public class JobCreateCommand extends ControlCommand {
     builder.setPorts(ports);
 
     // Parse service registrations
-    final Map<ServiceEndpoint, ServicePorts> explicitRegistration = parseServiceRegistration(options, ports);
+    final Map<ServiceEndpoint, ServicePorts> explicitRegistration =
+          parseServiceRegistration(options, ports);
 
     final String registrationDomain = options.getString(registrationDomainArg.getDest());
     if (!isNullOrEmpty(registrationDomain)) {
@@ -439,7 +441,8 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     // Merge service registrations
-    final Map<ServiceEndpoint, ServicePorts> registration = mergeMaps(builder.getRegistration(), explicitRegistration);
+    final Map<ServiceEndpoint, ServicePorts> registration =
+          mergeMaps(builder.getRegistration(), explicitRegistration);
     builder.setRegistration(registration);
 
     // Get grace period interval
@@ -502,7 +505,8 @@ public class JobCreateCommand extends ControlCommand {
     }
   }
 
-  private Map<ServiceEndpoint, ServicePorts> parseServiceRegistration(Namespace options, Map<String, PortMapping> ports) {
+  private Map<ServiceEndpoint, ServicePorts> parseServiceRegistration(
+        Namespace options, Map<String, PortMapping> ports) {
     final Map<ServiceEndpoint, ServicePorts> explicitRegistration = Maps.newHashMap();
     final Pattern registrationPattern =
           compile("(?<srv>[a-zA-Z][_\\-\\w]+)(?:/(?<prot>\\w+))?(?:=(?<port>[_\\-\\w]+))?");
@@ -559,7 +563,8 @@ public class JobCreateCommand extends ControlCommand {
     }
   }
 
-  private void printJobsError(PrintStream out, boolean json, String templateJobId, Map<JobId, Job> jobs) {
+  private void printJobsError(PrintStream out, boolean json, String templateJobId,
+                              Map<JobId, Job> jobs) {
     if (jobs.size() == 0) {
       if (!json) {
         out.printf("Unknown job: %s%n", templateJobId);
@@ -572,8 +577,8 @@ public class JobCreateCommand extends ControlCommand {
       if (!json) {
         out.printf("Ambiguous job reference: %s%n", templateJobId);
       } else {
-        final CreateJobResponse createJobResponse =
-              new CreateJobResponse(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
+        final CreateJobResponse createJobResponse = new CreateJobResponse(
+              CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
         out.print(createJobResponse.toJsonString());
       }
     }
