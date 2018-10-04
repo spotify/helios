@@ -325,6 +325,10 @@
             <artifactId>jnr-unixsocket</artifactId>
             <version>0.18</version>
         </dependency>
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+        </dependency>
 
         <!-- versions that we have to manage to avoid requireUpperBoundDeps violations -->
         <dependency>
