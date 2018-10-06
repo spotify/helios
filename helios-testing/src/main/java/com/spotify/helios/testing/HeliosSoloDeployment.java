@@ -375,10 +375,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
+   * Return the container ID of the Helios Solo container.
+   *
    * @param heliosHost The address at which the Helios agent should expect to find the Helios
    *                   master.
-   *
-   * @return The container ID of the Helios Solo container.
    *
    * @throws HeliosDeploymentException if Helios Solo could not be deployed.
    */
@@ -483,14 +483,16 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
-   * @return A helios client connected to the master of this HeliosSoloDeployment.
+   * Return a helios client connected to the master of this HeliosSoloDeployment.
    */
   public HeliosClient client() {
     return this.heliosClient;
   }
 
   /**
-   * @return The container ID of the Helios Solo container.
+   * Return the container ID of the Helios Solo container.
+   *
+   * @return container ID as a String
    */
   public String heliosContainerId() {
     return heliosContainerId;
@@ -599,36 +601,42 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
-   * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
+   * Return a Builder that can be used to instantiate a HeliosSoloDeployment.
+   *
+   * @return {@link Builder}
    */
   public static Builder builder() {
     return builder(null);
   }
 
   /**
-   * @param profile A configuration profile used to populate builder options.
+   * Return a Builder that can be used to instantiate a HeliosSoloDeployment.
    *
-   * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
+   * @param profile A configuration profile used to populate builder options.
+   * @return {@link Builder}
    */
   public static Builder builder(final String profile) {
     return new Builder(profile, HeliosConfig.loadConfig());
   }
 
   /**
-   * @return a Builder with its Docker Client configured automatically using the
-   *         <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
-   *         sensible defaults if they are absent.
+   * Return a Builder with its Docker Client configured automatically using the
+   * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
+   * sensible defaults if they are absent.
+   *
+   * @return {@link Builder}
    */
   public static Builder fromEnv() {
     return fromEnv(null);
   }
 
   /**
-   * @param profile A configuration profile used to populate builder options.
+   * Return a Builder with its Docker Client configured automatically using the
+   * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
+   * sensible defaults if they are absent.
    *
-   * @return a Builder with its Docker Client configured automatically using the
-   *         <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or
-   *         sensible defaults if they are absent.
+   * @param profile A configuration profile used to populate builder options.
+   * @return {@link Builder}
    */
   public static Builder fromEnv(final String profile) {
     try {
@@ -713,6 +721,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     /**
      * By default, the {@link #heliosSoloImage} will be checked for updates before creating a
      * container by doing a "docker pull". Call this method with "false" to disable this behavior.
+     *
+     * @return {@link Builder}
      */
     public Builder checkForNewImages(boolean enabled) {
       this.pullBeforeCreate = enabled;
@@ -724,6 +734,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * {@link HeliosSoloDeployment#close()} is called. Call this method with "false" to disable this
      * (which is probably only useful for developing helios-solo or this class itself and
      * inspecting logs).
+     *
+     * @return {@link Builder}
      */
     public Builder removeHeliosSoloOnExit(boolean enabled) {
       this.removeHeliosSoloContainerOnExit = enabled;
@@ -734,6 +746,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * Set the number of seconds Helios solo will wait for jobs to be undeployed and, as a result,
      * their associated Docker containers to stop running before shutting itself down.
      * The default is 30 seconds.
+     *
+     * @return {@link Builder}
      */
     public Builder jobUndeployWaitSeconds(int seconds) {
       this.jobUndeployWaitSeconds = seconds;
@@ -799,6 +813,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     /**
      * Customize the image used for helios-solo. If not set defaults to
      * "spotify/helios-solo:latest".
+     *
+     * @return {@link Builder}
      */
     public Builder heliosSoloImage(String image) {
       this.heliosSoloImage = Preconditions.checkNotNull(image);
@@ -863,6 +879,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * Override the credentials used for Google Container Registry. If not set, then the builder
      * will default to checking to see if an entry for "googleContainerRegistryCredentials" exists
      * in the configuration profile.
+     *
+     * @return {@link Builder}
      */
     public Builder googleContainerRegistryCredentials(File credentials) {
       this.googleContainerRegistryCredentials = Optional.of(credentials);

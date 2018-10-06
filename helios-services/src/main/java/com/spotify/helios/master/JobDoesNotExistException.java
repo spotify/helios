@@ -20,7 +20,6 @@
 
 package com.spotify.helios.master;
 
-
 import static java.lang.String.format;
 
 import com.spotify.helios.common.HeliosException;

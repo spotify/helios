@@ -99,7 +99,7 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   }
 
   /**
-   * Private constructor for use by {@link #parse(String)}
+   * Private constructor for use by {@link #parse(String)}.
    *
    * @param name The name of the job.
    */

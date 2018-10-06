@@ -88,6 +88,8 @@ public class TaskStatus extends Descriptor {
   private final String containerError;
 
   /**
+   * Constructor.
+   *
    * @param job            The job the task is running.
    * @param goal           The desired state of the task.
    * @param state          The state of the task.

@@ -81,14 +81,14 @@ public class JobStatus {
   }
 
   /**
-   * @return a map of host to task status.
+   * Return a map of host to task status.
    */
   public Map<String, TaskStatus> getTaskStatuses() {
     return taskStatuses;
   }
 
   /**
-   * @return a map of host to deployment.
+   * Return a map of host to deployment.
    */
   public Map<String, Deployment> getDeployments() {
     return deployments;
