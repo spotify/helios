@@ -73,6 +73,8 @@ public class HostInfo extends Descriptor {
   private final String dockerCertPath;
 
   /**
+   * Constructor.
+   *
    * @param hostname         The hostname of the agent.
    * @param uname            The output of the uname command.
    * @param architecture     The architecture of the Agent.
