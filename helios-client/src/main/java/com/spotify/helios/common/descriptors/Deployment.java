@@ -55,7 +55,7 @@ public class Deployment extends Descriptor {
   private final String deploymentGroupName;
 
   /**
-   * Constructor
+   * Constructor.
    *
    * @param jobId               The id of the job.
    * @param goal                The desired state (i.e. goal) of the task/deployment.

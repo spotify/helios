@@ -308,7 +308,7 @@ public class TemporaryJobs implements TestRule {
    * <li>HELIOS_ENDPOINTS - If set, use one of the endpoints, which are specified as a comma
    * separated list.</li>
    * <li>Testing Profile - If a testing profile can be loaded, use either {@code domain} or
-   * <tt>endpoints</tt> if present. If both are specified, {@code domain} takes precedence.</li>
+   * {@code endpoints} if present. If both are specified, {@code domain} takes precedence.</li>
    * <li>DOCKER_HOST - If set, assume a helios master is running on this host, so connect to it on
    * port {@code 5801}.</li>
    * <li>Use {@code http://localhost:5801}</li>

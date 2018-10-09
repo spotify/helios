@@ -417,7 +417,7 @@
 
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.5.3</version>
+                <version>3.1.0</version>
                 <configuration>
                     <descriptors>
                         <descriptor>${project.basedir}/src/assembly/helios-solo.xml</descriptor>

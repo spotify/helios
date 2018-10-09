@@ -35,7 +35,7 @@ public class HeliosConfig {
   public static final String APP_CONFIG_FILE = "helios.conf";
 
   /**
-   * @return The root configuration loaded from the helios configuration files.
+   * Return the root configuration loaded from the helios configuration files.
    */
   static Config loadConfig() {
     final ConfigResolveOptions resolveOptions = ConfigResolveOptions
@@ -52,11 +52,11 @@ public class HeliosConfig {
   }
 
   /**
+   * Return the name of the default profile.
+   *
    * @param profilePath  The path at which the default profile is specified.
    * @param profilesPath The path at which profiles are nested.
    * @param rootConfig   The config file root to read the default profile from.
-   *
-   * @return The name of the default profile.
    */
   static Config getDefaultProfile(
       final String profilePath, final String profilesPath, final Config rootConfig) {
@@ -69,11 +69,11 @@ public class HeliosConfig {
   }
 
   /**
+   * Return the requested configuration, or an empty configuration if profile is null.
+   *
    * @param profilesPath The path at which profiles are nested.
    * @param profile      The name of the profile to load.
    * @param rootConfig   The config file root to load profiles from.
-   *
-   * @return The requested configuration, or an empty configuration if profile is null.
    */
   static Config getProfile(
       final String profilesPath, final String profile, final Config rootConfig) {

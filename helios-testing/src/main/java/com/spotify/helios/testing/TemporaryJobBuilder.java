@@ -320,6 +320,8 @@ public class TemporaryJobBuilder {
    * Set the {@link #image(String)} field for the Docker image to use in this job from the output of
    * docker-maven-plugin (image_info.json on classpath) or dockerfile-maven-plugin
    * (docker/image-name on classpath)
+   *
+   * @return {@link TemporaryJobBuilder}
    */
   public TemporaryJobBuilder imageFromBuild() {
     final String envPath = env.get("IMAGE_INFO_PATH");
