@@ -327,23 +327,8 @@ public class JobCreateCommand extends ControlCommand {
       builder = job.toBuilder();
     } else if (templateJobId != null) {
       final Map<JobId, Job> jobs = client.jobs(templateJobId).get();
-      if (jobs.size() == 0) {
-        if (!json) {
-          out.printf("Unknown job: %s%n", templateJobId);
-        } else {
-          final CreateJobResponse createJobResponse =
-              new CreateJobResponse(CreateJobResponse.Status.UNKNOWN_JOB, null, null);
-          out.print(createJobResponse.toJsonString());
-        }
-        return 1;
-      } else if (jobs.size() > 1) {
-        if (!json) {
-          out.printf("Ambiguous job reference: %s%n", templateJobId);
-        } else {
-          final CreateJobResponse createJobResponse =
-              new CreateJobResponse(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
-          out.print(createJobResponse.toJsonString());
-        }
+      if (jobs.size() != 1) {
+        printJobsError(out, json, templateJobId, jobs);
         return 1;
       }
       final Job template = Iterables.getOnlyElement(jobs.values());
@@ -362,22 +347,59 @@ public class JobCreateCommand extends ControlCommand {
     // Merge job configuration options from command line arguments
 
     if (id != null) {
-      final String[] parts = id.split(":");
-      switch (parts.length) {
-        case 3:
-          builder.setHash(parts[2]);
-          // fall through
-        case 2:
-          builder.setVersion(parts[1]);
-          // fall through
-        case 1:
-          builder.setName(parts[0]);
-          break;
-        default:
-          throw new IllegalArgumentException("Invalid Job id: " + id);
-      }
+      parseJobId(builder, id);
     }
 
+    mergeJobConfigurationWIthCommandLineArgs(options, builder, imageIdentifier);
+
+    // We build without a hash here because we want the hash to be calculated server-side.
+    // This allows different CLI versions to be cross-compatible with different master versions
+    // that have either more or fewer job parameters.
+    final Job job = builder.buildWithoutHash();
+
+    final Collection<String> errors = JOB_VALIDATOR.validate(job);
+    if (!errors.isEmpty()) {
+      if (!json) {
+        for (final String error : errors) {
+          out.println(error);
+        }
+      } else {
+        final CreateJobResponse createJobResponse = new CreateJobResponse(
+              CreateJobResponse.Status.INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),
+              job.getId().toString());
+        out.println(createJobResponse.toJsonString());
+      }
+
+      return 1;
+    }
+
+    if (!quiet && !json) {
+      out.println("Creating job: " + job.toJsonString());
+    }
+
+    final CreateJobResponse status = client.createJob(job).get();
+    if (status.getStatus() == CreateJobResponse.Status.OK) {
+      if (!quiet && !json) {
+        out.println("Done.");
+      }
+      if (json) {
+        out.println(status.toJsonString());
+      } else {
+        out.println(status.getId());
+      }
+      return 0;
+    } else {
+      if (!quiet && !json) {
+        out.println("Failed: " + status);
+      } else if (json) {
+        out.println(status.toJsonString());
+      }
+      return 1;
+    }
+  }
+
+  private void mergeJobConfigurationWIthCommandLineArgs(Namespace options, Job.Builder builder,
+                                                        String imageIdentifier) {
     if (imageIdentifier != null) {
       builder.setImage(imageIdentifier);
     }
@@ -392,18 +414,7 @@ public class JobCreateCommand extends ControlCommand {
       builder.setCommand(command);
     }
 
-    final List<String> envList = options.getList(envArg.getDest());
-    // TODO (mbrown): does this mean that env config is only added when there is a CLI flag too?
-    if (!envList.isEmpty()) {
-      final Map<String, String> env = Maps.newHashMap();
-      // Add environmental variables from helios job configuration file
-      env.putAll(builder.getEnv());
-      // Add environmental variables passed in via CLI
-      // Overwrite any redundant keys to make CLI args take precedence
-      env.putAll(parseListOfPairs(envList, "environment variable"));
-
-      builder.setEnv(env);
-    }
+    setupEnvironmentVariables(options, builder);
 
     final Map<String, String> metadata = Maps.newHashMap();
     metadata.putAll(defaultMetadata());
@@ -417,43 +428,12 @@ public class JobCreateCommand extends ControlCommand {
     final Map<String, PortMapping> explicitPorts = PortMappingParser.parsePortMappings(portSpecs);
 
     // Merge port mappings
-    final Map<String, PortMapping> ports = Maps.newHashMap();
-    ports.putAll(builder.getPorts());
-    ports.putAll(explicitPorts);
+    final Map<String, PortMapping> ports = mergeMaps(builder.getPorts(), explicitPorts);
     builder.setPorts(ports);
 
     // Parse service registrations
-    final Map<ServiceEndpoint, ServicePorts> explicitRegistration = Maps.newHashMap();
-    final Pattern registrationPattern =
-        compile("(?<srv>[a-zA-Z][_\\-\\w]+)(?:/(?<prot>\\w+))?(?:=(?<port>[_\\-\\w]+))?");
-    final List<String> registrationSpecs = options.getList(registrationArg.getDest());
-    for (final String spec : registrationSpecs) {
-      final Matcher matcher = registrationPattern.matcher(spec);
-      if (!matcher.matches()) {
-        throw new IllegalArgumentException("Bad registration: " + spec);
-      }
-
-      final String service = matcher.group("srv");
-      final String proto = fromNullable(matcher.group("prot")).or(HTTP);
-      final String optionalPort = matcher.group("port");
-      final String port;
-
-      if (ports.size() == 0) {
-        throw new IllegalArgumentException("Need port mappings for service registration.");
-      }
-
-      if (optionalPort == null) {
-        if (ports.size() != 1) {
-          throw new IllegalArgumentException(
-              "Need exactly one port mapping for implicit service registration");
-        }
-        port = Iterables.getLast(ports.keySet());
-      } else {
-        port = optionalPort;
-      }
-
-      explicitRegistration.put(ServiceEndpoint.of(service, proto), ServicePorts.of(port));
-    }
+    final Map<ServiceEndpoint, ServicePorts> explicitRegistration =
+          parseServiceRegistration(options, ports);
 
     final String registrationDomain = options.getString(registrationDomainArg.getDest());
     if (!isNullOrEmpty(registrationDomain)) {
@@ -461,9 +441,8 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     // Merge service registrations
-    final Map<ServiceEndpoint, ServicePorts> registration = Maps.newHashMap();
-    registration.putAll(builder.getRegistration());
-    registration.putAll(explicitRegistration);
+    final Map<ServiceEndpoint, ServicePorts> registration =
+          mergeMaps(builder.getRegistration(), explicitRegistration);
     builder.setRegistration(registration);
 
     // Get grace period interval
@@ -473,24 +452,7 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     // Parse volumes
-    final List<String> volumeSpecs = options.getList(volumeArg.getDest());
-    for (final String spec : volumeSpecs) {
-      final String[] parts = spec.split(":", 2);
-      switch (parts.length) {
-        // Data volume
-        case 1:
-          builder.addVolume(parts[0]);
-          break;
-        // Bind mount
-        case 2:
-          final String path = parts[1];
-          final String source = parts[0];
-          builder.addVolume(path, source);
-          break;
-        default:
-          throw new IllegalArgumentException("Invalid volume: " + spec);
-      }
-    }
+    parseVolumes(options, builder);
 
     // Parse expires timestamp
     final String expires = options.getString(expiresArg.getDest());
@@ -500,38 +462,7 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     // Parse health check
-    final String execString = options.getString(healthCheckExecArg.getDest());
-    final List<String> execHealthCheck =
-        (execString == null) ? null : Arrays.asList(execString.split(" "));
-    final String httpHealthCheck = options.getString(healthCheckHttpArg.getDest());
-    final String tcpHealthCheck = options.getString(healthCheckTcpArg.getDest());
-
-    int numberOfHealthChecks = 0;
-    for (final String c : asList(httpHealthCheck, tcpHealthCheck)) {
-      if (!isNullOrEmpty(c)) {
-        numberOfHealthChecks++;
-      }
-    }
-    if (execHealthCheck != null && !execHealthCheck.isEmpty()) {
-      numberOfHealthChecks++;
-    }
-
-    if (numberOfHealthChecks > 1) {
-      throw new IllegalArgumentException("Only one health check may be specified.");
-    }
-
-    if (execHealthCheck != null && !execHealthCheck.isEmpty()) {
-      builder.setHealthCheck(ExecHealthCheck.of(execHealthCheck));
-    } else if (!isNullOrEmpty(httpHealthCheck)) {
-      final String[] parts = httpHealthCheck.split(":", 2);
-      if (parts.length != 2) {
-        throw new IllegalArgumentException("Invalid HTTP health check: " + httpHealthCheck);
-      }
-
-      builder.setHealthCheck(HttpHealthCheck.of(parts[0], parts[1]));
-    } else if (!isNullOrEmpty(tcpHealthCheck)) {
-      builder.setHealthCheck(TcpHealthCheck.of(tcpHealthCheck));
-    }
+    parseHealthChecks(options, builder);
 
     final List<String> securityOpt = options.getList(securityOptArg.getDest());
     if (securityOpt != null && !securityOpt.isEmpty()) {
@@ -572,55 +503,157 @@ public class JobCreateCommand extends ControlCommand {
       final RolloutOptions rolloutOptions = Json.convert(rolloutOptionsMap, RolloutOptions.class);
       builder.setRolloutOptions(rolloutOptions);
     }
+  }
 
-    final String runtime = options.getString(runtimeArg.getDest());
-    if (!isNullOrEmpty(runtime)) {
-      builder.setRuntime(runtime);
-    }
+  private Map<ServiceEndpoint, ServicePorts> parseServiceRegistration(
+        Namespace options, Map<String, PortMapping> ports) {
+    final Map<ServiceEndpoint, ServicePorts> explicitRegistration = Maps.newHashMap();
+    final Pattern registrationPattern =
+          compile("(?<srv>[a-zA-Z][_\\-\\w]+)(?:/(?<prot>\\w+))?(?:=(?<port>[_\\-\\w]+))?");
+    final List<String> registrationSpecs = options.getList(registrationArg.getDest());
+    for (final String spec : registrationSpecs) {
+      final Matcher matcher = registrationPattern.matcher(spec);
+      if (!matcher.matches()) {
+        throw new IllegalArgumentException("Bad registration: " + spec);
+      }
 
-    // We build without a hash here because we want the hash to be calculated server-side.
-    // This allows different CLI versions to be cross-compatible with different master versions
-    // that have either more or fewer job parameters.
-    final Job job = builder.buildWithoutHash();
+      final String service = matcher.group("srv");
+      final String proto = fromNullable(matcher.group("prot")).or(HTTP);
+      final String optionalPort = matcher.group("port");
 
-    final Collection<String> errors = JOB_VALIDATOR.validate(job);
-    if (!errors.isEmpty()) {
-      if (!json) {
-        for (final String error : errors) {
-          out.println(error);
+      if (ports.size() == 0) {
+        throw new IllegalArgumentException("Need port mappings for service registration.");
+      }
+
+      final String port;
+      if (optionalPort == null) {
+        if (ports.size() != 1) {
+          throw new IllegalArgumentException(
+                "Need exactly one port mapping for implicit service registration");
         }
+        port = Iterables.getLast(ports.keySet());
+      } else {
+        port = optionalPort;
+      }
+
+      explicitRegistration.put(ServiceEndpoint.of(service, proto), ServicePorts.of(port));
+    }
+    return explicitRegistration;
+  }
+
+  private <K, V> Map<K, V> mergeMaps(Map<K, V> defaultValues, Map<K, V> prioritizedValues) {
+    final Map<K, V> ports = Maps.newHashMap();
+    ports.putAll(defaultValues);
+    ports.putAll(prioritizedValues);
+    return ports;
+  }
+
+  private void setupEnvironmentVariables(Namespace options, Job.Builder builder) {
+    final List<String> envList = options.getList(envArg.getDest());
+    // TODO (mbrown): does this mean that env config is only added when there is a CLI flag too?
+    if (!envList.isEmpty()) {
+      final Map<String, String> env = Maps.newHashMap();
+      // Add environmental variables from helios job configuration file
+      env.putAll(builder.getEnv());
+      // Add environmental variables passed in via CLI
+      // Overwrite any redundant keys to make CLI args take precedence
+      env.putAll(parseListOfPairs(envList, "environment variable"));
+
+      builder.setEnv(env);
+    }
+  }
+
+  private void printJobsError(PrintStream out, boolean json, String templateJobId,
+                              Map<JobId, Job> jobs) {
+    if (jobs.size() == 0) {
+      if (!json) {
+        out.printf("Unknown job: %s%n", templateJobId);
+      } else {
+        final CreateJobResponse createJobResponse =
+              new CreateJobResponse(CreateJobResponse.Status.UNKNOWN_JOB, null, null);
+        out.print(createJobResponse.toJsonString());
+      }
+    } else {
+      if (!json) {
+        out.printf("Ambiguous job reference: %s%n", templateJobId);
       } else {
         final CreateJobResponse createJobResponse = new CreateJobResponse(
-            CreateJobResponse.Status.INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),
-            job.getId().toString());
-        out.println(createJobResponse.toJsonString());
+              CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
+        out.print(createJobResponse.toJsonString());
       }
+    }
+  }
 
-      return 1;
+  private void parseHealthChecks(Namespace options, Job.Builder builder) {
+    final String execString = options.getString(healthCheckExecArg.getDest());
+    final List<String> execHealthCheck =
+          (execString == null) ? null : Arrays.asList(execString.split(" "));
+    final String httpHealthCheck = options.getString(healthCheckHttpArg.getDest());
+    final String tcpHealthCheck = options.getString(healthCheckTcpArg.getDest());
+
+    int numberOfHealthChecks = 0;
+    for (final String c : asList(httpHealthCheck, tcpHealthCheck)) {
+      if (!isNullOrEmpty(c)) {
+        numberOfHealthChecks++;
+      }
+    }
+    if (execHealthCheck != null && !execHealthCheck.isEmpty()) {
+      numberOfHealthChecks++;
     }
 
-    if (!quiet && !json) {
-      out.println("Creating job: " + job.toJsonString());
+    if (numberOfHealthChecks > 1) {
+      throw new IllegalArgumentException("Only one health check may be specified.");
     }
 
-    final CreateJobResponse status = client.createJob(job).get();
-    if (status.getStatus() == CreateJobResponse.Status.OK) {
-      if (!quiet && !json) {
-        out.println("Done.");
+    if (execHealthCheck != null && !execHealthCheck.isEmpty()) {
+      builder.setHealthCheck(ExecHealthCheck.of(execHealthCheck));
+    } else if (!isNullOrEmpty(httpHealthCheck)) {
+      final String[] parts = httpHealthCheck.split(":", 2);
+      if (parts.length != 2) {
+        throw new IllegalArgumentException("Invalid HTTP health check: " + httpHealthCheck);
       }
-      if (json) {
-        out.println(status.toJsonString());
-      } else {
-        out.println(status.getId());
+
+      builder.setHealthCheck(HttpHealthCheck.of(parts[0], parts[1]));
+    } else if (!isNullOrEmpty(tcpHealthCheck)) {
+      builder.setHealthCheck(TcpHealthCheck.of(tcpHealthCheck));
+    }
+  }
+
+  private void parseVolumes(Namespace options, Job.Builder builder) {
+    final List<String> volumeSpecs = options.getList(volumeArg.getDest());
+    for (final String spec : volumeSpecs) {
+      final String[] parts = spec.split(":", 2);
+      switch (parts.length) {
+        // Data volume
+        case 1:
+          builder.addVolume(parts[0]);
+          break;
+        // Bind mount
+        case 2:
+          final String path = parts[1];
+          final String source = parts[0];
+          builder.addVolume(path, source);
+          break;
+        default:
+          throw new IllegalArgumentException("Invalid volume: " + spec);
       }
-      return 0;
-    } else {
-      if (!quiet && !json) {
-        out.println("Failed: " + status);
-      } else if (json) {
-        out.println(status.toJsonString());
-      }
-      return 1;
+    }
+  }
+
+  private void parseJobId(Job.Builder builder, String id) {
+    final String[] parts = id.split(":");
+    switch (parts.length) {
+      case 3:
+        builder.setHash(parts[2]);
+        // fall through
+      case 2:
+        builder.setVersion(parts[1]);
+        // fall through
+      case 1:
+        builder.setName(parts[0]);
+        break;
+      default:
+        throw new IllegalArgumentException("Invalid Job id: " + id);
     }
   }
 
