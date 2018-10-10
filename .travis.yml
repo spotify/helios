@@ -1,0 +1,15 @@
+language: java
+
+jdk:
+  - openjdk11
+
+services:
+  - docker
+
+install: true
+
+script: mvn clean verify -DskipTests
+
+cache:
+  directories:
+    - $HOME/.m2/repository/

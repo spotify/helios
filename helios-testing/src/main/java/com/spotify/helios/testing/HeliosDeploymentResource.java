@@ -49,6 +49,8 @@ public class HeliosDeploymentResource extends ExternalResource {
   private final HeliosDeployment deployment;
 
   /**
+   * Constructor.
+   *
    * @param deployment The Helios deployment to expose to your JUnit tests.
    */
   public HeliosDeploymentResource(final HeliosDeployment deployment) {
@@ -142,8 +144,10 @@ public class HeliosDeploymentResource extends ExternalResource {
   }
 
   /**
-   * @return a Helios client connected to the Helios deployment supplied when instantiating the
-   *         HeliosDeploymentResource.
+   * Return a Helios client connected to the Helios deployment supplied when instantiating the
+   * HeliosDeploymentResource.
+   *
+   * @return {@link HeliosClient}
    */
   public HeliosClient client() {
     return deployment.client();
