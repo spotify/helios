@@ -18,9 +18,6 @@ jobs:
     machine: true
     
     steps:
-    # Machine Setup
-    #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
-    # The following `checkout` command checks out your code to your working directory. In 1.0 this is done implicitly. In 2.0 you can choose where in the course of a job your code should be checked out.
     - checkout
 
     # 'See docs on artifact collection here https://circleci.com/docs/2.0/artifacts/'
@@ -37,7 +34,7 @@ jobs:
          if [[ $(python --version 2>&1) = *"2.7.10"* ]] || pyenv versions --bare | grep -x -q '2.7.10'; then pyenv global 2.7.10;else pyenv install --skip-existing  2.7.10 && pyenv global 2.7.10 && pyenv rehash && pip install virtualenv && pip install nose && pip install pep8 && pyenv rehash;fi
 
     # Configuring Docker to accept remote connections
-    - run: ./circle.sh pre_machine
+    - run: ./circle.sh pre_machine && ./circle.sh pre_machine_docker
 
     # Restarting docker for the changes to be applied
     - run: sudo service docker restart
@@ -64,3 +61,30 @@ jobs:
         path: /var/log/upstart/docker.log
     - store_artifacts:
         path: /tmp/circleci-test-results
+
+  build_java11:
+    docker:
+      - image: spotify/helios-test-container:1
+    working_directory: ~/spotify/helios
+    parallelism: 1
+    shell: /bin/bash --login
+    environment:
+      MAVEN_OPTS: -Xmx128m
+
+    steps:
+    - checkout
+
+    - run: ./circle.sh pre_machine
+
+    - run:
+        command: ./circle.sh dependencies
+        no_output_timeout: 20m
+
+    - run: ./circle.sh verify_no_tests
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - build_java11
