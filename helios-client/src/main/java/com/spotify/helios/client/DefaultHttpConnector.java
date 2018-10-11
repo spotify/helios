@@ -27,9 +27,9 @@ import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.sshagenttls.HttpsHandler;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -118,7 +118,7 @@ public class DefaultHttpConnector implements HttpConnector {
       connection.getOutputStream().write(entity);
     }
 
-    setRequestMethod(connection, method, connection instanceof HttpsURLConnection);
+    setRequestMethod(connection, method);
 
     return connection;
   }
@@ -145,27 +145,10 @@ public class DefaultHttpConnector implements HttpConnector {
   }
 
   private static void setRequestMethod(final HttpURLConnection connection,
-                                       final String method,
-                                       final boolean isHttps) {
-    // Nasty workaround for ancient HttpURLConnection only supporting few methods
-    final Class<?> httpUrlConnectionClass = connection.getClass();
+                                       final String method) {
     try {
-      Field methodField;
-      HttpURLConnection delegate;
-      if (isHttps) {
-        final Field delegateField = httpUrlConnectionClass.getDeclaredField("delegate");
-        delegateField.setAccessible(true);
-        delegate = (HttpURLConnection) delegateField.get(connection);
-        methodField = delegate.getClass().getSuperclass().getSuperclass().getSuperclass()
-            .getDeclaredField("method");
-      } else {
-        delegate = connection;
-        methodField = httpUrlConnectionClass.getSuperclass().getDeclaredField("method");
-      }
-
-      methodField.setAccessible(true);
-      methodField.set(delegate, method);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
+      connection.setRequestMethod(method);
+    } catch (ProtocolException e) {
       throw new RuntimeException(e);
     }
   }
