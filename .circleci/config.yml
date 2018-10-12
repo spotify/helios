@@ -78,6 +78,9 @@ jobs:
 
     - run:
         command: ./circle.sh dependencies
+        # Increase the timeout from the default of 10 minutes to 20.
+        # A docker executor has less resources and is therefore slower.
+        # Without this increased timeout, downloading deps often times out.
         no_output_timeout: 20m
 
     - run: ./circle.sh verify_no_tests
