@@ -27,14 +27,14 @@ import org.apache.zookeeper.KeeperException;
 public interface ZooKeeperRegistrar {
 
   /**
-   * Called upon startup
+   * Called upon startup.
    *
    * @throws Exception If an unexpected error occurs.
    */
   void startUp() throws Exception;
 
   /**
-   * Called upon shutdown
+   * Called upon shutdown.
    *
    * @throws Exception If an unexpected error occurs.
    */

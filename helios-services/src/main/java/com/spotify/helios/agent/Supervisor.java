@@ -168,7 +168,7 @@ public class Supervisor {
   }
 
   /**
-   * Get the current container id
+   * Get the current container id.
    *
    * @return The container id.
    */

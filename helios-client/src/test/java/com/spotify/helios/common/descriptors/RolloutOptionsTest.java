@@ -37,9 +37,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_IGNORE_FAILURES;
-import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_MIGRATE;
-import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_TOKEN;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;

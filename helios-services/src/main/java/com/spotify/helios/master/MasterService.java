@@ -38,7 +38,6 @@ import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.HeliosRuntimeException;
-import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;

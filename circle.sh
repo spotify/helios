@@ -2,22 +2,16 @@
 
 case "$1" in
   pre_machine)
-    # ensure correct level of parallelism
-    expected_nodes=6
-    if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
-    then
-        echo "Parallelism is set to ${CIRCLE_NODE_TOTAL}x, but we need ${expected_nodes}x."
-        exit 1
-    fi
+    # Edit pom files to have correct version syntax
+    for i in $(find . -name pom.xml -not -path './.rvm*'); do sed -i 's/${revision}/0/g' $i; done
 
+    ;;
+
+  pre_machine_docker)
     # have docker bind to localhost
     docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://0.0.0.0:2375"'
     sudo sh -c "echo '$docker_opts' >> /etc/default/docker"
-
     cat /etc/default/docker
-
-    # Edit pom files to have correct version syntax
-    for i in $(find . -name pom.xml -not -path './.rvm*'); do sed -i 's/${revision}/0/g' $i; done
 
     ;;
 
@@ -30,6 +24,11 @@ case "$1" in
   dependencies)
     mvn clean install -T 2 -Dmaven.javadoc.skip=true -DskipTests=true -B -V
     pip install codecov
+
+    ;;
+
+  verify_no_tests)
+    mvn clean verify -DskipTests
 
     ;;
 

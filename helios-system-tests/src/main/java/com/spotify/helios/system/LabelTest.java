@@ -42,6 +42,8 @@ import org.junit.Test;
 public class LabelTest extends SystemTestBase {
 
   /**
+   * Get labels for a set of hosts.
+   *
    * @param hosts Hostnames for which to get labels.
    *
    * @return a map whose keys are hostnames and values are maps of label key-vals.

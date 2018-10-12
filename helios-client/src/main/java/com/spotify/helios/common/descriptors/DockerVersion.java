@@ -52,6 +52,8 @@ public class DockerVersion {
   private final String version;
 
   /**
+   * Constructor.
+   *
    * @param apiVersion    The Docker api version supported.
    * @param arch          The architecture of the machine.
    * @param gitCommit     The git commit from which Docker was built.

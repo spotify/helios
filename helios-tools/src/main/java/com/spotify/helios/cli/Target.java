@@ -146,7 +146,7 @@ public abstract class Target {
   }
 
   /**
-   * Create a target from an explicit endpoint
+   * Create a target from an explicit endpoint.
    *
    * @param endpoint The endpoint.
    *
@@ -157,7 +157,7 @@ public abstract class Target {
   }
 
   /**
-   * Create targets for a list of domains
+   * Create targets for a list of domains.
    *
    * @param srvName The SRV name.
    * @param domains A list of domains.
