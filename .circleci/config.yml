@@ -1,8 +1,3 @@
-jdk_180_version: &jdk_180_version jdk1.8.0
-
-####################
-# Jobs
-####################
 version: 2
 jobs:
   build:
@@ -13,7 +8,7 @@ jobs:
       CIRCLE_ARTIFACTS: /tmp/circleci-artifacts
       CIRCLE_TEST_REPORTS: /tmp/circleci-test-results
       MAVEN_OPTS: -Xmx128m
-      JAVA_VERSION: *jdk_180_version
+      JAVA_VERSION: jdk1.8.0
 
     machine: true
     
