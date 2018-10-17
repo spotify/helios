@@ -28,6 +28,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +68,7 @@ public class ConfigTest {
 
     // Return an empty job list to skip trying to remove old jobs
     when(client.jobs()).thenReturn(future);
+    when(client.jobs(anyString())).thenReturn(future);
   }
 
   public static class ProfileTest implements Deployer {

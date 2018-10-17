@@ -28,6 +28,7 @@ import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anySetOf;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +63,7 @@ public class JobWithConfigTest {
 
     // Return an empty job list to skip trying to remove old jobs
     when(client.jobs()).thenReturn(future);
+    when(client.jobs(anyString())).thenReturn(future);
   }
 
   @Test
