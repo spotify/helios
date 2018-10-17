@@ -431,7 +431,7 @@ public class TemporaryJobs implements TestRule {
 
     log.info("Removing old temporary jobs");
 
-    final Map<JobId, Job> jobs = client.jobs().get();
+    final Map<JobId, Job> jobs = client.jobs(jobPrefixFile.prefix()).get();
 
     // Iterate over all files in the directory
     for (final File file : files) {
