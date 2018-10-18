@@ -34,6 +34,7 @@ public class AgentParserTest {
   public final ExpectedException exception = ExpectedException.none();
 
   @Test
+  @SuppressWarnings("ReturnValueIgnored")
   public void testValidateArgument() {
     final Predicate<Integer> isOdd = num -> num % 2 == 1;
 
