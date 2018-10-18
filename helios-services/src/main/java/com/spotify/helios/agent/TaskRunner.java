@@ -77,7 +77,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.listener = checkNotNull(builder.listener, "listener");
     this.existingContainerId = builder.existingContainerId;
     this.registrar = checkNotNull(builder.registrar, "registrar");
-    this.secondsToWaitBeforeKill = checkNotNull(builder.secondsToWaitBeforeKill, "waitBeforeKill");
+    this.secondsToWaitBeforeKill = builder.secondsToWaitBeforeKill;
     this.healthChecker = Optional.fromNullable(builder.healthChecker);
     this.serviceRegistrationHandle = Optional.absent();
     this.containerId = Optional.absent();

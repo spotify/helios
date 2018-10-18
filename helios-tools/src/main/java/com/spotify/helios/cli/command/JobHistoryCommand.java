@@ -90,7 +90,7 @@ public class JobHistoryCommand extends ControlCommand {
 
     for (final TaskStatusEvent event : events) {
       final String host = checkNotNull(event.getHost());
-      final long timestamp = checkNotNull(event.getTimestamp());
+      final long timestamp = event.getTimestamp();
       final TaskStatus status = checkNotNull(event.getStatus());
       final State state = checkNotNull(status.getState());
       String containerId = status.getContainerId();
