@@ -24,6 +24,8 @@ if [[ -n "$JDWPPORT" ]]; then
     DEBUG_ARGS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$JDWPPORT"
 fi
 
+export SUPPRESS_GCLOUD_CREDS_WARNING=true
+
 exec java \
     $JVM_ARGS \
     $DEBUG_ARGS \
