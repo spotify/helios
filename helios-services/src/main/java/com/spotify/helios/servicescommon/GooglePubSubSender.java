@@ -27,6 +27,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.dropwizard.lifecycle.Managed;
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
@@ -93,7 +94,7 @@ public class GooglePubSubSender implements EventSender {
             public void onFailure(final Throwable th) {
               log.warn("Unable to send an event to Google PubSub, topic: {}", combinedTopic, th);
             }
-          });
+          }, MoreExecutors.directExecutor());
     } catch (Exception e) {
       log.warn("Failed to publish Google PubSub message, topic: {}", combinedTopic, e);
     }

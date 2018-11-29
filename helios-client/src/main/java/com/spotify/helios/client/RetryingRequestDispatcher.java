@@ -121,7 +121,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
         log.debug("Specific reason for connection failure follows", th);
         handleFailure(future, code, deadline, delayMillis, th, uri);
       }
-    });
+    }, MoreExecutors.directExecutor());
   }
 
   private static String getChainAsString(final Throwable th) {
@@ -135,6 +135,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
     return Joiner.on(", ").join(messages);
   }
 
+  @SuppressWarnings("CheckReturnValue")
   private void handleFailure(final SettableFuture<Response> future,
                              final Supplier<ListenableFuture<Response>> code,
                              final long deadline,
