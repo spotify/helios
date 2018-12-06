@@ -202,7 +202,7 @@ public class HeliosClient implements Closeable {
         checkProtocolVersionStatus(response);
         return response;
       }
-    });
+    }, MoreExecutors.directExecutor());
   }
 
   private void checkProtocolVersionStatus(final Response response) {
@@ -239,7 +239,10 @@ public class HeliosClient implements Closeable {
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final JavaType javaType) {
-    return transformAsync(request(uri, "GET"), new ConvertResponseToPojo<T>(javaType));
+    return transformAsync(
+        request(uri, "GET"),
+        new ConvertResponseToPojo<T>(javaType),
+        MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Integer> put(final URI uri) {
@@ -259,7 +262,8 @@ public class HeliosClient implements Closeable {
     return transformAsync(request(uri(path("/hosts/%s/jobs/%s", host, job.getJobId()),
         ImmutableMap.of("token", token)),
         "PUT", job),
-        ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
+        ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes),
+        MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<SetGoalResponse> setGoal(final Deployment job, final String host) {
@@ -273,7 +277,7 @@ public class HeliosClient implements Closeable {
         "PATCH", job),
         ConvertResponseToPojo.create(SetGoalResponse.class,
             ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
-                HTTP_FORBIDDEN)));
+                HTTP_FORBIDDEN)), MoreExecutors.directExecutor());
   }
 
   private ListenableFuture<Integer> status(final ListenableFuture<Response> req) {
@@ -283,7 +287,7 @@ public class HeliosClient implements Closeable {
           public Integer apply(final Response reply) {
             return reply.status();
           }
-        });
+        }, MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<Deployment> deployment(final String host, final JobId job) {
@@ -311,7 +315,10 @@ public class HeliosClient implements Closeable {
         TypeFactory.defaultInstance().constructMapType(Map.class, String.class, HostStatus.class),
         ImmutableSet.of(HTTP_OK));
 
-    return transformAsync(request(uri("/hosts/statuses", queryParams), "POST", hosts), converter);
+    return transformAsync(
+        request(uri("/hosts/statuses", queryParams), "POST", hosts),
+        converter,
+        MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<Integer> registerHost(final String host, final String id) {
@@ -329,7 +336,7 @@ public class HeliosClient implements Closeable {
         ConvertResponseToPojo.create(JobDeleteResponse.class,
             ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
                 HTTP_BAD_REQUEST,
-                HTTP_FORBIDDEN)));
+                HTTP_FORBIDDEN)), MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<JobUndeployResponse> undeploy(final JobId jobId, final String host) {
@@ -344,13 +351,13 @@ public class HeliosClient implements Closeable {
         ConvertResponseToPojo.create(JobUndeployResponse.class,
             ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
                 HTTP_BAD_REQUEST,
-                HTTP_FORBIDDEN)));
+                HTTP_FORBIDDEN)), MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<HostDeregisterResponse> deregisterHost(final String host) {
     return transformAsync(request(uri(path("/hosts/%s", host)), "DELETE"),
         ConvertResponseToPojo.create(HostDeregisterResponse.class,
-            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)), MoreExecutors.directExecutor());
   }
 
   /**
@@ -420,8 +427,7 @@ public class HeliosClient implements Closeable {
           public Response apply(final Exception ex) {
             return null;
           }
-        }
-    );
+        }, MoreExecutors.directExecutor());
 
     return transformAsync(
         futureWithFallback,
@@ -436,13 +442,13 @@ public class HeliosClient implements Closeable {
 
             return immediateFuture(new VersionResponse(Version.POM_VERSION, masterVersion));
           }
-        });
+        }, MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<CreateJobResponse> createJob(final Job descriptor) {
     return transformAsync(request(uri("/jobs/"), "POST", descriptor),
         ConvertResponseToPojo.create(CreateJobResponse.class,
-            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)), MoreExecutors.directExecutor());
   }
 
   /**
@@ -484,7 +490,7 @@ public class HeliosClient implements Closeable {
     return transformAsync(
         request(uri(path("/history/jobs/%s", jobId.toString())), "GET"),
         ConvertResponseToPojo.create(TaskStatusEvents.class,
-            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+            ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)), MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<JobStatus> jobStatus(final JobId jobId) {
@@ -496,7 +502,8 @@ public class HeliosClient implements Closeable {
         TypeFactory.defaultInstance().constructMapType(Map.class, JobId.class, JobStatus.class),
         ImmutableSet.of(HTTP_OK));
 
-    return transformAsync(request(uri("/jobs/statuses"), "POST", jobs), converter);
+    return transformAsync(
+        request(uri("/jobs/statuses"), "POST", jobs), converter, MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<DeploymentGroup> deploymentGroup(final String name) {
@@ -518,13 +525,13 @@ public class HeliosClient implements Closeable {
       final DeploymentGroup descriptor) {
     return transformAsync(request(uri("/deployment-group/"), "POST", descriptor),
         ConvertResponseToPojo.create(CreateDeploymentGroupResponse.class,
-            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)), MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<RemoveDeploymentGroupResponse> removeDeploymentGroup(final String name) {
     return transformAsync(request(uri("/deployment-group/" + name), "DELETE"),
         ConvertResponseToPojo.create(RemoveDeploymentGroupResponse.class,
-            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)), MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<RollingUpdateResponse> rollingUpdate(
@@ -533,7 +540,7 @@ public class HeliosClient implements Closeable {
         request(uri(path("/deployment-group/%s/rolling-update", deploymentGroupName)),
             "POST", new RollingUpdateRequest(job, options)),
         ConvertResponseToPojo.create(RollingUpdateResponse.class,
-            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+            ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)), MoreExecutors.directExecutor());
   }
 
   public ListenableFuture<Integer> stopDeploymentGroup(final String deploymentGroupName) {

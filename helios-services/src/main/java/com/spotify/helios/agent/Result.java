@@ -23,6 +23,7 @@ package com.spotify.helios.agent;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import javax.annotation.Nullable;
 
 /**
@@ -35,7 +36,7 @@ public class Result<V> implements FutureCallback<V> {
   private volatile Throwable exception;
 
   public Result(final ListenableFuture<V> future) {
-    Futures.addCallback(future, this);
+    Futures.addCallback(future, this, MoreExecutors.directExecutor());
   }
 
   @Override
