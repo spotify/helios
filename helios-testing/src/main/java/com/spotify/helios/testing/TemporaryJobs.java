@@ -70,6 +70,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.MultipleFailureException;
@@ -570,6 +571,9 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("deployTimeoutMillis")) {
         deployTimeoutMillis(this.config.getLong("deployTimeoutMillis"));
       }
+      if (this.config.hasPath("heliosClientHttpTimeoutSeconds")) {
+        heliosClientHttpTimeoutSeconds(this.config.getInt("heliosClientHttpTimeoutSeconds"));
+      }
 
       // Configuration from profile may be overridden by environment variables
       configureWithEnv();
@@ -746,6 +750,11 @@ public class TemporaryJobs implements TestRule {
 
     public Builder deployTimeoutMillis(final long timeout) {
       this.deployTimeoutMillis = timeout;
+      return this;
+    }
+
+    public Builder heliosClientHttpTimeoutSeconds(final int timeout) {
+      this.clientBuilder.setHttpTimeout(timeout, TimeUnit.SECONDS);
       return this;
     }
 

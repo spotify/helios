@@ -251,6 +251,8 @@ accomplish this. Within a profile, the following keys having meaning:
 * `hostPickingStrategyKey` - string - a string used to seed the random number
   generator.  It can be basically anything, but it's best for it to not
   be empty.
+* `heliosClientHttpTimeoutSeconds` - int - an integer with the timeout in seconds used by the
+  HeliosClient http requests to the Helios API.
 
 There's also the `prefix` config variable, which is useless to set,
 but useful to reference from some of the above variables if you want
