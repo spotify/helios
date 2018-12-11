@@ -559,6 +559,9 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("hostFilter")) {
         hostFilter(this.config.getString("hostFilter"));
       }
+      if (this.config.hasPath("heliosClientHttpTimeoutSeconds")) {
+        heliosClientHttpTimeoutSeconds(this.config.getInt("heliosClientHttpTimeoutSeconds"));
+      }
       if (this.config.hasPath("endpoints")) {
         endpointStrings(getListByKey("endpoints", config));
       }
@@ -571,10 +574,6 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("deployTimeoutMillis")) {
         deployTimeoutMillis(this.config.getLong("deployTimeoutMillis"));
       }
-      if (this.config.hasPath("heliosClientHttpTimeoutSeconds")) {
-        heliosClientHttpTimeoutSeconds(this.config.getInt("heliosClientHttpTimeoutSeconds"));
-      }
-
       // Configuration from profile may be overridden by environment variables
       configureWithEnv();
     }
