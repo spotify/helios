@@ -48,7 +48,6 @@ import static org.junit.Assert.fail;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Charsets;
-import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -59,6 +58,7 @@ import com.google.common.collect.Range;
 import com.google.common.io.Files;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Service;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
@@ -1019,12 +1019,8 @@ public abstract class SystemTestBase {
 
   protected <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
-    return Futures.catching(future, Exception.class, new Function<Exception, T>() {
-      @Override
-      public T apply(final Exception ex) {
-        return null;
-      }
-    }).get();
+    return Futures.catching(future, Exception.class, ex -> null, MoreExecutors.directExecutor())
+        .get();
   }
 
   protected static void removeContainer(final DockerClient dockerClient, final String containerId)
