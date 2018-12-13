@@ -25,7 +25,6 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -34,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
@@ -592,12 +592,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
-    return Futures.catching(future, Exception.class, new Function<Exception, T>() {
-      @Override
-      public T apply(final Exception ex) {
-        return null;
-      }
-    }).get();
+    return Futures.catching(future, Exception.class, ex -> null, MoreExecutors.directExecutor())
+        .get();
   }
 
   /**
