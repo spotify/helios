@@ -32,6 +32,7 @@ import static org.junit.Assert.fail;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.agent.AgentMain;
@@ -129,21 +130,23 @@ public class ClusterDeploymentTest extends SystemTestBase {
           public void onFailure(@NotNull final Throwable th) {
             fail("deploy failed");
           }
-        });
+        },
+        MoreExecutors.directExecutor());
   }
 
   private void undeploy(final JobId jobId, final String host) throws Exception {
 
     Futures.addCallback(client.undeploy(jobId, host), new FutureCallback<JobUndeployResponse>() {
-      @Override
-      public void onSuccess(final JobUndeployResponse result) {
-        assertEquals(JobUndeployResponse.Status.OK, result.getStatus());
-      }
+          @Override
+          public void onSuccess(final JobUndeployResponse result) {
+            assertEquals(JobUndeployResponse.Status.OK, result.getStatus());
+          }
 
-      @Override
-      public void onFailure(@NotNull final Throwable th) {
-        fail("undeploy failed");
-      }
-    });
+          @Override
+          public void onFailure(@NotNull final Throwable th) {
+            fail("undeploy failed");
+          }
+        },
+        MoreExecutors.directExecutor());
   }
 }
