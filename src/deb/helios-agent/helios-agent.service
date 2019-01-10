@@ -1,0 +1,10 @@
+[Unit]
+Description=Helios agent daemon
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/helios-agent-wrapper
+User=helios
+

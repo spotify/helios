@@ -552,6 +552,24 @@
                                         <filemode>755</filemode>
                                     </mapper>
                                 </data>
+                                <data>
+                                    <src>${project.parent.basedir}/src/deb/helios-agent/helios-agent.service</src>
+                                    <type>file</type>
+                                    <dst>/etc/systemd/system/helios-agent.service</dst>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${project.parent.basedir}/src/deb/helios-agent/helios-agent-wrapper</src>
+                                    <type>file</type>
+                                    <dst>/usr/bin/helios-agent-wrapper</dst>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
                             </dataSet>
                         </configuration>
                     </execution>
