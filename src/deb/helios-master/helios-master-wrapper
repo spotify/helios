@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# This wrapper script allows initialization of
+# environment variables since systemd's Environment and
+# EnvironmentFile directives don't support running
+# arbitrary commands.
+
+DEFAULTFILE=/etc/default/helios-master
+
+[ -f $DEFAULTFILE ] && . $DEFAULTFILE
+
+exec /usr/bin/helios-master ${HELIOS_MASTER_OPTS}

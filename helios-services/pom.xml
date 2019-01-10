@@ -503,6 +503,24 @@
                                         <filemode>755</filemode>
                                     </mapper>
                                 </data>
+                                <data>
+                                    <src>${project.parent.basedir}/src/deb/helios-master/helios-master.service</src>
+                                    <type>file</type>
+                                    <dst>/etc/systemd/system/helios-master.service</dst>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${project.parent.basedir}/src/deb/helios-master/helios-master-wrapper</src>
+                                    <type>file</type>
+                                    <dst>/usr/bin/helios-master-wrapper</dst>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
                             </dataSet>
                         </configuration>
                     </execution>
@@ -547,6 +565,24 @@
                                     <src>${project.parent.basedir}/src/deb/helios-agent/init</src>
                                     <type>file</type>
                                     <dst>/etc/init.d/helios-agent</dst>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${project.parent.basedir}/src/deb/helios-agent/helios-agent.service</src>
+                                    <type>file</type>
+                                    <dst>/etc/systemd/system/helios-agent.service</dst>
+                                    <mapper>
+                                        <type>perm</type>
+                                        <filemode>755</filemode>
+                                    </mapper>
+                                </data>
+                                <data>
+                                    <src>${project.parent.basedir}/src/deb/helios-agent/helios-agent-wrapper</src>
+                                    <type>file</type>
+                                    <dst>/usr/bin/helios-agent-wrapper</dst>
                                     <mapper>
                                         <type>perm</type>
                                         <filemode>755</filemode>

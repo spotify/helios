@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# This wrapper script allows initialization of
+# environment variables since systemd's Environment and
+# EnvironmentFile directives don't support running
+# arbitrary commands.
+
+DEFAULTFILE=/etc/default/helios-agent
+
+[ -f $DEFAULTFILE ] && . $DEFAULTFILE
+
+exec /usr/bin/helios-agent ${HELIOS_AGENT_OPTS}
