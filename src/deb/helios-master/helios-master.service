@@ -8,3 +8,5 @@ Restart=always
 ExecStart=/usr/bin/helios-master-wrapper
 User=helios
 
+[Install]
+WantedBy=multi-user.target
