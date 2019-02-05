@@ -51,7 +51,7 @@ public final class Utils {
   private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
   static final String HTTP_TIMEOUT_ENV_VAR = "HELIOS_CLI_HTTP_TIMEOUT";
-  static final int DEFAULT_HTTP_TIMEOUT_SECS = 30;
+  static final int DEFAULT_HTTP_TIMEOUT_SECS = 60;
 
   static final String TOTAL_TIMEOUT_ENV_VAR = "HELIOS_CLI_TOTAL_TIMEOUT";
   static final int DEFAULT_TOTAL_TIMEOUT_SECS = DEFAULT_HTTP_TIMEOUT_SECS * 4;
