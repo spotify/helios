@@ -125,7 +125,7 @@ public class JobInspectCommand extends WildcardJobCommand {
   }
 
   public JobInspectCommand(final Subparser parser) {
-    super(parser);
+    super(parser, false);
     parser.help("print the configuration of a job");
   }
 
