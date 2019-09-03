@@ -37,6 +37,9 @@
                         <artifactId>docker-maven-plugin</artifactId>
                         <version>1.2.0</version>
                         <configuration>
+                            <ignoredDependencies>
+                                <ignoredDependency>com.spotify.docker.client</ignoredDependency>
+                            </ignoredDependencies>
                             <labels>
                                 <label>com.spotify.helios.version="${project.version}"</label>
                             </labels>
@@ -121,6 +124,9 @@
                         <artifactId>docker-maven-plugin</artifactId>
                         <version>1.2.0</version>
                         <configuration>
+                            <ignoredDependencies>
+                                <ignoredDependency>com.spotify.docker.client</ignoredDependency>
+                            </ignoredDependencies>
                             <labels>
                                 <label>com.spotify.helios.version="${project.version}"</label>
                             </labels>
