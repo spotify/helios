@@ -80,6 +80,12 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
         continue;
       } else if (job.getExpires().getTime() <= clock.now().getMillis()) {
         final JobStatus status = masterModel.getJobStatus(jobId);
+        if (status == null) {
+          log.warn("Couldn't find job status for {} because job has already been deleted."
+                   + "Skipping.", jobId);
+          return;
+        }
+
         final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
 
         for (final String host : hosts) {

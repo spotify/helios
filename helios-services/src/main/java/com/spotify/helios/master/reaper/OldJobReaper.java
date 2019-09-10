@@ -122,6 +122,12 @@ public class OldJobReaper extends RateLimitedService<Job> {
 
     try {
       final JobStatus jobStatus = masterModel.getJobStatus(jobId);
+      if (jobStatus == null) {
+        log.warn("Couldn't find job status for {} because job has already been deleted. Skipping.",
+            jobId);
+        return;
+      }
+
       final Map<String, Deployment> deployments = jobStatus.getDeployments();
       final List<TaskStatusEvent> events = masterModel.getJobHistory(jobId);
 
