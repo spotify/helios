@@ -58,7 +58,7 @@ public class ResolverTest {
 
     when(resolver.resolve("_helios._https.example.com")).thenReturn(lookupResults);
 
-    final Supplier<List<URI>> supplier = Resolver.supplier("helios", "example.com", resolver);
+    final Supplier<List<URI>> supplier = new Resolver().supplier("helios", "example.com", resolver);
     final List<URI> uris = supplier.get();
 
     assertThat(uris.size(), equalTo(3));
@@ -82,7 +82,7 @@ public class ResolverTest {
         .thenReturn(Collections.<LookupResult>emptyList());
     when(resolver.resolve("_helios._http.example.com")).thenReturn(lookupResults);
 
-    final Supplier<List<URI>> supplier = Resolver.supplier("helios", "example.com", resolver);
+    final Supplier<List<URI>> supplier = new Resolver().supplier("helios", "example.com", resolver);
     final List<URI> uris = supplier.get();
 
     assertThat(uris.size(), equalTo(3));

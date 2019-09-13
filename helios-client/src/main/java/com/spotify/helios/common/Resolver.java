@@ -33,7 +33,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
-public abstract class Resolver {
+/**
+ * A utility class that resolves DNS SRV records. Used by {@link PeriodicResolver} to discover
+ * helios masters.
+ */
+class Resolver {
 
   private static final String HTTPS_SRV_FORMAT = env("HELIOS_HTTPS_SRV_FORMAT", "_%s._https.%s");
   private static final String HTTP_SRV_FORMAT = env("HELIOS_HTTP_SRV_FORMAT", "_%s._http.%s");
@@ -44,11 +48,11 @@ public abstract class Resolver {
     return Optional.fromNullable(getenv(name)).or(defaultValue);
   }
 
-  public static Supplier<List<URI>> supplier(final String srvName, final String domain) {
+  Supplier<List<URI>> supplier(final String srvName, final String domain) {
     return supplier(srvName, domain, DEFAULT_RESOLVER);
   }
 
-  static Supplier<List<URI>> supplier(final String srvName, final String domain,
+  Supplier<List<URI>> supplier(final String srvName, final String domain,
                                       final DnsSrvResolver resolver) {
     return new Supplier<List<URI>>() {
       @Override
