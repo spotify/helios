@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.spotify.dns.DnsSrvResolver;
 import com.spotify.dns.LookupResult;
@@ -44,7 +43,7 @@ public class ResolverTest {
   DnsSrvResolver resolver;
 
   @Test
-  public void testSupplier() throws Exception {
+  public void testResolve() throws Exception {
     final List<LookupResult> lookupResults = ImmutableList.of(
         LookupResult.create("master1.example.com", 443, 1, 1, 1),
         LookupResult.create("master2.example.com", 443, 1, 1, 1),
@@ -58,15 +57,14 @@ public class ResolverTest {
 
     when(resolver.resolve("_helios._https.example.com")).thenReturn(lookupResults);
 
-    final Supplier<List<URI>> supplier = new Resolver().supplier("helios", "example.com", resolver);
-    final List<URI> uris = supplier.get();
+    final List<URI> uris = new Resolver().resolve("helios", "example.com", resolver);
 
     assertThat(uris.size(), equalTo(3));
     assertThat(uris, Matchers.containsInAnyOrder(expectedUris));
   }
 
   @Test
-  public void testSupplierWithHttpFallback() throws Exception {
+  public void testResolveWithHttpFallback() throws Exception {
     final List<LookupResult> lookupResults = ImmutableList.of(
         LookupResult.create("master1.example.com", 80, 1, 1, 1),
         LookupResult.create("master2.example.com", 80, 1, 1, 1),
@@ -79,11 +77,10 @@ public class ResolverTest {
     };
 
     when(resolver.resolve("_helios._https.example.com"))
-        .thenReturn(Collections.<LookupResult>emptyList());
+        .thenReturn(Collections.emptyList());
     when(resolver.resolve("_helios._http.example.com")).thenReturn(lookupResults);
 
-    final Supplier<List<URI>> supplier = new Resolver().supplier("helios", "example.com", resolver);
-    final List<URI> uris = supplier.get();
+    final List<URI> uris = new Resolver().resolve("helios", "example.com", resolver);
 
     assertThat(uris.size(), equalTo(3));
     assertThat(uris, Matchers.containsInAnyOrder(expectedUris));

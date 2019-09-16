@@ -38,9 +38,9 @@ public class PeriodicResolver implements Supplier<List<URI>> {
                            final String domain,
                            final Resolver resolver,
                            final ScheduledExecutorService executorService) {
-    endpoints = resolver.supplier(srvName, domain).get();
+    endpoints = resolver.resolve(srvName, domain);
     executorService.scheduleWithFixedDelay(() ->
-        endpoints = resolver.supplier(srvName, domain).get(), 0, 1, TimeUnit.MINUTES);
+        endpoints = resolver.resolve(srvName, domain), 0, 1, TimeUnit.MINUTES);
   }
 
   public static PeriodicResolver create(final String srvName,

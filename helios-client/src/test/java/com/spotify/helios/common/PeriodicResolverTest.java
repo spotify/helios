@@ -37,8 +37,7 @@ public class PeriodicResolverTest {
   @Test
   public void testGet() {
     final URI uri = URI.create("https://foo.bar.com");
-    when(resolver.supplier("foo", "bar"))
-        .thenReturn(() -> ImmutableList.of(uri));
+    when(resolver.resolve("foo", "bar")).thenReturn(ImmutableList.of(uri));
     final PeriodicResolver sut = PeriodicResolver.create("foo", "bar", resolver,
         Executors.newSingleThreadScheduledExecutor());
     assertThat(sut.get(), Matchers.contains(uri));

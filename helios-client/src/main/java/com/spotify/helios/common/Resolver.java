@@ -24,7 +24,6 @@ import static java.lang.String.format;
 import static java.lang.System.getenv;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.spotify.dns.DnsSrvResolver;
 import com.spotify.dns.DnsSrvResolvers;
@@ -48,23 +47,16 @@ class Resolver {
     return Optional.fromNullable(getenv(name)).or(defaultValue);
   }
 
-  Supplier<List<URI>> supplier(final String srvName, final String domain) {
-    return supplier(srvName, domain, DEFAULT_RESOLVER);
+  List<URI> resolve(final String srvName, final String domain) {
+    return resolve(srvName, domain, DEFAULT_RESOLVER);
   }
 
-  Supplier<List<URI>> supplier(final String srvName, final String domain,
-                                      final DnsSrvResolver resolver) {
-    return new Supplier<List<URI>>() {
-      @Override
-      public List<URI> get() {
-        // Try to get HTTPS SRV records first and fallback to HTTP
-        List<URI> uris = resolve(srvName, "https", domain, resolver);
-        if (uris.isEmpty()) {
-          uris = resolve(srvName, "http", domain, resolver);
-        }
-        return uris;
-      }
-    };
+  List<URI> resolve(final String srvName, final String domain, final DnsSrvResolver resolver) {
+    List<URI> uris = resolve(srvName, "https", domain, resolver);
+    if (uris.isEmpty()) {
+      return resolve(srvName, "http", domain, resolver);
+    }
+    return uris;
   }
 
   private static List<URI> resolve(final String srvName,
