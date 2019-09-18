@@ -23,9 +23,10 @@ package com.spotify.helios.cli;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.spotify.helios.common.Resolver;
+import com.spotify.helios.common.PeriodicResolver;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 /**
  * A target cluster identified by an endpoint string that can be used with a {@link
@@ -64,7 +65,7 @@ public abstract class Target {
 
     @Override
     public Supplier<List<URI>> getEndpointSupplier() {
-      return Resolver.supplier(srv, domain);
+      return PeriodicResolver.create(srv, domain, Executors.newSingleThreadScheduledExecutor());
     }
 
     @Override

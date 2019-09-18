@@ -65,7 +65,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.Resolver;
+import com.spotify.helios.common.PeriodicResolver;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -102,6 +102,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -632,7 +633,8 @@ public class HeliosClient implements Closeable {
     }
 
     public Builder setDomain(final String domain) {
-      return setEndpointSupplier(Endpoints.of(Resolver.supplier("helios", domain)));
+      return setEndpointSupplier(Endpoints.of(PeriodicResolver.create("helios", domain,
+          Executors.newSingleThreadScheduledExecutor())));
     }
 
     public Builder setEndpoints(final List<URI> endpoints) {
