@@ -31,12 +31,16 @@ import com.spotify.dns.LookupResult;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A utility class that resolves DNS SRV records. Used by {@link PeriodicResolver} to discover
  * helios masters.
  */
 class Resolver {
+
+  private static final Logger log = LoggerFactory.getLogger(Resolver.class);
 
   private static final String HTTPS_SRV_FORMAT = env("HELIOS_HTTPS_SRV_FORMAT", "_%s._https.%s");
   private static final String HTTP_SRV_FORMAT = env("HELIOS_HTTP_SRV_FORMAT", "_%s._http.%s");
@@ -83,7 +87,9 @@ class Resolver {
       endpoints.add(protocol(protocol, result.host(), result.port()));
     }
 
-    return endpoints.build();
+    final ImmutableList<URI> uris = endpoints.build();
+    log.info("Resolved {} to {}", name, uris);
+    return uris;
   }
 
   private static URI protocol(final String protocol, final String host, final int port) {
