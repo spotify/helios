@@ -96,7 +96,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       @Override
       public void stateChanged(CuratorFramework client, ConnectionState newState) {
         log.info("DefaultZooKeeperClient connection state change - {}", newState);
-        if (newState == ConnectionState.RECONNECTED) {
+        if (newState.isConnected()) {
           checkClusterIdExists(clusterId, "connectionStateListener");
         }
       }
