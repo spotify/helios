@@ -1,4 +1,4 @@
-Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?style=badge)](https://circleci.com/gh/spotify/helios/tree/master) [![Slack Status](http://slackin.spotify.com/badge.svg)](http://slackin.spotify.com)
+Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?style=badge)](https://circleci.com/gh/spotify/helios/tree/master) [![Slack Status](http://slackin.spotify.com/badge.svg)](http://slackin.spotify.com) [ ![Download](https://api.bintray.com/packages/spotify/deb/helios/images/download.svg) ](https://bintray.com/spotify/deb/helios/_latestVersion)
 ======
 
 ## Status: Bug-fix only
