@@ -676,7 +676,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException(
-          "rolling-update on deployment-group " + deploymentGroup.getName() + " failed", e);
+          "rolling-update on deployment-group " + deploymentGroup.getName() + " failed. "
+          + e.getMessage(), e);
     }
   }
 
@@ -836,7 +837,8 @@ public class ZooKeeperMasterModel implements MasterModel {
             log.info("rolling-update step on deployment-group was processed by another master"
                      + ": name={}, zookeeper operations={}", deploymentGroupName, ops);
           } catch (KeeperException e) {
-            log.error("rolling-update on deployment-group {} failed", deploymentGroupName, e);
+            log.error("rolling-update on deployment-group {} failed. {}", deploymentGroupName,
+                e.getMessage(), e);
           }
         }
       } catch (final Exception e) {
