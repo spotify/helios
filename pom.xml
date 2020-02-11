@@ -109,11 +109,11 @@
     <repositories>
         <repository>
             <id>clojars.org</id>
-            <url>http://clojars.org/repo</url>
+            <url>https://clojars.org/repo</url>
         </repository>
         <repository>
             <id>bintray-readytalk</id>
-            <url>http://dl.bintray.com/readytalk/maven</url>
+            <url>https://dl.bintray.com/readytalk/maven</url>
         </repository>
         <repository>
             <id>ossrh</id>
