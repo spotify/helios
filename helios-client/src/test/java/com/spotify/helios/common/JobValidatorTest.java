@@ -207,7 +207,18 @@ public class JobValidatorTest {
             "2", PortMapping.of(2, 1)))
         .build();
 
-    assertEquals(ImmutableSet.of("Duplicate external port mapping: 1"), validator.validate(job));
+    assertEquals(
+        ImmutableSet.of("Duplicate external port mapping: tcp:1"), validator.validate(job));
+
+    final Job job2 = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("bar")
+        .setPorts(ImmutableMap.of("tcp-proto", PortMapping.of(1, 1, PortMapping.TCP),
+            "udp-proto", PortMapping.of(1, 1,PortMapping.UDP)))
+        .build();
+
+    assertEquals(0, validator.validate(job2).size());
   }
 
   @Test
