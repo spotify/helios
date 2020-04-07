@@ -110,7 +110,10 @@ public class AgentTest {
       .setName("foo")
       .setVersion("17")
       .setPorts(ImmutableMap.of("p1", PortMapping.of(4711),
-          "p2", PortMapping.of(4712, 12345)))
+          "p2", PortMapping.of(4712, 12345),
+          "p-tcp", PortMapping.of(3100, 4100, PortMapping.TCP),
+          "p-udp", PortMapping.of(3100, 4100, PortMapping.UDP)
+          ))
       .build();
 
   private static final Map<String, Integer> FOO_PORT_ALLOCATION = ImmutableMap.of("p1", 30000,

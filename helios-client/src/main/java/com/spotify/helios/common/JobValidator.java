@@ -107,13 +107,17 @@ public class JobValidator {
     errors.addAll(validateJobHostName(job.getHostname()));
 
     // Check that there's not external port collision
-    final Set<Integer> externalPorts = Sets.newHashSet();
+    final Set<String> externalPortsWithProto = Sets.newHashSet();
     for (final PortMapping mapping : job.getPorts().values()) {
       final Integer externalMappedPort = mapping.getExternalPort();
-      if (externalPorts.contains(externalMappedPort) && externalMappedPort != null) {
-        errors.add(format("Duplicate external port mapping: %s", externalMappedPort));
+      String externalMappedPortWithProto =
+          String.format(
+              "%s:%d", mapping.getProtocol(), externalMappedPort != null ? externalMappedPort : 0);
+      if (externalPortsWithProto.contains(externalMappedPortWithProto)
+          && externalMappedPort != null) {
+        errors.add(format("Duplicate external port mapping: %s", externalMappedPortWithProto));
       }
-      externalPorts.add(externalMappedPort);
+      externalPortsWithProto.add(externalMappedPortWithProto);
     }
 
     // Verify port mappings
