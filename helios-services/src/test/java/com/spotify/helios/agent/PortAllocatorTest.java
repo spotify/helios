@@ -50,6 +50,23 @@ public class PortAllocatorTest {
   }
 
   @Test
+  public void testAllocatePortsWithDifferentProtocols() throws Exception {
+    final PortAllocator sut = new PortAllocator(20000, 20010);
+    final Map<String, PortMapping> mapping =
+        ImmutableMap.of(
+            "p1", PortMapping.of(17),
+            "p-tcp", PortMapping.of(18, 18),
+            "p-udp", PortMapping.of(18, 18));
+    final Set<Integer> used = ImmutableSet.of(10, 11);
+    final Map<String, Integer> allocation = sut.allocate(mapping, used);
+    assertThat(
+        allocation,
+        hasEntry(is("p1"), allOf(greaterThanOrEqualTo(20000), lessThanOrEqualTo(20010))));
+    assertThat(allocation, hasEntry("p-tcp", 18));
+    assertThat(allocation, hasEntry("p-udp", 18));
+  }
+
+  @Test
   public void testInsufficientPortsFail1() throws Exception {
     final PortAllocator sut = new PortAllocator(10, 11);
     final Map<String, PortMapping> mapping = ImmutableMap.of("p1", PortMapping.of(17),

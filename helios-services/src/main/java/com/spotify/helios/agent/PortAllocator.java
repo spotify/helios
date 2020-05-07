@@ -26,6 +26,7 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,10 +70,11 @@ public class PortAllocator {
     return allocate0(ports, Sets.newHashSet(used));
   }
 
-  private Map<String, Integer> allocate0(final Map<String, PortMapping> mappings,
-                                         final Set<Integer> used) {
+  private Map<String, Integer> allocate0(
+      final Map<String, PortMapping> mappings, final Set<Integer> used) {
 
     final ImmutableMap.Builder<String, Integer> allocation = ImmutableMap.builder();
+    final Set<Integer> staticExternalPorts = new HashSet<>();
 
     for (final Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
       final String name = entry.getKey();
@@ -84,27 +86,43 @@ public class PortAllocator {
           return null;
         }
       } else {
-        if (!allocateStatic(allocation, used, name, externalPort)) {
-          return null;
-        }
+        // for static external ports, it's valid to
+        // have two same ports with different protocols
+        // e.g.
+        // "externalPort": 11101, "protocol": "tcp"
+        // "externalPort": 11101, "protocol": "udp"
+        staticExternalPorts.add(externalPort);
+      }
+    }
+
+    // check conflict between `used` and `staticExternalPorts`
+    for (final Integer externalPort : staticExternalPorts) {
+      if (used.contains(externalPort)) {
+        return null;
+      }
+    }
+
+    // we have checked the conflict between `used` and `staticExternalPorts` above
+    // so here we can add all externalPorts into `allocation` without any validation
+    for (final Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
+      final String name = entry.getKey();
+      final PortMapping portMapping = entry.getValue();
+      final Integer externalPort = portMapping.getExternalPort();
+
+      if (externalPort != null) {
+        allocateStatic(allocation, used, name, externalPort);
       }
     }
 
     return allocation.build();
   }
 
-  private boolean allocateStatic(final ImmutableMap.Builder<String, Integer> allocation,
+  private void allocateStatic(final ImmutableMap.Builder<String, Integer> allocation,
                                  final Set<Integer> used,
                                  final String name,
                                  final Integer port) {
-    // Verify that this port is not in use
-    if (used.contains(port)) {
-      return false;
-    }
-
     used.add(port);
     allocation.put(name, port);
-    return true;
   }
 
   private boolean allocateDynamic(final ImmutableMap.Builder<String, Integer> allocation,
