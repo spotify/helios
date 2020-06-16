@@ -1562,7 +1562,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final String taskPath = Paths.configHostJob(host, id);
     final String taskCreationPath = Paths.configHostJobCreation(host, id, operationId);
 
-    final List<Integer> staticPorts = staticPorts(job);
+    final Set<Integer> staticPorts = staticPorts(job);
     final Map<String, byte[]> portNodes = Maps.newHashMap();
     final byte[] idJson = id.toJsonBytes();
     for (final int port : staticPorts) {
@@ -1643,8 +1643,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private List<Integer> staticPorts(final Job job) {
-    final List<Integer> staticPorts = Lists.newArrayList();
+  private Set<Integer> staticPorts(final Job job) {
+    final Set<Integer> staticPorts = Sets.newHashSet();
     for (final PortMapping portMapping : job.getPorts().values()) {
       if (portMapping.getExternalPort() != null) {
         staticPorts.add(portMapping.getExternalPort());
@@ -1951,7 +1951,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<String> nodes = newArrayList(reverse(client.listRecursive(configHostJobPath)));
       nodes.add(Paths.configJobHost(jobId, host));
 
-      final List<Integer> staticPorts = staticPorts(job);
+      final Set<Integer> staticPorts = staticPorts(job);
       for (final int port : staticPorts) {
         nodes.add(Paths.configHostPort(host, port));
       }
@@ -1990,7 +1990,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<String> nodes = newArrayList(reverse(client.listRecursive(configHostJobPath)));
       nodes.add(Paths.configJobHost(jobId, host));
 
-      final List<Integer> staticPorts = staticPorts(job);
+      final Set<Integer> staticPorts = staticPorts(job);
       for (final int port : staticPorts) {
         nodes.add(Paths.configHostPort(host, port));
       }
@@ -2027,7 +2027,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final String taskPath = Paths.configHostJob(host, id);
     final String taskCreationPath = Paths.configHostJobCreation(host, id, operationId);
 
-    final List<Integer> staticPorts = staticPorts(job);
+    final Set<Integer> staticPorts = staticPorts(job);
     final Map<String, byte[]> portNodes = Maps.newHashMap();
     final byte[] idJson = id.toJsonBytes();
     for (final int port : staticPorts) {
