@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PortAllocator {
 
-  private static final Logger log = LoggerFactory.getLogger(Agent.class);
+  private static final Logger log = LoggerFactory.getLogger(PortAllocator.class);
 
   private int idx = 0;
   private final List<Integer> potentialPorts;
