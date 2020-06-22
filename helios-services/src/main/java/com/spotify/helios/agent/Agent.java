@@ -250,12 +250,13 @@ public class Agent extends AbstractIdleService {
           final Job job = execution.getJob();
           final Map<String, Integer> ports = portAllocator.allocate(job.getPorts(),
               usedPorts.build());
-          log.debug("Allocated ports for job {}: {}", jobId, ports);
+          log.info("Allocated ports for job {}: {}", jobId, ports);
           if (ports != null) {
             newExecutions.put(jobId, execution.withPorts(ports));
             usedPorts.addAll(ports.values());
           } else {
-            log.warn("Unable to allocate ports for job: {}", job);
+            log.warn("Unable to allocate ports for job: {}, job ports {}, usedPorts {}", job,
+                job.getPorts(), usedPorts.build());
           }
         }
       }

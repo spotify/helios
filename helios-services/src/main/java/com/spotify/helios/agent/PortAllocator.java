@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PortAllocator {
 
-  private static final Logger log = LoggerFactory.getLogger(Agent.class);
+  private static final Logger log = LoggerFactory.getLogger(PortAllocator.class);
 
   private int idx = 0;
   private final List<Integer> potentialPorts;
@@ -83,6 +83,9 @@ public class PortAllocator {
 
       if (externalPort == null) {
         if (!allocateDynamic(allocation, used, name)) {
+          log.info("Unable to allocateDynamic allocation {}, used {}, name {}", allocation.build(),
+              used,
+              name);
           return null;
         }
       } else {
@@ -98,6 +101,7 @@ public class PortAllocator {
     // check conflict between `used` and `staticExternalPorts`
     for (final Integer externalPort : staticExternalPorts) {
       if (used.contains(externalPort)) {
+        log.info("Conflict here used {}, externalPort {}", used, externalPort);
         return null;
       }
     }
