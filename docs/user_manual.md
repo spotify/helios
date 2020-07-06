@@ -182,6 +182,7 @@ example that uses all the available configuration keys with an explanation of ea
       }
     }
   },
+  "registrationAuth" : false,
   "registrationDomain" : "",
   "resources" : {
     "memory" : 10485760,

@@ -21,6 +21,7 @@
 package com.spotify.helios.system;
 
 import static com.spotify.helios.common.descriptors.Job.DEFAULT_NETWORK_MODE;
+import static com.spotify.helios.common.descriptors.Job.DEFAULT_REGISTRATION_AUTH;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATED;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
@@ -60,7 +61,7 @@ public class IdMismatchJobCreateTest extends SystemTestBase {
     final CreateJobResponse createIdMismatch = client.createJob(
         new Job(JobId.fromString("bad:job:deadbeef"), BUSYBOX, EMPTY_HOSTNAME, EMPTY_CREATED,
             IDLE_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
-            EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
+            EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES, DEFAULT_REGISTRATION_AUTH,
             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
             EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, DEFAULT_NETWORK_MODE,
             EMPTY_METADATA, EMPTY_CAPS, EMPTY_CAPS, EMPTY_LABELS, EMPTY_SECONDS_TO_WAIT,

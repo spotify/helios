@@ -100,6 +100,7 @@ import org.jetbrains.annotations.Nullable;
  *       }
  *     }
  *   },
+ *   "registrationAuth" : true,
  *   "registrationDomain" : "",
  *   "resources" : {
  *     "memory" : 10485760,
@@ -137,6 +138,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, String> EMPTY_VOLUMES = emptyMap();
   public static final String EMPTY_MOUNT = "";
   public static final Date EMPTY_EXPIRES = null;
+  public static final Boolean DEFAULT_REGISTRATION_AUTH = Boolean.FALSE;
   public static final String EMPTY_REGISTRATION_DOMAIN = "";
   public static final String EMPTY_CREATING_USER = null;
   public static final String EMPTY_TOKEN = "";
@@ -164,6 +166,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Integer gracePeriod;
   private final Map<String, String> volumes;
   private final Date expires;
+  private final Boolean registrationAuth;
   private final String registrationDomain;
   private final String creatingUser;
   private final String token;
@@ -199,6 +202,10 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param volumes                 Docker volumes to mount.
    * @param expires                 If set, a timestamp at which the job and any deployments will be
    *                                removed.
+   * @param registrationAuth        If the service discovery registrar requires authorization,
+   *                                setting this option to true tells the Helios agent's service
+   *                                registration plugin to send authorization credentials when
+   *                                registering. Defaults to false.
    * @param registrationDomain      If set, overrides the default domain in which discovery service
    *                                registration occurs.  What is allowed here will vary based
    *                                upon the discovery service plugin used.
@@ -235,6 +242,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("gracePeriod") @Nullable final Integer gracePeriod,
       @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
       @JsonProperty("expires") @Nullable final Date expires,
+      @JsonProperty("registrationAuth") @Nullable Boolean registrationAuth,
       @JsonProperty("registrationDomain") @Nullable String registrationDomain,
       @JsonProperty("creatingUser") @Nullable String creatingUser,
       @JsonProperty("token") @Nullable String token,
@@ -263,6 +271,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.gracePeriod = Optional.fromNullable(gracePeriod).orNull();
     this.volumes = Optional.fromNullable(volumes).or(EMPTY_VOLUMES);
     this.expires = expires;
+    this.registrationAuth = java.util.Optional.ofNullable(registrationAuth)
+        .orElse(DEFAULT_REGISTRATION_AUTH);
     this.registrationDomain = Optional.fromNullable(registrationDomain)
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = Optional.fromNullable(creatingUser).orNull();
@@ -294,6 +304,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.gracePeriod = pm.gracePeriod;
     this.volumes = ImmutableMap.copyOf(checkNotNull(pm.volumes, "volumes"));
     this.expires = pm.expires;
+    this.registrationAuth =
+        java.util.Optional.ofNullable(pm.registrationAuth).orElse(DEFAULT_REGISTRATION_AUTH);
     this.registrationDomain = Optional.fromNullable(pm.registrationDomain)
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = pm.creatingUser;
@@ -345,6 +357,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Map<ServiceEndpoint, ServicePorts> getRegistration() {
     return registration;
+  }
+
+  public Boolean getRegistrationAuth() {
+    return registrationAuth;
   }
 
   public String getRegistrationDomain() {
@@ -457,6 +473,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            && Objects.equals(this.resources, that.resources)
            && Objects.equals(this.ports, that.ports)
            && Objects.equals(this.registration, that.registration)
+           && Objects.equals(this.registrationAuth, that.registrationAuth)
            && Objects.equals(this.registrationDomain, that.registrationDomain)
            && Objects.equals(this.gracePeriod, that.gracePeriod)
            && Objects.equals(this.volumes, that.volumes)
@@ -479,8 +496,8 @@ public class Job extends Descriptor implements Comparable<Job> {
   public int hashCode() {
     return Objects.hash(
         id, image, hostname, expires, created, command, env, resources,
-        ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
-        token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
+        ports, registration, registrationAuth, registrationDomain, gracePeriod, volumes,
+        creatingUser, token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
         dropCapabilities, labels, secondsToWaitBeforeKill, ramdisks, rolloutOptions, runtime);
   }
 
@@ -499,6 +516,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            + ", gracePeriod=" + gracePeriod
            + ", volumes=" + volumes
            + ", expires=" + expires
+           + ", registrationAuth='" + registrationAuth + '\''
            + ", registrationDomain='" + registrationDomain + '\''
            + ", creatingUser='" + creatingUser + '\''
            + ", token='" + token + '\''
@@ -535,6 +553,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setGracePeriod(gracePeriod)
         .setVolumes(volumes)
         .setExpires(expires)
+        .setRegistrationAuth(registrationAuth)
         .setRegistrationDomain(registrationDomain)
         .setCreatingUser(creatingUser)
         .setToken(token)
@@ -567,6 +586,7 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     private static class Parameters implements Cloneable {
 
+      public Boolean registrationAuth;
       public String registrationDomain;
       public String name;
       public String version;
@@ -604,6 +624,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.registration = Maps.newHashMap(EMPTY_REGISTRATION);
         this.gracePeriod = EMPTY_GRACE_PERIOD;
         this.volumes = Maps.newHashMap(EMPTY_VOLUMES);
+        this.registrationAuth = DEFAULT_REGISTRATION_AUTH;
         this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
         this.creatingUser = EMPTY_CREATING_USER;
         this.token = EMPTY_TOKEN;
@@ -632,6 +653,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.gracePeriod = pm.gracePeriod;
         this.volumes = Maps.newHashMap(pm.volumes);
         this.expires = pm.expires;
+        this.registrationAuth = pm.registrationAuth;
         this.registrationDomain = pm.registrationDomain;
         this.creatingUser = pm.creatingUser;
         this.token = pm.token;
@@ -655,6 +677,11 @@ public class Job extends Descriptor implements Comparable<Job> {
 
         return clone;
       }
+    }
+
+    public Builder setRegistrationAuth(final Boolean enabled) {
+      this.pm.registrationAuth = enabled;
+      return this;
     }
 
     public Builder setRegistrationDomain(final String domain) {
@@ -867,6 +894,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
       return ImmutableMap.copyOf(pm.registration);
+    }
+
+    public Boolean getRegistrationAuth() {
+      return pm.registrationAuth;
     }
 
     public String getRegistrationDomain() {
