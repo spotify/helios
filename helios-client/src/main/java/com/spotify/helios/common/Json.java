@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +49,8 @@ public class Json {
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
       .configure(WRITE_DATES_AS_TIMESTAMPS, false)
-      .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+      .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .setDateFormat(new StdDateFormat().withColonInTimeZone(false));
 
   private static final ObjectWriter NORMALIZING_OBJECT_WRITER = new ObjectMapper()
       .setDefaultPropertyInclusion(
@@ -58,12 +60,14 @@ public class Json {
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
       .configure(WRITE_DATES_AS_TIMESTAMPS, false)
+      .setDateFormat(new StdDateFormat().withColonInTimeZone(false))
       .writer();
 
   private static final ObjectWriter PRETTY_OBJECT_WRITER = new ObjectMapper()
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
       .configure(WRITE_DATES_AS_TIMESTAMPS, false)
+      .setDateFormat(new StdDateFormat().withColonInTimeZone(false))
       .writerWithDefaultPrettyPrinter();
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE =
