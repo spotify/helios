@@ -40,7 +40,7 @@ public class JobRemoveCommand extends WildcardJobCommand {
   private final Argument yesArg;
 
   public JobRemoveCommand(Subparser parser) {
-    super(parser);
+    super(parser, false);
 
     parser.help("remove a job");
 

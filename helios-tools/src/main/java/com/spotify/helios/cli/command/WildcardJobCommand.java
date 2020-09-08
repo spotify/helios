@@ -41,6 +41,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 abstract class WildcardJobCommand extends ControlCommand {
 
   private final Argument jobArg;
+  private final Argument strictStartArg;
 
   public WildcardJobCommand(final Subparser parser) {
     this(parser, false);
@@ -51,15 +52,30 @@ abstract class WildcardJobCommand extends ControlCommand {
 
     jobArg = parser.addArgument("job")
         .help("Job id.");
+    strictStartArg = parser.addArgument("--strict-start")
+        .type(Boolean.class)
+        .setDefault(false)
+        .help("Forces job names to be matched from the string start. "
+              + "By default, some commands will match on any jobs that contain the input name as a"
+              + " substring, this option forces the match to only happen if the string starts with"
+              + " the input name. Affects the subcommands: remove, inspect, rolling-update,"
+              + " undeploy, deploy and stop.");
   }
 
   @Override
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
           final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
-
     final String jobIdString = options.getString(jobArg.getDest());
     final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
+
+    if (options.getBoolean(strictStartArg.getDest())) {
+      for (final Map.Entry<JobId, Job> entry : jobs.entrySet()) {
+        if (!entry.getKey().toShortString().startsWith(jobIdString)) {
+          jobs.remove(entry.getKey());
+        }
+      }
+    }
 
     if (jobs.size() == 0) {
       if (!json) {

@@ -41,7 +41,7 @@ public class JobStartCommand extends WildcardJobCommand {
   private final Argument tokenArg;
 
   public JobStartCommand(Subparser parser) {
-    super(parser);
+    super(parser, false);
 
     parser.help("start a stopped job");
 
