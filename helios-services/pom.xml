@@ -17,6 +17,7 @@
         <masterImageName>helios-master:${project.version}</masterImageName>
         <agentImageName>helios-agent:${project.version}</agentImageName>
         <soloImageName>helios-solo:${project.version}</soloImageName>
+        <jersey.version>1.19.4</jersey.version>
     </properties>
 
     <profiles>
@@ -286,17 +287,17 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>1.18.1</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>1.18.1</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-core</artifactId>
-            <version>1.18.1</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.spotify</groupId>
