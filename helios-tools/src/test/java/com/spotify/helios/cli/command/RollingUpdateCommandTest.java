@@ -107,7 +107,7 @@ public class RollingUpdateCommandTest {
   @Before
   public void before() {
     // Default CLI argument stubs
-    when(options.getString("deployment-group-name")).thenReturn(GROUP_NAME);
+    when(options.getString("deployment_group_name")).thenReturn(GROUP_NAME);
     when(options.getInt("parallelism")).thenReturn(PARALLELISM);
     when(options.getLong("timeout")).thenReturn(TIMEOUT);
     when(options.getLong("rollout_timeout")).thenReturn(10L);

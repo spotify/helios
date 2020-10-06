@@ -54,7 +54,7 @@ public class DeploymentGroupRemoveCommandTest {
   @Before
   public void before() {
     // Default CLI argument stubs
-    when(options.getString("deployment-group-name")).thenReturn(GROUP_NAME);
+    when(options.getString("deployment_group_name")).thenReturn(GROUP_NAME);
   }
 
   @Test
