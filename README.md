@@ -268,3 +268,4 @@ order):
 * Resource specification and enforcement -- That is: restrict my container to *X* MB of RAM, *X* CPUs, and *X* MB disk and perhaps other things like IOPs, network bandwidth, etc.
 * Dynamic scheduling of jobs -- either within Helios itself or as a layer on top
 * Packaging/Config for other Linux distributions such as RedHat, CoreOS, etc.
+
