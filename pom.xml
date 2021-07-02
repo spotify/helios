@@ -225,6 +225,11 @@
                 <version>1.2.1</version>
             </dependency>
             <dependency>
+                 <groupId>com.spotify</groupId>
+                <artifactId>dns</artifactId>
+                 <version>3.2.2</version>
+            </dependency>
+            <dependency>
                 <groupId>dnsjava</groupId>
                 <artifactId>dnsjava</artifactId>
                 <version>3.0.2</version>
