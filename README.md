@@ -1,12 +1,11 @@
 Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?style=badge)](https://circleci.com/gh/spotify/helios/tree/master) [![Slack Status](http://slackin.spotify.com/badge.svg)](http://slackin.spotify.com) [ ![Download](https://api.bintray.com/packages/spotify/deb/helios/images/download.svg) ](https://bintray.com/spotify/deb/helios/_latestVersion)
 ======
 
-## Status: Bug-fix only
+## Status: Sunset
 
 This project was created when there were no open source container orchestration frameworks.
-Since the advent of Kubernetes and other tools, we've stopped adding new features to helios
-and are now switching to other tools like Kubernetes. This project will no longer have new features
-or accept PRs for new features. We will continue to accept bug fixes, however.
+Since the advent of Kubernetes and other tools, we've stopped using helios at Spotify
+and have now switched to other tools like Kubernetes. This project will no longer accept PRs.
 
 Helios is a Docker orchestration platform for deploying and managing
 containers across an entire fleet of servers. Helios provides a HTTP
