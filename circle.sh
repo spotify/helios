@@ -33,10 +33,12 @@ case "$1" in
     ;;
 
   test)
-    # fix DOCKER_HOST to be accessible from within containers
-    docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
-      awk -F: '{print $2}' | awk '{print $1}')
-    export DOCKER_HOST="tcp://$docker0_ip:2375"
+    if [ -n "$CIRCLE_MACHINE_EXECUTOR" ]; then
+        # fix DOCKER_HOST to be accessible from within containers
+        docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
+          awk -F: '{print $2}' | awk '{print $1}')
+        export DOCKER_HOST="tcp://$docker0_ip:2375"
+    fi
 
     case $CIRCLE_NODE_INDEX in
       0)
