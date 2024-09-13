@@ -24,6 +24,7 @@ import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -646,6 +647,37 @@ public class RollingUpdateCommandTest {
     command.runWithJob(options, client, out, false, JOB, null);
 
     assertThat(baos.toString(), containsString(expectedSubstring));
+  }
+
+  @Test
+  public void testStrictStartJobName() throws Exception {
+    final JobId jobId1 = JobId.parse("foo-bar:cafe");
+    Job job1 = Job.newBuilder()
+        .setName(jobId1.getName())
+        .setHash(jobId1.getHash())
+        .setRolloutOptions(jobOptions)
+        .build();
+    final JobId jobId2 = JobId.parse("bar:beef");
+    Job job2 = Job.newBuilder()
+        .setName(jobId2.getName())
+        .setHash(jobId2.getHash())
+        .setRolloutOptions(jobOptions)
+        .build();
+    final Map<JobId, Job> jobs = ImmutableMap.of(
+        jobId1, job1,
+        jobId2, job2
+    );
+    when(client.jobs(anyString())).thenReturn(immediateFuture(jobs));
+
+    when(options.getBoolean("strict-start")).thenReturn(true);
+
+    when(options.getString("job")).thenReturn("bar");
+
+    final int ret = command.run(options, client, out, false, null);
+
+    assertEquals(ret, 0);
+
+    assertThat(out.toString(), not(containsString("Ambiguous job reference")));
   }
 
   private static class TimeUtil implements RollingUpdateCommand.SleepFunction, Supplier<Long> {

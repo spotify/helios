@@ -46,7 +46,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
   private final Argument yesArg;
 
   public JobUndeployCommand(final Subparser parser) {
-    super(parser);
+    super(parser, false);
 
     parser.help("undeploy a job from hosts");
 

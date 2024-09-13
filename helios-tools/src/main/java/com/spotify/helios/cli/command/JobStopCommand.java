@@ -41,7 +41,7 @@ public class JobStopCommand extends WildcardJobCommand {
   private final Argument tokenArg;
 
   public JobStopCommand(Subparser parser) {
-    super(parser);
+    super(parser, false);
 
     parser.help("stop a running job without undeploying it");
 
