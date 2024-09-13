@@ -27,7 +27,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
-import javax.ws.rs.core.Response;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -56,10 +55,10 @@ public class DeploymentGroupStopCommand extends ControlCommand {
 
     // TODO(staffam): Support json output
 
-    if (status == Response.Status.NO_CONTENT.getStatusCode()) {
+    if (status == 204) {
       out.println(format("Deployment-group %s stopped", name));
       return 0;
-    } else if (status == Response.Status.NOT_FOUND.getStatusCode()) {
+    } else if (status == 404) {
       out.println(format("Deployment-group %s not found", name));
       return 1;
     } else {

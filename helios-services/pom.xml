@@ -17,6 +17,7 @@
         <masterImageName>helios-master:${project.version}</masterImageName>
         <agentImageName>helios-agent:${project.version}</agentImageName>
         <soloImageName>helios-solo:${project.version}</soloImageName>
+        <jersey.version>1.19.4</jersey.version>
     </properties>
 
     <profiles>
@@ -159,11 +160,7 @@
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
-            <version>0.7.1</version>
-        </dependency>
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>jsr311-api</artifactId>
+            <version>0.9.3</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.jaxrs</groupId>
@@ -290,17 +287,17 @@
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-server</artifactId>
-            <version>1.18.1</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>1.18.1</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.sun.jersey</groupId>
             <artifactId>jersey-core</artifactId>
-            <version>1.18.1</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>com.spotify</groupId>
